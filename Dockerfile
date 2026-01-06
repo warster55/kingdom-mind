@@ -1,4 +1,3 @@
-
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
@@ -13,10 +12,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
+# Environment variables for build time (Dummy values to satisfy Next.js compiler)
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV DATABASE_URL postgresql://dummy:dummy@localhost:5432/dummy
+ENV NEXTAUTH_SECRET build_dummy_secret
+ENV NEXTAUTH_URL http://localhost:4000
 
 RUN npm run build
 
@@ -38,7 +38,6 @@ RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
