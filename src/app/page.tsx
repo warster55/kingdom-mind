@@ -3,6 +3,8 @@ import { authOptions } from './api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { WelcomePage } from '@/components/chat/WelcomePage';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const session = await getServerSession(authOptions);
 

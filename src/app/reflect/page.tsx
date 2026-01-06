@@ -5,6 +5,8 @@ import { db, mentoringSessions, chatMessages, users } from '@/lib/db';
 import { eq, desc, and } from 'drizzle-orm';
 import { ReflectChat } from './ReflectChat';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ReflectPage() {
   const session = await getServerSession(authOptions);
 
