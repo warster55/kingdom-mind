@@ -1,5 +1,4 @@
-
-import { db, users, mentoringSessions, chatMessages } from '../src/lib/db';
+import { db, users, mentoringSessions, chatMessages } from '../lib/db';
 import { eq } from 'drizzle-orm';
 
 async function main() {
@@ -33,7 +32,6 @@ async function main() {
       break;
 
     case 'cleanup':
-      // Be careful with this!
       const cleanupEmail = args[1];
       if (cleanupEmail) {
         const [u] = await db.select().from(users).where(eq(users.email, cleanupEmail)).limit(1);

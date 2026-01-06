@@ -1,5 +1,4 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
-import { Adapter } from "next-auth/adapters";
+import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db, users } from "@/lib/db";
@@ -7,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 export const authOptions: NextAuthOptions = {
   // @ts-ignore
-  adapter: DrizzleAdapter(db) as Adapter,
+  adapter: DrizzleAdapter(db),
   providers: [
     CredentialsProvider({
       id: "credentials",
@@ -20,7 +19,6 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email) return null;
         
         try {
-          // Use direct select for 100% reliability
           const userResult = await db.select().from(users).where(eq(users.email, credentials.email)).limit(1);
           let user = userResult[0];
 
@@ -69,6 +67,3 @@ export const authOptions: NextAuthOptions = {
     error: '/',
   }
 };
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };

@@ -1,4 +1,4 @@
-import { db, users } from '../src/lib/db';
+import { db, users } from '../lib/db';
 
 async function seed() {
   console.log("Seeding...");

@@ -2,8 +2,11 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -13,15 +16,15 @@ const config: Config = {
       },
       colors: {
         background: {
-          primary: 'rgb(var(--background-primary) / <alpha-value>)',
-          secondary: 'rgb(var(--background-secondary) / <alpha-value>)',
+          primary: 'rgb(var(--background-primary))',
+          secondary: 'rgb(var(--background-secondary))',
         },
         text: {
-          primary: 'rgb(var(--text-primary) / <alpha-value>)',
-          secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
+          primary: 'rgb(var(--text-primary))',
+          secondary: 'rgb(var(--text-secondary))',
         },
         accent: {
-          primary: 'rgb(var(--accent-600) / <alpha-value>)',
+          primary: 'rgb(var(--accent-600))',
         },
       },
       animation: {
