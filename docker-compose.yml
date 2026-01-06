@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: kingdom-mind-web
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    env_file:
+      - .env.local
+    environment:
+      - DATABASE_URL=postgresql://kingdom_user:kingdom_pass_123@db:5432/kingdom_mind
+      - NODE_ENV=development
+      - PORT=4000
+      - NEXTAUTH_URL=http://localhost:4000
+      - NEXTAUTH_SECRET=super-secret-key-that-is-long-enough-for-encryption-12345
+      - GEMINI_API_KEY=AIzaSyAJ4Cl-UiZikGVkoBRgP_FzV8KVA-QoF3k
+      - OLLAMA_BASE_URL=http://3.19.67.252:11434
+    depends_on:
+      - db
+    networks:
+      - kingdom-net
+
+  db:
+    container_name: kingdom-mind-db
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=kingdom_user
+      - POSTGRES_PASSWORD=kingdom_pass_123
+      - POSTGRES_DB=kingdom_mind
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - kingdom-net
+
+volumes:
+  postgres_data:
+
+networks:
+  kingdom-net:
+    driver: bridge

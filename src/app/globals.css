@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background-primary: 250 250 249; /* stone-50 */
+    --background-secondary: 245 245 244; /* stone-100 */
+    --text-primary: 28 25 23; /* stone-900 */
+    --text-secondary: 87 83 78; /* stone-600 */
+    --accent-600: 217 119 6; /* amber-600 */
+  }
+
+  .dark {
+    --background-primary: 28 25 23; /* stone-900 */
+    --background-secondary: 41 37 36; /* stone-800 */
+    --text-primary: 250 250 249; /* stone-50 */
+    --text-secondary: 168 162 158; /* stone-400 */
+    --accent-600: 251 191 36; /* amber-400 */
+  }
+
+  body {
+    background-color: rgb(var(--background-primary));
+    color: rgb(var(--text-primary));
+    transition-property: color, background-color;
+    transition-duration: 500ms;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(168, 162, 158, 0.2);
+    border-radius: 10px;
+  }
+}

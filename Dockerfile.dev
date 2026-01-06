@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies first (for caching)
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# We don't COPY the rest of the code here because 
+# we will map it via volumes in docker-compose.
+
+EXPOSE 4000
+
+# Run Next.js in development mode
+CMD ["npm", "run", "dev", "--", "-p", "4000"]
