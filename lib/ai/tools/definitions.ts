@@ -155,6 +155,20 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'switchView',
+      description: "Changes the user's perspective of the sanctuary. Call this when you want to show them the 'map' of their breakthroughs or bring them back to the 'chat' for conversation.",
+      parameters: {
+        type: 'object',
+        properties: {
+          view: { type: 'string', enum: ['chat', 'map'], description: 'The perspective to switch to' }
+        },
+        required: ['view'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'setHabit',
       description: "Creates a new 'Action Anchor' (habit) for the user. Call this when you want to anchor a mental breakthrough with a practical daily or weekly physical action.",
       parameters: {

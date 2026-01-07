@@ -20,7 +20,8 @@ import {
   executeSetAtmosphere,
   executeRecallInsight,
   executeSetHabit,
-  executeCompleteHabit
+  executeCompleteHabit,
+  executeSwitchView
 } from '@/lib/ai/tools/handlers';
 import OpenAI from 'openai';
 
@@ -190,6 +191,7 @@ ${lastInsight[0] ? `- Last Breakthrough: "${lastInsight[0].content}"` : ''}
           else if (name === 'recallInsight') result = await executeRecallInsight(userId as string, args.domain);
           else if (name === 'setHabit') result = await executeSetHabit(userId as string, args.title, args.domain, args.description, args.frequency);
           else if (name === 'completeHabit') result = await executeCompleteHabit(userId as string, args.title);
+          else if (name === 'switchView') result = await executeSwitchView(args.view);
           
           return {
             tool_call_id: tc.id,

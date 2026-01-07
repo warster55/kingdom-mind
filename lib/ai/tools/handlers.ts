@@ -248,3 +248,8 @@ export async function executeCompleteHabit(userId: string, title: string): Promi
     return { success: false, error: error.message };
   }
 }
+
+export async function executeSwitchView(view: 'chat' | 'map'): Promise<ToolResult> {
+  // This is a UI signal.
+  return { success: true, data: { action: 'SWITCH_VIEW', target: view } };
+}

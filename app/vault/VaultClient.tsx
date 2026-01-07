@@ -4,14 +4,16 @@ import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { User, Insight, Habit } from '@/lib/db/schema';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Anchor, Compass, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { Sparkles, Anchor, Compass, X } from 'lucide-react';
 
 interface VaultClientProps {
   user: User;
   insights: Insight[];
   habits: Habit[];
+  onClose?: () => void;
 }
+
+const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
 
 const DOMAIN_COLORS: Record<string, string> = {
   'Identity': 'text-amber-500 bg-amber-500 shadow-amber-500/50 stroke-amber-500/20',
@@ -23,12 +25,11 @@ const DOMAIN_COLORS: Record<string, string> = {
   'Legacy': 'text-purple-500 bg-purple-500 shadow-purple-500/50 stroke-purple-500/20',
 };
 
-export function VaultClient({ user, insights, habits }: VaultClientProps) {
+export function VaultClient({ user, insights, habits, onClose }: VaultClientProps) {
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null);
   const [hoveredInsight, setHoveredInsight] = useState<Insight | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  // Handle Parallax
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ 
@@ -40,7 +41,6 @@ export function VaultClient({ user, insights, habits }: VaultClientProps) {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Calculate Star Positions once
   const starMap = useMemo(() => {
     return insights.map(insight => ({
       ...insight,
@@ -49,7 +49,6 @@ export function VaultClient({ user, insights, habits }: VaultClientProps) {
     }));
   }, [insights]);
 
-  // Group stars by domain for constellation lines
   const constellations = useMemo(() => {
     const groups: Record<string, typeof starMap> = {};
     starMap.forEach(star => {
@@ -60,14 +59,42 @@ export function VaultClient({ user, insights, habits }: VaultClientProps) {
   }, [starMap]);
 
   return (
-    <div className="flex h-screen w-full relative bg-stone-950 overflow-hidden">
+    <div className="flex h-screen w-full relative bg-stone-950 overflow-hidden text-stone-100">
+      
+      {/* Ghost Domain Labels (Celestial Geography) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {DOMAINS.map((domain, i) => {
+          const isActive = user.currentDomain === domain;
+          // Calculate a fixed spot for each domain region
+          const angle = (i / DOMAINS.length) * Math.PI * 2;
+          const dist = 35; // % distance from center
+          const left = 50 + Math.cos(angle) * dist;
+          const top = 50 + Math.sin(angle) * dist;
+
+          return (
+            <motion.div
+              key={domain}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isActive ? 0.15 : 0.05 }}
+              style={{ left: `${left}%`, top: `${top}%` }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 select-none"
+            >
+              <span className={cn(
+                "text-[4vw] font-serif italic uppercase tracking-[1em] whitespace-nowrap",
+                isActive && "text-amber-500"
+              )}>
+                {domain}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+
       {/* Dynamic Starfield Background */}
       <motion.div 
         style={{ x: -mousePos.x, y: -mousePos.y }}
         className="absolute inset-0 pointer-events-none opacity-30"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.05)_0%,_transparent_100%)]" />
-        {/* Subtle background dust */}
         {[...Array(50)].map((_, i) => (
           <div 
             key={i}
@@ -83,27 +110,17 @@ export function VaultClient({ user, insights, habits }: VaultClientProps) {
         ))}
       </motion.div>
 
-      {/* Back to Sanctuary */}
-      <Link 
-        href="/reflect"
-        className="absolute top-8 left-8 z-20 flex items-center gap-2 text-[10px] uppercase tracking-widest text-stone-500 hover:text-amber-600 transition-colors duration-500 group"
-      >
-        <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
-        The Sanctuary
-      </Link>
-
       {/* Main Constellation Canvas */}
       <div className="flex-1 relative flex items-center justify-center">
         <motion.div 
           style={{ x: mousePos.x * 0.5, y: mousePos.y * 0.5 }}
           className="relative w-full h-full max-w-5xl max-h-[80%]"
         >
-          {/* Constellation Lines (SVG Layer) */}
+          {/* Constellation Lines */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
             {Object.entries(constellations).map(([domain, stars]) => {
               if (stars.length < 2) return null;
               const color = DOMAIN_COLORS[domain]?.split(' ')[3] || "stroke-stone-800";
-              
               return (
                 <g key={domain}>
                   {stars.map((star, i) => {
@@ -147,36 +164,14 @@ export function VaultClient({ user, insights, habits }: VaultClientProps) {
                   onClick={() => setSelectedInsight(insight)}
                   className="relative group flex items-center justify-center -translate-x-1/2 -translate-y-1/2"
                 >
-                  <div 
-                    className={cn(
-                      "rounded-full blur-xl absolute inset-0 transition-all duration-1000 opacity-0 group-hover:opacity-40",
-                      colorClass
-                    )}
-                    style={{ width: size * 8, height: size * 8 }}
-                  />
-                  <div 
-                    className={cn(
-                      "rounded-full transition-all duration-700 shadow-lg",
-                      colorClass,
-                      selectedInsight?.id === insight.id ? "scale-150 ring-4 ring-white/10" : "group-hover:scale-125"
-                    )}
-                    style={{ width: size, height: size }}
-                  />
+                  <div className={cn("rounded-full blur-xl absolute inset-0 transition-all duration-1000 opacity-0 group-hover:opacity-40", colorClass)} style={{ width: size * 8, height: size * 8 }} />
+                  <div className={cn("rounded-full transition-all duration-700 shadow-lg", colorClass, selectedInsight?.id === insight.id ? "scale-150 ring-4 ring-white/10" : "group-hover:scale-125")} style={{ width: size, height: size }} />
                   
                   <AnimatePresence>
                     {hoveredInsight?.id === insight.id && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute bottom-full mb-4 px-4 py-2 bg-stone-900/90 backdrop-blur-md border border-stone-800 rounded-xl shadow-2xl whitespace-nowrap z-30 pointer-events-none"
-                      >
-                        <p className={cn("text-[10px] uppercase font-bold tracking-widest", domainStyle.split(' ')[0])}>
-                          {insight.domain}
-                        </p>
-                        <p className="text-xs font-serif italic text-stone-300">
-                          {insight.content.substring(0, 40)}...
-                        </p>
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-4 px-4 py-2 bg-stone-900/90 backdrop-blur-md border border-stone-800 rounded-xl shadow-2xl whitespace-nowrap z-30 pointer-events-none">
+                        <p className={cn("text-[10px] uppercase font-bold tracking-widest", domainStyle.split(' ')[0])}>{insight.domain}</p>
+                        <p className="text-xs font-serif italic text-stone-300">{insight.content.substring(0, 40)}...</p>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -184,99 +179,38 @@ export function VaultClient({ user, insights, habits }: VaultClientProps) {
               </motion.div>
             );
           })}
-
-          {insights.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 animate-fadeIn">
-              <Sparkles className="w-8 h-8 text-stone-800" />
-              <p className="text-stone-600 font-serif italic text-xl">
-                Your map of truths is waiting for its first star...
-              </p>
-            </div>
-          )}
         </motion.div>
 
-        {/* Selected Insight Detail Card */}
+        {/* Selected Insight Detail */}
         <AnimatePresence>
           {selectedInsight && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-xl p-12 bg-stone-900/90 backdrop-blur-2xl border border-stone-800 rounded-3xl shadow-2xl text-center z-40"
-            >
-              <button 
-                onClick={() => setSelectedInsight(null)}
-                className="absolute top-4 right-6 text-stone-500 hover:text-stone-300 text-lg p-2"
-              >
-                ×
-              </button>
-              <h3 className={cn(
-                "text-[10px] uppercase tracking-[0.4em] font-bold mb-6",
-                DOMAIN_COLORS[selectedInsight.domain]?.split(' ')[0]
-              )}>
-                Breakthrough • {selectedInsight.domain}
-              </h3>
-              <p className="text-2xl font-serif italic leading-relaxed text-stone-100">
-                "{selectedInsight.content}"
-              </p>
-              <div className="mt-8 text-[10px] uppercase tracking-widest text-stone-500">
-                Recorded on {new Date(selectedInsight.createdAt).toLocaleDateString()}
-              </div>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-xl p-12 bg-stone-900/90 backdrop-blur-2xl border border-stone-800 rounded-3xl shadow-2xl text-center z-40">
+              <button onClick={() => setSelectedInsight(null)} className="absolute top-4 right-6 text-stone-500 hover:text-stone-300 text-lg p-2"><X /></button>
+              <h3 className={cn("text-[10px] uppercase tracking-[0.4em] font-bold mb-6", DOMAIN_COLORS[selectedInsight.domain]?.split(' ')[0])}>Breakthrough • {selectedInsight.domain}</h3>
+              <p className="text-2xl font-serif italic leading-relaxed text-stone-100">"{selectedInsight.content}"</p>
+              <div className="mt-8 text-[10px] uppercase tracking-widest text-stone-500">Recorded on {new Date(selectedInsight.createdAt).toLocaleDateString()}</div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Sidebar: Action Anchors (Habits) */}
-      <div className="w-96 h-full border-l border-stone-900 p-12 overflow-y-auto bg-black/20 backdrop-blur-sm relative z-10">
+      {/* Sidebar: Action Anchors (Mobile Hidden for now) */}
+      <div className="hidden md:block w-96 h-full border-l border-stone-900 p-12 overflow-y-auto bg-black/40 backdrop-blur-md relative z-10">
         <div className="space-y-12">
           <div>
-            <h2 className="text-[10px] uppercase tracking-[0.4em] font-bold text-stone-500 mb-8 flex items-center gap-3">
-              <Anchor className="w-3 h-3" /> Action Anchors
-            </h2>
+            <h2 className="text-[10px] uppercase tracking-[0.4em] font-bold text-stone-500 mb-8 flex items-center gap-3"><Anchor className="w-3 h-3" /> Action Anchors</h2>
             <div className="space-y-8">
               {habits.map((habit) => (
-                <motion.div 
-                  key={habit.id} 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="group"
-                >
+                <div key={habit.id} className="group">
                   <div className="flex justify-between items-start mb-2">
-                    <span className={cn(
-                      "text-[10px] uppercase tracking-widest font-bold",
-                      DOMAIN_COLORS[habit.domain]?.split(' ')[0] || "text-stone-400"
-                    )}>
-                      {habit.domain}
-                    </span>
-                    <span className="text-[10px] font-mono text-stone-600 group-hover:text-amber-600 transition-colors">
-                      {habit.streak} DAY STREAK
-                    </span>
+                    <span className={cn("text-[10px] uppercase tracking-widest font-bold", DOMAIN_COLORS[habit.domain]?.split(' ')[0] || "text-stone-400")}>{habit.domain}</span>
+                    <span className="text-[10px] font-mono text-stone-600 group-hover:text-amber-600 transition-colors">{habit.streak} DAY STREAK</span>
                   </div>
-                  <h4 className="text-lg font-serif italic text-stone-200 group-hover:text-white transition-colors">
-                    {habit.title}
-                  </h4>
-                  <p className="text-sm text-stone-500 mt-2 leading-relaxed">
-                    {habit.description}
-                  </p>
-                </motion.div>
+                  <h4 className="text-lg font-serif italic text-stone-200">{habit.title}</h4>
+                  <p className="text-sm text-stone-500 mt-2 leading-relaxed">{habit.description}</p>
+                </div>
               ))}
-              {habits.length === 0 && (
-                <p className="text-stone-600 text-sm font-serif italic">
-                  The AI Mentor will anchor your breakthroughs with physical actions here...
-                </p>
-              )}
             </div>
-          </div>
-
-          <div className="pt-12 border-t border-stone-900">
-            <h2 className="text-[10px] uppercase tracking-[0.4em] font-bold text-stone-500 mb-4 flex items-center gap-3">
-              <Compass className="w-3 h-3" /> Core Identity
-            </h2>
-            <div className="text-3xl font-serif italic text-stone-100">
-              {user.name}
-            </div>
-            <p className="text-sm text-stone-500 mt-2 italic">Currently navigating the {user.currentDomain} domain.</p>
           </div>
         </div>
       </div>

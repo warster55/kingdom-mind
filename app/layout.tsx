@@ -40,7 +40,6 @@ export default function RootLayout({
         <SessionProvider>
           <QueryProvider>
             <ThemeProvider>
-              <SanctuaryNav />
               {children}
             </ThemeProvider>
           </QueryProvider>
