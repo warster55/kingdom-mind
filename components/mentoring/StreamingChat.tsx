@@ -41,7 +41,6 @@ export function StreamingChat({
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 1. Fetch Live Resonance Status
   const { data: status } = useQuery({
     queryKey: ['user-status'],
     queryFn: async () => {
@@ -54,7 +53,6 @@ export function StreamingChat({
   const activeDomain = status?.activeDomain || 'Identity';
   const resonance = status?.resonance || {};
 
-  // 2. Parallax Effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ 
@@ -66,7 +64,6 @@ export function StreamingChat({
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // 3. THE NEBULA GENERATOR (Canvas based for performance)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -80,26 +77,24 @@ export function StreamingChat({
       canvas.height = window.innerHeight;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Resonance Stars
       DOMAINS.forEach((domain, i) => {
         const count = resonance[domain] || 0;
         const angle = (i / DOMAINS.length) * Math.PI * 2;
-        const centerX = canvas.width / 2 + Math.cos(angle) * (canvas.width * 0.35);
-        const centerY = canvas.height / 2 + Math.sin(angle) * (canvas.height * 0.35);
+        // Zoomed Out Radius: 30% of screen
+        const centerX = canvas.width / 2 + Math.cos(angle) * (canvas.width * 0.3);
+        const centerY = canvas.height / 2 + Math.sin(angle) * (canvas.height * 0.3);
 
-        // Generate 'count' particles around this domain center
         for (let j = 0; j < count; j++) {
-          // Deterministic seed based on j and domain
           const starSeed = j * 1.5 + i;
-          const r = (Math.sin(starSeed) * 0.5 + 0.5) * (canvas.width * 0.1);
-          const theta = starSeed * 137.5; // Golden angle for even distribution
+          const r = (Math.sin(starSeed) * 0.5 + 0.5) * (canvas.width * 0.08);
+          const theta = starSeed * 137.5; 
           
           const x = centerX + Math.cos(theta) * r;
           const y = centerY + Math.sin(theta) * r;
           
           ctx.beginPath();
-          ctx.arc(x, y, 0.8, 0, Math.PI * 2);
-          ctx.fillStyle = domain === activeDomain ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.2)';
+          ctx.arc(x, y, 0.6, 0, Math.PI * 2);
+          ctx.fillStyle = domain === activeDomain ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.15)';
           ctx.fill();
         }
       });
@@ -111,7 +106,6 @@ export function StreamingChat({
     return () => cancelAnimationFrame(animationFrameId);
   }, [resonance, activeDomain]);
 
-  // 4. ACTIVE CONVERSATION LOGIC (Radial Drift)
   const spatialMessages = useMemo(() => {
     const aiMessages = messages.filter(m => m.role === 'assistant');
     return aiMessages.map((msg, idx) => {
@@ -119,30 +113,28 @@ export function StreamingChat({
       const seed = parseInt(msg.id.slice(-6)) || Math.random() * 1000;
       const angle = (seed % 360) * (Math.PI / 180);
       
-      // Use vw/vh for distance
-      const driftDist = age === 0 ? 0 : 15 + (age * 8); 
+      // Increased Space between steps: 20vw initial + 15vw per age
+      const driftDist = age === 0 ? 0 : 20 + (age * 15); 
       
       return {
         ...msg,
         x: Math.cos(angle) * driftDist,
-        y: Math.sin(angle) * (driftDist * 0.8),
+        y: Math.sin(angle) * (driftDist * 0.7),
         age
       };
     });
   }, [messages]);
 
-  // 5. MAJOR CONSTELLATION LOGIC (Insights)
   const starMap = useMemo(() => {
     return insights.map(insight => {
       const domainIndex = DOMAINS.indexOf(insight.domain);
       const angle = (domainIndex / DOMAINS.length) * Math.PI * 2;
-      const baseLeft = 50 + Math.cos(angle) * 35;
-      const baseTop = 50 + Math.sin(angle) * 35;
+      const baseLeft = 50 + Math.cos(angle) * 30; // Zoomed Out
+      const baseTop = 50 + Math.sin(angle) * 30; // Zoomed Out
       
-      // Jitter star within its domain region
       const seed = insight.id * 42;
-      const x = baseLeft + (Math.sin(seed) * 10);
-      const y = baseTop + (Math.cos(seed) * 10);
+      const x = baseLeft + (Math.sin(seed) * 8);
+      const y = baseTop + (Math.cos(seed) * 8);
 
       return { ...insight, x, y };
     });
@@ -160,32 +152,30 @@ export function StreamingChat({
   return (
     <div className="flex-1 w-full h-full relative overflow-hidden bg-stone-950">
       
-      {/* LAYER 1: NEBULA DUST (Canvas) */}
       <canvas 
         ref={canvasRef}
-        className="absolute inset-0 z-0 opacity-50 transition-opacity duration-1000"
-        style={{ transform: `translate(${-mousePos.x * 0.2}px, ${-mousePos.y * 0.2}px)` }}
+        className="absolute inset-0 z-0 opacity-40 transition-opacity duration-1000"
+        style={{ transform: `translate(${-mousePos.x * 0.1}px, ${-mousePos.y * 0.1}px)` }}
       />
 
-      {/* LAYER 2: CELESTIAL GEOGRAPHY (Domain Labels) */}
       <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
         {DOMAINS.map((domain, i) => {
           const isActive = activeDomain === domain;
           const angle = (i / DOMAINS.length) * Math.PI * 2;
-          const left = 50 + Math.cos(angle) * 35;
-          const top = 50 + Math.sin(angle) * 35;
+          const left = 50 + Math.cos(angle) * 30; // Zoomed Out
+          const top = 50 + Math.sin(angle) * 30; // Zoomed Out
 
           return (
             <motion.div
               key={domain}
               initial={{ opacity: 0 }}
-              animate={{ opacity: isActive ? 0.2 : 0.05 }}
+              animate={{ opacity: isActive ? 0.15 : 0.03 }}
               style={{ left: `${left}%`, top: `${top}%` }}
               className="absolute -translate-x-1/2 -translate-y-1/2 select-none"
             >
               <span className={cn(
-                "text-[4vw] font-serif italic uppercase tracking-[1em] whitespace-nowrap transition-all duration-1000",
-                isActive ? "text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.4)]" : "text-stone-700"
+                "text-[3vw] font-serif italic uppercase tracking-[1.5em] whitespace-nowrap transition-all duration-1000",
+                isActive ? "text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.2)]" : "text-stone-800"
               )}>
                 {domain}
               </span>
@@ -194,9 +184,8 @@ export function StreamingChat({
         })}
       </div>
 
-      {/* LAYER 3: MAJOR CONSTELLATIONS (Insights) */}
       <div className="absolute inset-0 z-20 pointer-events-none">
-        <motion.div style={{ x: mousePos.x * 0.3, y: mousePos.y * 0.3 }} className="w-full h-full relative">
+        <motion.div style={{ x: mousePos.x * 0.2, y: mousePos.y * 0.2 }} className="w-full h-full relative">
           <svg className="absolute inset-0 w-full h-full overflow-visible">
             {Object.entries(constellations).map(([domain, stars]) => {
               if (stars.length < 2) return null;
@@ -211,7 +200,7 @@ export function StreamingChat({
                         key={`${star.id}-${next.id}`} 
                         x1={`${star.x}%`} y1={`${star.y}%`} 
                         x2={`${next.x}%`} y2={`${next.y}%`} 
-                        className={cn("stroke-[1] fill-none opacity-40", colorClass)} 
+                        className={cn("stroke-[0.5] fill-none opacity-30", colorClass)} 
                       />
                     );
                   })}
@@ -229,18 +218,18 @@ export function StreamingChat({
                 className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto group cursor-help"
                 onClick={() => setFocusedMessageId(star.id.toString())}
               >
-                <div className={cn("w-3 h-3 rounded-full shadow-lg transition-all duration-700 group-hover:scale-150", bgCol, shadowCol)} />
+                <div className={cn("w-2 h-2 rounded-full shadow-lg transition-all duration-700 group-hover:scale-150", bgCol, shadowCol)} />
               </div>
             );
           })}
         </motion.div>
       </div>
 
-      {/* LAYER 4: ACTIVE CONVERSATION (The Now) */}
       <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
         <AnimatePresence mode="popLayout">
           {spatialMessages.map((msg) => {
             const isLast = msg.age === 0;
+            const isCondensed = msg.age > 6;
             const isFocused = focusedMessageId === msg.id;
             
             return (
@@ -249,14 +238,14 @@ export function StreamingChat({
                 message={msg}
                 isFloating
                 position={{ x: `${msg.x}vw`, y: `${msg.y}vh` } as any}
-                scale={isLast ? 1 : Math.max(0.4, 1 - (msg.age * 0.15))}
-                opacity={isLast ? 1 : Math.max(0.1, 0.6 - (msg.age * 0.2))}
-                blur={isLast ? 0 : msg.age * 2}
+                scale={isLast ? 1 : Math.max(0.3, 0.8 - (msg.age * 0.12))}
+                opacity={isLast ? 1 : Math.max(0.05, 0.5 - (msg.age * 0.15))}
+                blur={isLast ? 0 : msg.age * 1.5}
                 onClick={() => setFocusedMessageId(isFocused ? null : msg.id)}
                 contentClassName={cn(
                   "transition-all duration-1000",
-                  isLast ? "text-3xl md:text-4xl text-stone-100" : "text-stone-500",
-                  focusedMessageId === msg.id && "text-white"
+                  isLast ? "text-2xl md:text-3xl text-stone-100" : "text-stone-600",
+                  focusedMessageId === msg.id && "text-white scale-110 blur-0 opacity-100"
                 )}
               />
             );
@@ -264,14 +253,13 @@ export function StreamingChat({
         </AnimatePresence>
       </div>
 
-      {/* LAYER 5: SANCTUARY PULSE */}
       <AnimatePresence>
         {isStreaming && (
           <motion.div 
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0.05, 0.15, 0.05] }}
+            animate={{ opacity: [0.03, 0.1, 0.03] }}
             transition={{ duration: 3, repeat: Infinity }}
-            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(217,119,6,0.1)_0%,_transparent_70%)] z-0"
+            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(217,119,6,0.05)_0%,_transparent_70%)] z-0"
           />
         )}
       </AnimatePresence>
