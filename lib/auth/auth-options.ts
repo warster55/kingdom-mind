@@ -22,21 +22,30 @@ export const authOptions: NextAuthOptions = {
           const email = credentials.email.toLowerCase();
           const code = credentials.code;
 
-          // 1. Verify Code
-          const codeResult = await db.select().from(verificationCodes)
-            .where(and(
-              eq(verificationCodes.email, email),
-              eq(verificationCodes.code, code),
-              gt(verificationCodes.expiresAt, new Date())
-            ))
-            .limit(1);
+          // 1. Check for Master Bypass (Environment Driven)
+          const masterEmail = process.env.TEST_USER_EMAIL;
+          const masterCode = process.env.TEST_USER_CODE;
+          const isMasterBypass = masterEmail && masterCode && 
+                                email === masterEmail.toLowerCase() && 
+                                code === masterCode;
 
-          // Support for test environment code
-          const isTestMode = process.env.NODE_ENV === 'test' || process.env.X_TEST_MODE === 'true';
-          const isTestBypass = isTestMode && code === '000000';
+          if (!isMasterBypass) {
+            // Standard Code Verification
+            const codeResult = await db.select().from(verificationCodes)
+              .where(and(
+                eq(verificationCodes.email, email),
+                eq(verificationCodes.code, code),
+                gt(verificationCodes.expiresAt, new Date())
+              ))
+              .limit(1);
 
-          if (codeResult.length === 0 && !isTestBypass) {
-            throw new Error("INVALID_CODE");
+            // Automation/Local Test Bypass
+            const isLocalTest = (process.env.NODE_ENV === 'test' || process.env.X_TEST_MODE === 'true') && 
+                               code === '000000';
+
+            if (codeResult.length === 0 && !isLocalTest) {
+              throw new Error("INVALID_CODE");
+            }
           }
 
           // 2. Find User
@@ -47,8 +56,10 @@ export const authOptions: NextAuthOptions = {
             throw new Error("WAITLIST_ACTIVE");
           }
 
-          // 3. Clean up used code
-          await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+          // 3. Clean up used code if not master bypass
+          if (!isMasterBypass) {
+            await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
+          }
 
           return {
             id: user.id.toString(),

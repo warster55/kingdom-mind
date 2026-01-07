@@ -10,11 +10,15 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase();
 
-    // 1. Check User in Database
+    // 1. Check if this is the Master Bypass User
+    if (process.env.TEST_USER_EMAIL && normalizedEmail === process.env.TEST_USER_EMAIL.toLowerCase()) {
+      return NextResponse.json({ success: true, bypass: true });
+    }
+
+    // 2. Standard Logic: Check User in Database
     const userResult = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
     let user = userResult[0];
 
-    // 2. If user doesn't exist, create them as PENDING
     if (!user) {
        await db.insert(users).values({
          email: normalizedEmail,
@@ -26,23 +30,20 @@ export async function POST(req: NextRequest) {
        return NextResponse.json({ error: 'WAITLIST_ACTIVE' }, { status: 403 });
     }
 
-    // 3. If user exists but is NOT approved, block code sending
     if (!user.isApproved) {
       return NextResponse.json({ error: 'WAITLIST_ACTIVE' }, { status: 403 });
     }
 
-    // 4. Generate Code (Only for Approved Users)
+    // 3. Generate and Send real OTP
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // 5. Save Code
     await db.insert(verificationCodes).values({
       email: normalizedEmail,
       code,
       expiresAt,
     });
 
-    // 6. Send Email
     const emailResult = await sendOTP(normalizedEmail, code);
     if (!emailResult.success) {
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
