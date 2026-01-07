@@ -14,7 +14,7 @@ interface ChatInputProps {
   className?: string;
 }
 
-export function ChatInput({ onSend, disabled, placeholder, className }: ChatInputProps) {
+export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -30,7 +30,7 @@ export function ChatInput({ onSend, disabled, placeholder, className }: ChatInpu
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (input.trim() && !disabled) {
+      if (input.trim()) {
         onSend(input.trim());
         setInput('');
         setShowMenu(false);
@@ -50,7 +50,7 @@ export function ChatInput({ onSend, disabled, placeholder, className }: ChatInpu
   };
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto pb-12 pt-4 px-4 md:px-0">
+    <div className="relative w-full max-w-3xl mx-auto pb-12 pt-4 px-4 md:px-0 z-[100]">
       {showMenu && (
         <div className="absolute bottom-full left-0 right-0 mb-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
           <div className="p-2">
@@ -82,14 +82,12 @@ export function ChatInput({ onSend, disabled, placeholder, className }: ChatInpu
           value={input}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          disabled={disabled}
           placeholder={placeholder || "Share what's on your heart..."}
           className={cn(
             "w-full bg-transparent border-b border-stone-200 dark:border-stone-800 py-4",
             "text-xl font-serif italic text-center leading-relaxed",
             "focus:outline-none focus:border-amber-500/50 transition-colors",
             "placeholder:text-stone-300 dark:placeholder:text-stone-700",
-            disabled && "opacity-50 cursor-not-allowed",
             className
           )}
           style={{ minHeight: '64px', resize: 'none' }}

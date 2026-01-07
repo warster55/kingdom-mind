@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
-import { ActiveFocusCard } from '@/components/progress/ActiveFocusCard';
 import { VaultClient } from '@/app/vault/VaultClient';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Message } from '@/components/chat/ChatMessage';
@@ -95,46 +94,28 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
         
         {/* Dimension Canvas */}
         <div className="flex-1 relative">
-          {/* Chat View */}
+          {/* Chat Dimension (Non-Scrolling, Auto-Scaling) */}
           <motion.div 
             animate={{ 
               opacity: view === 'chat' ? 1 : 0,
               scale: view === 'chat' ? 1 : 1.05,
-              filter: view === 'chat' ? 'blur(0px)' : 'blur(20px)'
+              filter: view === 'chat' ? 'blur(0px)' : 'blur(40px)'
             }}
             transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
             className={cn(
-              "absolute inset-0 flex flex-col",
+              "absolute inset-0 flex flex-col items-center justify-center",
               view === 'map' ? "pointer-events-none" : "pointer-events-auto"
             )}
           >
-            <div className="flex-1 flex overflow-hidden">
-              <div className="flex-1 overflow-hidden">
-                <StreamingChat 
-                  messages={messages}
-                  isStreaming={isStreaming}
-                  error={error}
-                  mode={mode}
-                />
-              </div>
-              
-              {/* Sidebar (Desktop Only) */}
-              <AnimatePresence>
-                {mode === 'mentor' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="z-10"
-                  >
-                    <ActiveFocusCard />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <StreamingChat 
+              messages={messages}
+              isStreaming={isStreaming}
+              error={error}
+              mode={mode}
+            />
           </motion.div>
 
-          {/* Map View */}
+          {/* Map Dimension */}
           <AnimatePresence>
             {view === 'map' && (
               <motion.div 
@@ -154,15 +135,14 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
           </AnimatePresence>
         </div>
 
-        {/* Global Persistent Input */}
-        <div className="relative z-50">
+        {/* Global Persistent Input (Always on top) */}
+        <div className="relative z-[100]">
           <ChatInput 
             onSend={handleSend} 
-            disabled={isStreaming} 
-            placeholder={view === 'map' ? "[ LOOKING AT THE MAP ] Talk to the Mentor..." : undefined}
+            placeholder={view === 'map' ? "[ ARCHITECT MODE ] Talk to the system..." : undefined}
             className={cn(
               "transition-all duration-1000",
-              view === 'map' && "opacity-40 hover:opacity-100 focus-within:opacity-100 font-mono text-stone-400"
+              view === 'map' && "opacity-40 hover:opacity-100 focus-within:opacity-100 font-mono text-stone-400 border-stone-800"
             )}
           />
         </div>

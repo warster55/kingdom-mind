@@ -4,13 +4,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { User, Insight, Habit } from '@/lib/db/schema';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Anchor, Compass, X } from 'lucide-react';
+import { Sparkles, Anchor, Compass } from 'lucide-react';
 
 interface VaultClientProps {
   user: User;
   insights: Insight[];
   habits: Habit[];
-  onClose?: () => void;
 }
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
@@ -25,7 +24,7 @@ const DOMAIN_COLORS: Record<string, string> = {
   'Legacy': 'text-purple-500 bg-purple-500 shadow-purple-500/50 stroke-purple-500/20',
 };
 
-export function VaultClient({ user, insights, habits, onClose }: VaultClientProps) {
+export function VaultClient({ user, insights, habits }: VaultClientProps) {
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null);
   const [hoveredInsight, setHoveredInsight] = useState<Insight | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -65,9 +64,8 @@ export function VaultClient({ user, insights, habits, onClose }: VaultClientProp
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {DOMAINS.map((domain, i) => {
           const isActive = user.currentDomain === domain;
-          // Calculate a fixed spot for each domain region
           const angle = (i / DOMAINS.length) * Math.PI * 2;
-          const dist = 35; // % distance from center
+          const dist = 35; 
           const left = 50 + Math.cos(angle) * dist;
           const top = 50 + Math.sin(angle) * dist;
 
@@ -75,7 +73,7 @@ export function VaultClient({ user, insights, habits, onClose }: VaultClientProp
             <motion.div
               key={domain}
               initial={{ opacity: 0 }}
-              animate={{ opacity: isActive ? 0.15 : 0.05 }}
+              animate={{ opacity: isActive ? 0.1 : 0.03 }}
               style={{ left: `${left}%`, top: `${top}%` }}
               className="absolute -translate-x-1/2 -translate-y-1/2 select-none"
             >
@@ -181,11 +179,11 @@ export function VaultClient({ user, insights, habits, onClose }: VaultClientProp
           })}
         </motion.div>
 
-        {/* Selected Insight Detail */}
+        {/* Selected Insight Detail Card */}
         <AnimatePresence>
           {selectedInsight && (
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-xl p-12 bg-stone-900/90 backdrop-blur-2xl border border-stone-800 rounded-3xl shadow-2xl text-center z-40">
-              <button onClick={() => setSelectedInsight(null)} className="absolute top-4 right-6 text-stone-500 hover:text-stone-300 text-lg p-2"><X /></button>
+              <button onClick={() => setSelectedInsight(null)} className="absolute top-4 right-6 text-stone-500 hover:text-stone-300 text-lg p-2">×</button>
               <h3 className={cn("text-[10px] uppercase tracking-[0.4em] font-bold mb-6", DOMAIN_COLORS[selectedInsight.domain]?.split(' ')[0])}>Breakthrough • {selectedInsight.domain}</h3>
               <p className="text-2xl font-serif italic leading-relaxed text-stone-100">"{selectedInsight.content}"</p>
               <div className="mt-8 text-[10px] uppercase tracking-widest text-stone-500">Recorded on {new Date(selectedInsight.createdAt).toLocaleDateString()}</div>
@@ -194,9 +192,9 @@ export function VaultClient({ user, insights, habits, onClose }: VaultClientProp
         </AnimatePresence>
       </div>
 
-      {/* Sidebar: Action Anchors (Mobile Hidden for now) */}
-      <div className="hidden md:block w-96 h-full border-l border-stone-900 p-12 overflow-y-auto bg-black/40 backdrop-blur-md relative z-10">
-        <div className="space-y-12">
+      {/* Sidebar: Action Anchors */}
+      <div className="hidden lg:block w-96 h-full border-l border-stone-900 p-12 overflow-y-auto bg-black/40 backdrop-blur-md relative z-10">
+        <div className="space-y-12 pb-32">
           <div>
             <h2 className="text-[10px] uppercase tracking-[0.4em] font-bold text-stone-500 mb-8 flex items-center gap-3"><Anchor className="w-3 h-3" /> Action Anchors</h2>
             <div className="space-y-8">
@@ -210,6 +208,9 @@ export function VaultClient({ user, insights, habits, onClose }: VaultClientProp
                   <p className="text-sm text-stone-500 mt-2 leading-relaxed">{habit.description}</p>
                 </div>
               ))}
+              {habits.length === 0 && (
+                <p className="text-stone-600 text-sm font-serif italic">No action anchors set yet.</p>
+              )}
             </div>
           </div>
         </div>
