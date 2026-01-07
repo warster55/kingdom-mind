@@ -6,7 +6,8 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name'),
-  role: text('role').notNull().default('user'),
+  role: text('role').notNull().default('user'), // 'user', 'admin'
+  isApproved: boolean('is_approved').default(false).notNull(), // The Sanctuary Lock
   hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
   onboardingStep: integer('onboarding_step').default(0).notNull(),
   onboardingData: jsonb('onboarding_data'),

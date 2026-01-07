@@ -1,15 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { WelcomePage } from './WelcomePage';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
 import { Message } from '@/components/chat/ChatMessage';
 import { Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export function RootChat() {
   const { data: session, status } = useSession();
   const [isEntering, setIsEntering] = useState(false);
+  const [waitlistMode, setWaitlistMode] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Handle Auth Errors from URL
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'WAITLIST_ACTIVE' || error === 'Callback') {
+      setWaitlistMode(true);
+      setIsEntering(true);
+    }
+  }, [searchParams]);
 
   if (status === 'loading') {
     return (
@@ -19,16 +32,22 @@ export function RootChat() {
     );
   }
 
-  // If already logged in, the parent page will handle the redirect.
-  // This component is for the Guest experience.
-
   if (!isEntering) {
     return <WelcomePage onEnter={() => setIsEntering(true)} />;
   }
 
-  const loginSystemPrompt = "You are the Gatekeeper of Kingdom Mind. Your goal is to welcome the user and ask for their email address to grant them access to the sanctuary. Be warm, poetic, and concise. IF the user shares an email, tell them you are opening the gates.";
-  
-  const initialLoginMessages: Message[] = [
+  // System Prompts
+  const gatekeeperPrompt = "You are the Gatekeeper. Welcome the user and ask for their email to grant entry.";
+  const waitlistPrompt = "The user provided an email that is not yet on the approved list. Kindly explain that we are currently invite-only to ensure every soul receives focused care. Tell them they have been added to the path of interest and to watch their inbox.";
+
+  const initialMessages: Message[] = waitlistMode ? [
+    {
+      id: 'waitlist-1',
+      role: 'assistant',
+      content: "Peace be with you. I see your heart is ready for this journey, but our sanctuary is currently at capacity to ensure we can provide focused care to every soul. I have recorded your interest, and the gates will open for you as soon as a space is prepared. Watch your inbox for an invitation.",
+      timestamp: new Date(),
+    }
+  ] : [
     {
       id: 'gatekeeper-1',
       role: 'assistant',
@@ -38,12 +57,24 @@ export function RootChat() {
   ];
 
   const handleMessageIntercept = async (content: string) => {
+    // If we are already in waitlist mode, just let them chat with the AI
+    if (waitlistMode) return false;
+
     const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     if (emailMatch) {
       const email = emailMatch[0];
-      // Trigger the sign-in
-      await signIn('credentials', { email, callbackUrl: '/reflect' });
-      return true; // We handled it
+      const result = await signIn('credentials', { 
+        email: email.toLowerCase(), 
+        redirect: false 
+      });
+
+      if (result?.error) {
+        setWaitlistMode(true);
+        return true; 
+      } else {
+        router.push('/reflect');
+        return true;
+      }
     }
     return false;
   };
@@ -58,9 +89,13 @@ export function RootChat() {
       
       <StreamingChat 
         sessionId={0}
-        initialMessages={initialLoginMessages}
-        systemPrompt={loginSystemPrompt}
-        onReset={() => setIsEntering(false)}
+        initialMessages={initialMessages}
+        systemPrompt={waitlistMode ? waitlistPrompt : gatekeeperPrompt}
+        onReset={() => {
+          setWaitlistMode(false);
+          setIsEntering(false);
+          router.replace('/');
+        }}
         onMessageSent={handleMessageIntercept}
       />
     </main>

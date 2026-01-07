@@ -1,3 +1,4 @@
+
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
@@ -12,11 +13,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Environment variables for build time (Dummy values to satisfy Next.js compiler)
+# Environment variables for build time (Satisfy Next.js compiler)
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV DATABASE_URL postgresql://dummy:dummy@localhost:5432/dummy
 ENV NEXTAUTH_SECRET build_dummy_secret
 ENV NEXTAUTH_URL http://localhost:4000
+ENV XAI_API_KEY build_dummy_xai
+ENV OPENAI_API_KEY build_dummy_openai
 
 RUN npm run build
 
