@@ -11,20 +11,34 @@ interface StreamingChatProps {
   initialMessages: Message[];
   systemPrompt: string;
   onReset: () => void;
+  onMessageSent?: (content: string) => Promise<boolean>;
 }
 
-export function StreamingChat({ sessionId, initialMessages, systemPrompt, onReset }: StreamingChatProps) {
+export function StreamingChat({ 
+  sessionId, 
+  initialMessages, 
+  systemPrompt, 
+  onReset,
+  onMessageSent 
+}: StreamingChatProps) {
   const { messages, isStreaming, error, sendMessage } = useStreamingChat({
     sessionId,
     initialMessages,
     systemPrompt,
   });
 
-  const handleSend = (content: string) => {
+  const handleSend = async (content: string) => {
     if (content === '/reset') {
       onReset();
       return;
     }
+
+    // Allow intercepting the message (e.g. for login)
+    if (onMessageSent) {
+      const handled = await onMessageSent(content);
+      if (handled) return;
+    }
+
     sendMessage(content);
   };
 
@@ -40,7 +54,7 @@ export function StreamingChat({ sessionId, initialMessages, systemPrompt, onRese
           </div>
         )}
         {error && (
-          <div className="text-center py-8 text-red-500 font-serif italic">
+          <div className="text-center py-8 text-red-500 font-serif italic text-sm">
             {error}
           </div>
         )}

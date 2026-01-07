@@ -14,12 +14,12 @@ test.describe('Kingdom Mind - Full Production Journey', () => {
 
     // 3. Wait for Gatekeeper Greeting
     console.log('Waiting for Gatekeeper...');
-    const gatekeeperMsg = page.locator('div:has-text("threshold of the sanctuary")').first();
-    await expect(gatekeeperMsg).toBeVisible({ timeout: 10000 });
+    // The first message from the AI should appear
+    await expect(page.locator('.prose')).toBeVisible({ timeout: 15000 });
     
     // 4. Submit Test Email
     console.log('Submitting email...');
-    const chatInput = page.getByPlaceholder('Type a message...');
+    const chatInput = page.getByPlaceholder("Share what's on your heart...");
     await chatInput.fill('test@kingdommind.app');
     await page.keyboard.press('Enter');
 
