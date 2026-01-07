@@ -8,19 +8,22 @@ import { Message } from '@/components/chat/ChatMessage';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+type AuthStep = 'EMAIL' | 'CODE' | 'WAITLIST';
+
 export function RootChat() {
   const { data: session, status } = useSession();
   const [isEntering, setIsEntering] = useState(false);
-  const [waitlistMode, setWaitlistMode] = useState(false);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authStep, setAuthStep] = useState<AuthStep>('EMAIL');
+  const [email, setEmail] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Handle Auth Errors from URL
+  // Handle URL Errors
   useEffect(() => {
     const error = searchParams.get('error');
-    if (error === 'WAITLIST_ACTIVE' || error === 'Callback') {
-      setWaitlistMode(true);
+    if (error === 'WAITLIST_ACTIVE') {
+      setAuthStep('WAITLIST');
       setIsEntering(true);
     }
   }, [searchParams]);
@@ -38,48 +41,97 @@ export function RootChat() {
   }
 
   // System Prompts
-  const gatekeeperPrompt = "You are the Gatekeeper of Kingdom Mind. Welcome the user warmly and ask for their email address to begin. If they provide an email, you will verify their access.";
-  const waitlistPrompt = "The user provided an email that is NOT approved. Explain poetically that we are at capacity to ensure focused care. Mention they are on the path of interest.";
+  const emailPrompt = "You are the Gatekeeper of Kingdom Mind. Welcome the user warmly and ask for their email address to begin.";
+  const codePrompt = `I have sent a 6-digit sign-in code to \${email}. Kindly ask the user to share the code here to open the gates.`;
+  const waitlistPrompt = "The user is not yet on our approved list. Kindly explain that we are currently invite-only to ensure focused care. They have been added to our path of interest.";
 
-  const initialMessages: Message[] = waitlistMode ? [
-    {
-      id: 'waitlist-1',
-      role: 'assistant',
-      content: "Peace be with you. I see your heart is ready for this journey, but our sanctuary is currently at capacity to ensure we can provide focused care to every soul. I have recorded your interest, and the gates will open for you as soon as a space is prepared. Watch your inbox for an invitation.",
-      timestamp: new Date(),
-    }
-  ] : [
-    {
-      id: 'gatekeeper-1',
-      role: 'assistant',
-      content: "Peace be with you. You have reached the threshold of the sanctuary. To begin your journey of renewal, may I ask for the email address you wish to use?",
-      timestamp: new Date(),
-    }
-  ];
+  const initialMessages: Message[] = {
+    EMAIL: [
+      {
+        id: 'gatekeeper-1',
+        role: 'assistant',
+        content: "Peace be with you. You have reached the threshold of the sanctuary. To begin your journey of renewal, may I ask for the email address you wish to use?",
+        timestamp: new Date(),
+      }
+    ],
+    CODE: [
+      {
+        id: 'gatekeeper-code',
+        role: 'assistant',
+        content: `I have sent a 6-digit sign-in code to your inbox. Please share it with me here to open the gates.`,
+        timestamp: new Date(),
+      }
+    ],
+    WAITLIST: [
+      {
+        id: 'waitlist-1',
+        role: 'assistant',
+        content: "Peace be with you. I see your heart is ready for this journey, but our sanctuary is currently at capacity to ensure we can provide focused care to every soul. I have recorded your interest, and the gates will open for you as soon as a space is prepared.",
+        timestamp: new Date(),
+      }
+    ]
+  }[authStep];
 
   const handleMessageIntercept = async (content: string) => {
-    if (waitlistMode) return false;
+    if (authStep === 'WAITLIST' || isProcessing) return false;
 
-    const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    if (emailMatch) {
-      const email = emailMatch[0];
-      setIsAuthenticating(true);
-      
-      const result = await signIn('credentials', { 
-        email: email.toLowerCase(), 
-        redirect: false 
-      });
+    // STEP 1: Handle Email Submission
+    if (authStep === 'EMAIL') {
+      const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (emailMatch) {
+        const submittedEmail = emailMatch[0].toLowerCase();
+        setEmail(submittedEmail);
+        setIsProcessing(true);
 
-      setIsAuthenticating(false);
+        try {
+          const res = await fetch('/api/auth/otp/request', {
+            method: 'POST',
+            body: JSON.stringify({ email: submittedEmail }),
+          });
+          const data = await res.json();
 
-      if (result?.error) {
-        setWaitlistMode(true);
-        return true; 
-      } else {
-        router.push('/reflect');
+          if (data.error === 'WAITLIST_ACTIVE') {
+            setAuthStep('WAITLIST');
+          } else if (data.success) {
+            setAuthStep('CODE');
+          } else {
+            // Error handling
+            console.error(data.error);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsProcessing(false);
+        }
         return true;
       }
     }
+
+    // STEP 2: Handle Code Submission
+    if (authStep === 'CODE') {
+      const codeMatch = content.match(/\b\d{6}\b/);
+      if (codeMatch) {
+        const code = codeMatch[0];
+        setIsProcessing(true);
+
+        const result = await signIn('credentials', { 
+          email, 
+          code, 
+          redirect: false 
+        });
+
+        setIsProcessing(false);
+
+        if (result?.error) {
+          // Handle error (invalid code, etc)
+          return false; 
+        } else {
+          router.push('/reflect');
+          return true;
+        }
+      }
+    }
+
     return false;
   };
 
@@ -92,23 +144,25 @@ export function RootChat() {
       </header>
       
       <StreamingChat 
-        key={waitlistMode ? 'waitlist' : 'gatekeeper'}
+        key={authStep}
         sessionId={0}
         initialMessages={initialMessages}
-        systemPrompt={waitlistMode ? waitlistPrompt : gatekeeperPrompt}
+        systemPrompt={authStep === 'EMAIL' ? emailPrompt : authStep === 'CODE' ? codePrompt : waitlistPrompt}
         onReset={() => {
-          setWaitlistMode(false);
+          setAuthStep('EMAIL');
           setIsEntering(false);
           router.replace('/');
         }}
         onMessageSent={handleMessageIntercept}
       />
 
-      {isAuthenticating && (
+      {isProcessing && (
         <div className="absolute inset-0 bg-stone-50/50 dark:bg-stone-950/50 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
-            <p className="text-sm font-serif italic text-stone-600">Opening the gates...</p>
+            <p className="text-sm font-serif italic text-stone-600">
+              {authStep === 'EMAIL' ? 'Verifying access...' : 'Opening the gates...'}
+            </p>
           </div>
         </div>
       )}

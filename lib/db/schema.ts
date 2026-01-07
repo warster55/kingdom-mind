@@ -18,6 +18,17 @@ export const users = pgTable('users', {
   emailIdx: index('users_email_idx').on(table.email),
 }));
 
+// --- Verification Codes (OTP) ---
+export const verificationCodes = pgTable('verification_codes', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull(),
+  code: varchar('code', { length: 6 }).notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index('verification_codes_email_idx').on(table.email),
+}));
+
 // --- Mentoring Sessions ---
 export const mentoringSessions = pgTable('mentoring_sessions', {
   id: serial('id').primaryKey(),
@@ -66,6 +77,7 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 
 // --- Types ---
 export type User = typeof users.$inferSelect;
+export type VerificationCode = typeof verificationCodes.$inferSelect;
 export type MentoringSession = typeof mentoringSessions.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type Domain = typeof domains.$inferSelect;
