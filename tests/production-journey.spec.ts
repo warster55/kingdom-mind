@@ -1,8 +1,9 @@
+
 import { test, expect } from '@playwright/test';
 
-test.describe('Kingdom Mind - Production Security & Journey', () => {
+test.describe('Kingdom Mind - Production Master Security & Journey', () => {
   
-  test('Admin Access: test@kingdommind.app should enter instantly', async ({ page }) => {
+  test('Master Bypass: arcane-guardian-9921 should enter with master code', async ({ page }) => {
     // 1. Visit Landing Page
     await page.goto('https://kingdomind.com');
     
@@ -13,19 +14,30 @@ test.describe('Kingdom Mind - Production Security & Journey', () => {
     // 3. Wait for Gatekeeper Greeting
     await expect(page.locator('.prose')).toBeVisible({ timeout: 15000 });
     
-    // 4. Submit Admin Email
-    console.log('Submitting Admin email...');
+    // 4. Submit Master Email
+    console.log('Submitting Master email...');
     const chatInput = page.getByPlaceholder("Share what's on your heart...");
-    await chatInput.fill('test@kingdommind.app');
+    await chatInput.fill('arcane-guardian-9921@kingdomind.com');
     await page.keyboard.press('Enter');
 
-    // 5. Verify Transition to Sanctuary (/reflect)
+    // 5. Wait for Code Request UI
+    console.log('Waiting for code request...');
+    await expect(page.locator('text=sign-in code')).toBeVisible({ timeout: 10000 });
+
+    // 6. Submit Master Code
+    console.log('Submitting Master code...');
+    await chatInput.fill('992100');
+    await page.keyboard.press('Enter');
+
+    // 7. Verify Transition to Sanctuary (/reflect)
     console.log('Waiting for Sanctuary redirect...');
     await page.waitForURL(/.*reflect/, { timeout: 15000 });
     
-    // 6. Verify Sanctuary UI
+    // 8. Verify Sanctuary UI (Journey Sidebar and Header)
     await expect(page.locator('h1:has-text("Kingdom Mind")')).toBeVisible();
-    console.log('✅ Admin Access Verified');
+    await expect(page.locator('text=The Journey')).toBeVisible();
+    
+    console.log('✅ Master Bypass Verified');
   });
 
   test('Guest Access: Random email should be blocked/waitlisted', async ({ page }) => {

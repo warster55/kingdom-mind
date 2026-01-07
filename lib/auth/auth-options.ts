@@ -19,15 +19,18 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.code) return null;
         
         try {
-          const email = credentials.email.toLowerCase();
-          const code = credentials.code;
+          const email = credentials.email.toLowerCase().trim();
+          const code = credentials.code.trim();
 
           // 1. Check for Master Bypass (Environment Driven)
-          const masterEmail = process.env.TEST_USER_EMAIL;
-          const masterCode = process.env.TEST_USER_CODE;
+          const masterEmail = process.env.TEST_USER_EMAIL?.toLowerCase().trim();
+          const masterCode = process.env.TEST_USER_CODE?.trim();
+          
           const isMasterBypass = masterEmail && masterCode && 
-                                email === masterEmail.toLowerCase() && 
+                                email === masterEmail && 
                                 code === masterCode;
+
+          console.log(`[Auth] Attempt: ${email} with code ${code}. Master: ${masterEmail} / ${masterCode}. Bypass: ${isMasterBypass}`);
 
           if (!isMasterBypass) {
             // Standard Code Verification
@@ -44,6 +47,7 @@ export const authOptions: NextAuthOptions = {
                                code === '000000';
 
             if (codeResult.length === 0 && !isLocalTest) {
+              console.error(`[Auth] Invalid code for ${email}`);
               throw new Error("INVALID_CODE");
             }
           }
@@ -53,6 +57,7 @@ export const authOptions: NextAuthOptions = {
           let user = userResult[0];
 
           if (!user || !user.isApproved) {
+            console.error(`[Auth] User not approved or not found: ${email}`);
             throw new Error("WAITLIST_ACTIVE");
           }
 
@@ -61,6 +66,7 @@ export const authOptions: NextAuthOptions = {
             await db.delete(verificationCodes).where(eq(verificationCodes.email, email));
           }
 
+          console.log(`[Auth] Success: ${email} logged in.`);
           return {
             id: user.id.toString(),
             email: user.email,
@@ -68,7 +74,7 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
           };
         } catch (e: any) {
-          console.error(`[Auth] Access Denied:`, e.message);
+          console.error(`[Auth] Access Denied for ${credentials.email}:`, e.message);
           throw e;
         }
       }
