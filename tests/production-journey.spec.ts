@@ -10,7 +10,10 @@ test.describe('Kingdom Mind - Full Production Journey', () => {
 
     // 2. Click "Enter the Sanctuary"
     console.log('Clicking Enter...');
-    await page.click('text=Enter the Sanctuary');
+    await page.waitForSelector('[data-testid="enter-sanctuary-btn"]');
+    // Small wait for hydration
+    await page.waitForTimeout(1000);
+    await page.click('[data-testid="enter-sanctuary-btn"]', { force: true });
 
     // 3. Wait for Gatekeeper Greeting
     console.log('Waiting for Gatekeeper...');

@@ -26,6 +26,7 @@ export function WelcomePage({ onEnter }: WelcomePageProps) {
           <div className="pt-8 flex flex-col items-center gap-8">
             <button
               onClick={onEnter}
+              data-testid="enter-sanctuary-btn"
               className="group relative flex items-center gap-4 px-12 py-5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full text-lg font-medium hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-700 animate-slideUp"
             >
               <span className="text-stone-700 dark:text-stone-300">Enter the Sanctuary</span>
