@@ -111,6 +111,10 @@ export async function POST(req: NextRequest) {
             const args = JSON.parse(tc.function.arguments);
             result = await executeUpdateProgress(userId, args.domain, args.note);
           }
+          else if (tc.function.name === 'approveUser') {
+            const args = JSON.parse(tc.function.arguments);
+            result = await executeApproveUser(userId, args.email);
+          }
           
           return {
             tool_call_id: tc.id,

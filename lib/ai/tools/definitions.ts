@@ -31,6 +31,20 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'approveUser',
+      description: "Approves a user for entry into the sanctuary. Call this ONLY when an administrator (role: admin) requests to approve a specific email address.",
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', description: 'The email address of the user to approve' }
+        },
+        required: ['email'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'createCheckoutSession',
       description: "Generates a subscription link. Call this ONLY if the user explicitly asks to subscribe or pay.",
       parameters: { type: 'object', properties: {}, required: [] },

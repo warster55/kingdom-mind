@@ -1,4 +1,4 @@
-import { db, users, mentoringSessions } from '@/lib/db';
+import { db, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { ToolResult } from './definitions';
 
@@ -13,8 +13,9 @@ export async function executeUserStatus(userId: string): Promise<ToolResult> {
       success: true,
       data: {
         name: user.name,
+        role: user.role,
+        isApproved: user.isApproved,
         hasCompletedOnboarding: user.hasCompletedOnboarding,
-        // We will expand this with real domain logic soon
         activeDomain: 'Identity',
         overallProgress: 15,
       }
@@ -25,7 +26,28 @@ export async function executeUserStatus(userId: string): Promise<ToolResult> {
 }
 
 export async function executeUpdateProgress(userId: string, domain: string, note: string): Promise<ToolResult> {
-  // Logic to save progress to DB
   console.log(`[AI Tool] Updating progress for ${userId}: ${domain} - ${note}`);
   return { success: true, data: { status: 'recorded' } };
+}
+
+export async function executeApproveUser(adminUserId: string, targetEmail: string): Promise<ToolResult> {
+  try {
+    // 1. Verify caller is an admin
+    const adminResult = await db.select().from(users).where(eq(users.id, parseInt(adminUserId))).limit(1);
+    const admin = adminResult[0];
+
+    if (!admin || admin.role !== 'admin') {
+      return { success: false, error: 'Unauthorized: Only administrators can approve users.' };
+    }
+
+    // 2. Approve the user
+    await db.update(users)
+      .set({ isApproved: true })
+      .where(eq(users.email, targetEmail.toLowerCase()));
+
+    console.log(`[AI Tool] Admin ${admin.email} approved user: ${targetEmail}`);
+    return { success: true, data: { status: 'approved', email: targetEmail } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }

@@ -39,7 +39,7 @@ export function RootChat() {
 
   // System Prompts
   const gatekeeperPrompt = "You are the Gatekeeper of Kingdom Mind. Welcome the user warmly and ask for their email address to begin. If they provide an email, you will verify their access.";
-  const waitlistPrompt = "The user has provided an email that is not yet on our approved sanctuary list. Kindly and poetically explain that we are currently invite-only to ensure focused care for every soul. Tell them they have been added to our path of interest and to watch their inbox for a sign.";
+  const waitlistPrompt = "The user provided an email that is NOT approved. Explain poetically that we are at capacity to ensure focused care. Mention they are on the path of interest.";
 
   const initialMessages: Message[] = waitlistMode ? [
     {
@@ -58,7 +58,6 @@ export function RootChat() {
   ];
 
   const handleMessageIntercept = async (content: string) => {
-    // If we are already in waitlist mode, just let them chat with the AI
     if (waitlistMode) return false;
 
     const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
@@ -74,11 +73,9 @@ export function RootChat() {
       setIsAuthenticating(false);
 
       if (result?.error) {
-        // Switch to waitlist mode immediately to show the AI's explanation
         setWaitlistMode(true);
         return true; 
       } else {
-        // Success! Move to the inner sanctuary
         router.push('/reflect');
         return true;
       }
@@ -95,6 +92,7 @@ export function RootChat() {
       </header>
       
       <StreamingChat 
+        key={waitlistMode ? 'waitlist' : 'gatekeeper'}
         sessionId={0}
         initialMessages={initialMessages}
         systemPrompt={waitlistMode ? waitlistPrompt : gatekeeperPrompt}
