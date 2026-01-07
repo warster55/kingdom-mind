@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { db, chatMessages, users, insights } from '@/lib/db';
+import { db, chatMessages, users, insights, systemPrompts } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { getAIStream } from '@/lib/ai';
-import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
+import { processArchitectCommand } from '@/lib/ai/architect';
 import { mentorTools } from '@/lib/ai/tools/definitions';
 import { 
   executeUserStatus, 
@@ -27,11 +27,9 @@ const xai = new OpenAI({
   baseURL: 'https://api.x.ai/v1',
 });
 
-const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
-
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, message, systemPrompt: clientSystemPrompt, timezone } = await req.json();
+    const { sessionId, message, timezone } = await req.json();
     const session = await getServerSession(authOptions);
 
     if (sessionId !== 0 && !session) {
@@ -39,65 +37,83 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session?.user?.id;
-    let finalSystemPrompt = clientSystemPrompt;
+    const userRole = (session?.user as any)?.role;
 
-    // 1. Build the High-Intelligence Prompt for members
+    // 1. ADMIN INTERCEPT: Check for '#' Sovereignty Command
+    if (message.startsWith('#') && userRole === 'admin') {
+      const command = message.substring(1);
+      const architectResult = await processArchitectCommand(command, userId as string);
+      
+      return new Response(new ReadableStream({
+        start(controller) {
+          const encoder = new TextEncoder();
+          if (architectResult.success) {
+            controller.enqueue(encoder.encode(`Sovereignty acknowledged. **System Updated.**\n\n**Reason:** ${architectResult.explanation}`));
+          } else {
+            controller.enqueue(encoder.encode(`Sovereignty failed: ${architectResult.error}`));
+          }
+          controller.close();
+        }
+      }));
+    }
+
+    // 2. Fetch High-Intelligence Context
+    let finalSystemPrompt = "You are a helpful mentor.";
+    let userHandle = "Seeker";
+
     if (sessionId !== 0 && userId) {
       const userResult = await db.select().from(users).where(eq(users.id, parseInt(userId))).limit(1);
       const user = userResult[0];
 
       if (user) {
-        // Update timezone if changed
-        if (timezone && user.timezone !== timezone) {
-          await db.update(users).set({ timezone }).where(eq(users.id, user.id));
-        }
-
-        const lastInsightResult = await db
-          .select()
-          .from(insights)
+        userHandle = user.name || "Seeker";
+        
+        // Pull latest prompt from DB
+        const dbPrompt = await db.select().from(systemPrompts)
+          .where(eq(systemPrompts.isActive, true))
+          .orderBy(desc(systemPrompts.createdAt))
+          .limit(1);
+        
+        const lastInsight = await db.select().from(insights)
           .where(eq(insights.userId, user.id))
           .orderBy(desc(insights.createdAt))
           .limit(1);
-        
-        const lastInsight = lastInsightResult[0];
 
-        // Format current local time
+        // Build prompt with BLIND PII (No email, no full name unless in 'name' field)
+        const basePrompt = dbPrompt[0]?.content || finalSystemPrompt;
+        
         const userLocalTime = new Date().toLocaleString("en-US", { 
           timeZone: timezone || user.timezone || 'UTC',
-          hour: 'numeric',
-          minute: 'numeric',
-          hour12: true,
-          weekday: 'long'
+          hour: 'numeric', minute: 'numeric', hour12: true, weekday: 'long'
         });
 
-        finalSystemPrompt = buildSanctuaryPrompt({
-          userName: user.name || 'Seeker',
-          currentDomain: user.currentDomain,
-          progress: Math.round(((DOMAINS.indexOf(user.currentDomain) + 1) / DOMAINS.length) * 100),
-          lastInsight: lastInsight?.content,
-          localTime: userLocalTime
-        });
+        finalSystemPrompt = `
+${basePrompt}
+
+USER CONTEXT:
+- Name: ${userHandle}
+- Domain: ${user.currentDomain}
+- Time: ${userLocalTime}
+${lastInsight[0] ? `- Last Breakthrough: "${lastInsight[0].content}"` : ''}
+`.trim();
       }
     }
 
-    // 2. Save user message if member
+    // 3. Save user message if member
     if (sessionId !== 0) {
       await db.insert(chatMessages).values({ sessionId, role: 'user', content: message });
     }
 
-    // 3. Fetch history
-    let history: any[] = [];
-    if (sessionId !== 0) {
-      const dbHistory = await db.query.chatMessages.findMany({
-        where: (msgs, { eq: eqOp }) => eqOp(msgs.sessionId, sessionId),
-        orderBy: (msgs, { asc }) => [asc(msgs.createdAt)],
-        limit: 15,
-      });
-      history = dbHistory.map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
-        content: msg.content
-      }));
-    }
+    // 4. Fetch history
+    const dbHistory = await db.query.chatMessages.findMany({
+      where: (msgs, { eq: eqOp }) => eqOp(msgs.sessionId, sessionId),
+      orderBy: (msgs, { asc }) => [asc(msgs.createdAt)],
+      limit: 15,
+    });
+    const history = dbHistory.map(msg => ({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content
+    }));
 
     const messages: any[] = [
       { role: 'system', content: finalSystemPrompt },
@@ -105,7 +121,7 @@ export async function POST(req: NextRequest) {
       { role: 'user', content: message }
     ];
 
-    // 4. Handle AI Turn (Recursive for Tool Support)
+    // 5. Handle AI Turn
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -141,12 +157,10 @@ export async function POST(req: NextRequest) {
 
       for await (const chunk of response) {
         const delta = chunk.choices[0]?.delta;
-        
         if (delta?.content) {
           fullAssistantContent += delta.content;
           controller.enqueue(encoder.encode(delta.content));
         }
-
         if (delta?.tool_calls) {
           delta.tool_calls.forEach((tc: any) => {
             if (tc.id) toolCalls.push({ id: tc.id, function: { name: '', arguments: '' } });

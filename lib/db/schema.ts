@@ -91,13 +91,61 @@ export const insights = pgTable('insights', {
 
 
 
+// --- System Prompts (The Dynamic Brain) ---
+
+
+
+export const systemPrompts = pgTable('system_prompts', {
+
+
+
+  id: serial('id').primaryKey(),
+
+
+
+  version: integer('version').notNull(),
+
+
+
+  content: text('content').notNull(),
+
+
+
+  changeLog: text('change_log'),
+
+
+
+  isActive: boolean('is_approved').default(true).notNull(), // Using 'is_approved' column name for active status to match naming patterns
+
+
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+
+
+
+});
+
+
+
+
+
+
+
 // --- Relations ---
+
+
 
 export const usersRelations = relations(users, ({ many }) => ({
 
+
+
   sessions: many(mentoringSessions),
 
+
+
   insights: many(insights),
+
+
 
 }));
 
