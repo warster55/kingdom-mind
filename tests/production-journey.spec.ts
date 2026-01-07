@@ -33,8 +33,8 @@ test.describe('Kingdom Mind - Full Production Journey', () => {
     await page.waitForURL(/.*reflect/, { timeout: 15000 });
     
     // 6. Verify Sanctuary UI
-    await expect(page.locator('text=Mentoring Session')).toBeVisible();
-    await expect(page.locator('text=Active Focus')).toBeVisible();
+    await expect(page.locator('h1:has-text("Kingdom Mind")')).toBeVisible();
+    await expect(page.getByPlaceholder("Share what's on your heart...")).toBeVisible();
     
     console.log('✅ Full Journey Verified on Production');
   });

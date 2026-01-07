@@ -1,9 +1,17 @@
-import { getGeminiStream, getOpenAIStream, getOllamaStream, AIStreamResponse } from './providers';
+import { getGeminiStream, getOpenAIStream, getXAIStream, getOllamaStream, AIStreamResponse } from './providers';
 
 export async function getAIStream(prompt: string, history: any[]): Promise<AIStreamResponse> {
   // Logic to determine which provider to use. 
-  // For now, prioritize Gemini as it's reliable and we have the key.
+  // Prioritize X.AI (Grok) as requested.
   
+  if (process.env.XAI_API_KEY) {
+    try {
+      return await getXAIStream(prompt, history);
+    } catch (e) {
+      console.error("X.AI (Grok) failed, falling back...", e);
+    }
+  }
+
   if (process.env.GEMINI_API_KEY) {
     try {
       return await getGeminiStream(prompt, history);

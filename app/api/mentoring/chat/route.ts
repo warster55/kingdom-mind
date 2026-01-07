@@ -3,29 +3,32 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { db, chatMessages } from '@/lib/db';
 import { getAIStream } from '@/lib/ai';
+import { mentorTools } from '@/lib/ai/tools/definitions';
+import { executeUserStatus, executeUpdateProgress } from '@/lib/ai/tools/handlers';
+import OpenAI from 'openai';
+
+const xai = new OpenAI({
+  apiKey: process.env.XAI_API_KEY,
+  baseURL: 'https://api.x.ai/v1',
+});
 
 export async function POST(req: NextRequest) {
   try {
     const { sessionId, message, systemPrompt } = await req.json();
     const session = await getServerSession(authOptions);
 
-    // ALLOW sessionId 0 (Gatekeeper) without a session
     if (sessionId !== 0 && !session) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
 
     const userId = session?.user?.id || 'guest';
 
-    // 1. Save user message to DB (only if member session)
+    // 1. Save user message if member
     if (sessionId !== 0) {
-      await db.insert(chatMessages).values({
-        sessionId,
-        role: 'user',
-        content: message,
-      });
+      await db.insert(chatMessages).values({ sessionId, role: 'user', content: message });
     }
 
-    // 2. Prepare History
+    // 2. Fetch history
     let history: any[] = [];
     if (sessionId !== 0) {
       const dbHistory = await db.query.chatMessages.findMany({
@@ -39,50 +42,97 @@ export async function POST(req: NextRequest) {
       }));
     }
 
-    const formattedHistory = [
+    const messages: any[] = [
       { role: 'system', content: systemPrompt },
-      ...history
+      ...history,
+      { role: 'user', content: message }
     ];
 
-    // 3. Get AI Stream
-    let aiStream;
-    if (process.env.NODE_ENV === 'test' || req.headers.get('x-test-mode') === 'true') {
-      aiStream = {
-        stream: (async function* () {
-          yield "Welcome to the ";
-          yield "threshold of ";
-          yield "the sanctuary. ";
-          yield "Please share your email.";
-        })()
-      };
-    } else {
-      const { stream } = await getAIStream(message, formattedHistory);
-      aiStream = { stream };
-    }
-
-    // 4. Return Stream
-    const responseStream = new ReadableStream({
+    // 3. Handle AI Turn (Recursive for Tool Support)
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
       async start(controller) {
-        let fullAssistantContent = '';
-        for await (const chunk of aiStream.stream) {
-          fullAssistantContent += chunk;
-          controller.enqueue(new TextEncoder().encode(chunk));
+        try {
+          await processTurn(controller, messages);
+        } catch (e) {
+          console.error("Turn Error:", e);
+        } finally {
+          controller.close();
         }
-
-        // 5. Save assistant message if member
-        if (sessionId !== 0) {
-          await db.insert(chatMessages).values({
-            sessionId,
-            role: 'assistant',
-            content: fullAssistantContent,
-          });
-        }
-
-        controller.close();
       },
     });
 
-    return new Response(responseStream);
+    async function processTurn(controller: ReadableStreamDefaultController, currentMessages: any[]) {
+      // If sessionId is 0, we use basic streaming (no tools for gatekeeper)
+      if (sessionId === 0) {
+        const { stream: basicStream } = await getAIStream(message, currentMessages.slice(0, -1));
+        for await (const chunk of basicStream) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        return;
+      }
+
+      // Member turn with Tool Support
+      const response = await xai.chat.completions.create({
+        model: process.env.XAI_MODEL || 'grok-4-latest',
+        messages: currentMessages,
+        tools: mentorTools,
+        tool_choice: 'auto',
+        stream: true,
+      });
+
+      let fullAssistantContent = '';
+      const toolCalls: any[] = [];
+
+      for await (const chunk of response) {
+        const delta = chunk.choices[0]?.delta;
+        
+        if (delta?.content) {
+          fullAssistantContent += delta.content;
+          controller.enqueue(encoder.encode(delta.content));
+        }
+
+        if (delta?.tool_calls) {
+          delta.tool_calls.forEach((tc: any) => {
+            if (tc.id) toolCalls.push({ id: tc.id, function: { name: '', arguments: '' } });
+            const current = toolCalls[toolCalls.length - 1];
+            if (tc.function?.name) current.function.name += tc.function.name;
+            if (tc.function?.arguments) current.function.arguments += tc.function.arguments;
+          });
+        }
+      }
+
+      // Process Tools if any
+      if (toolCalls.length > 0) {
+        const toolResults = await Promise.all(toolCalls.map(async (tc) => {
+          let result;
+          if (tc.function.name === 'getUserStatus') result = await executeUserStatus(userId);
+          else if (tc.function.name === 'updateProgress') {
+            const args = JSON.parse(tc.function.arguments);
+            result = await executeUpdateProgress(userId, args.domain, args.note);
+          }
+          
+          return {
+            tool_call_id: tc.id,
+            role: 'tool',
+            content: JSON.stringify(result?.data || { error: result?.error })
+          };
+        }));
+
+        const nextMessages = [
+          ...currentMessages,
+          { role: 'assistant', content: fullAssistantContent || null, tool_calls: toolCalls },
+          ...toolResults
+        ];
+
+        await processTurn(controller, nextMessages);
+      } else if (fullAssistantContent) {
+        // Finalize
+        await db.insert(chatMessages).values({ sessionId, role: 'assistant', content: fullAssistantContent });
+      }
+    }
+
+    return new Response(stream);
 
   } catch (error: any) {
     console.error('Chat API Error:', error);
