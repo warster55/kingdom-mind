@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
 import { ActiveFocusCard } from '@/components/progress/ActiveFocusCard';
 import { VaultClient } from '@/app/vault/VaultClient';
+import { ChatInput } from '@/components/chat/ChatInput';
 import { Message } from '@/components/chat/ChatMessage';
 import { User, Insight, Habit } from '@/lib/db/schema';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,13 +19,20 @@ interface ReflectChatProps {
   user: User;
   insights: Insight[];
   habits: Habit[];
+  systemPrompt: string;
 }
 
-export function ReflectChat({ sessionId, initialMessages, user, insights, habits }: ReflectChatProps) {
+export function ReflectChat({ sessionId, initialMessages, user, insights, habits, systemPrompt }: ReflectChatProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const [mode, setMode] = useState<'mentor' | 'architect'>('mentor');
   const [view, setView] = useState<'chat' | 'map'>('chat');
+
+  const { messages, isStreaming, error, sendMessage } = useStreamingChat({
+    sessionId,
+    initialMessages,
+    systemPrompt,
+  });
 
   const isAdmin = (session?.user as any)?.role === 'admin';
 
@@ -36,46 +45,42 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
     router.refresh();
   };
 
-  const handleMessageIntercept = async (content: string) => {
+  const handleSend = async (content: string) => {
+    if (content === '/reset') {
+      handleReset();
+      return;
+    }
+
+    // Admin Commands
     if (content === '#activate' && isAdmin) {
       setMode('architect');
-      return true;
+      return;
     }
     if ((content === '#exit' || content === '#deactivate') && isAdmin) {
       setMode('mentor');
-      return true;
+      return;
     }
     
     // Switch View Commands
     const lowerContent = content.toLowerCase();
     if (lowerContent.includes('show me the map') || lowerContent.includes('show me the vault') || lowerContent.includes('look up')) {
       setView('map');
-      // We return false to let the message still go to the AI so it can narrate the transition
-      return false; 
-    }
-    if (lowerContent.includes('back to chat') || lowerContent.includes('talk to me') || lowerContent.includes('go back')) {
+    } else if (lowerContent.includes('back to chat') || lowerContent.includes('talk to me') || lowerContent.includes('go back')) {
       setView('chat');
-      return false;
     }
 
-    return false;
+    sendMessage(content, mode);
   };
 
   return (
     <div className="flex h-full w-full overflow-hidden relative">
-      {/* Dynamic Background for Map Mode */}
-      <AnimatePresence>
-        {view === 'map' && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-stone-950 z-0"
-          />
-        )}
-      </AnimatePresence>
+      {/* Background Layer */}
+      <div className={cn(
+        "absolute inset-0 transition-colors duration-1000 z-0",
+        view === 'map' ? "bg-stone-950" : "bg-stone-50 dark:bg-stone-950"
+      )} />
 
-      {/* Small Floating Header */}
+      {/* Floating Header */}
       <header className="absolute top-0 left-0 p-8 z-50 pointer-events-none">
         <h1 className={cn(
           "text-[10px] uppercase tracking-[0.5em] font-bold transition-colors duration-1000",
@@ -85,66 +90,83 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
         </h1>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex relative z-10">
+      {/* Primary Interaction Layer */}
+      <div className="flex-1 flex flex-col relative z-10 overflow-hidden">
         
-        {/* Chat Dimension */}
-        <motion.div 
-          animate={{ 
-            opacity: view === 'chat' ? 1 : 0,
-            scale: view === 'chat' ? 1 : 1.05,
-            filter: view === 'chat' ? 'blur(0px)' : 'blur(20px)'
-          }}
-          transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
-          className={cn(
-            "flex-1 flex flex-col h-full",
-            view === 'map' ? "pointer-events-none" : "pointer-events-auto"
-          )}
-        >
-          <StreamingChat 
-            sessionId={sessionId}
-            initialMessages={initialMessages}
-            systemPrompt="" // Handled by backend now
-            onReset={handleReset}
-            onMessageSent={handleMessageIntercept}
-            mode={mode}
-          />
-        </motion.div>
-
-        {/* Map Dimension */}
-        <AnimatePresence>
-          {view === 'map' && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
-              className="absolute inset-0 z-20"
-            >
-              <VaultClient 
-                user={user} 
-                insights={insights} 
-                habits={habits} 
-                onClose={() => setView('chat')}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Sidebar (Desktop Only) */}
-      <AnimatePresence>
-        {view === 'chat' && mode === 'mentor' && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="z-10"
+        {/* Dimension Canvas */}
+        <div className="flex-1 relative">
+          {/* Chat View */}
+          <motion.div 
+            animate={{ 
+              opacity: view === 'chat' ? 1 : 0,
+              scale: view === 'chat' ? 1 : 1.05,
+              filter: view === 'chat' ? 'blur(0px)' : 'blur(20px)'
+            }}
+            transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
+            className={cn(
+              "absolute inset-0 flex flex-col",
+              view === 'map' ? "pointer-events-none" : "pointer-events-auto"
+            )}
           >
-            <ActiveFocusCard />
+            <div className="flex-1 flex overflow-hidden">
+              <div className="flex-1 overflow-hidden">
+                <StreamingChat 
+                  messages={messages}
+                  isStreaming={isStreaming}
+                  error={error}
+                  mode={mode}
+                />
+              </div>
+              
+              {/* Sidebar (Desktop Only) */}
+              <AnimatePresence>
+                {mode === 'mentor' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="z-10"
+                  >
+                    <ActiveFocusCard />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+
+          {/* Map View */}
+          <AnimatePresence>
+            {view === 'map' && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
+                className="absolute inset-0 z-20"
+              >
+                <VaultClient 
+                  user={user} 
+                  insights={insights} 
+                  habits={habits} 
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Global Persistent Input */}
+        <div className="relative z-50">
+          <ChatInput 
+            onSend={handleSend} 
+            disabled={isStreaming} 
+            placeholder={view === 'map' ? "[ LOOKING AT THE MAP ] Talk to the Mentor..." : undefined}
+            className={cn(
+              "transition-all duration-1000",
+              view === 'map' && "opacity-40 hover:opacity-100 focus-within:opacity-100 font-mono text-stone-400"
+            )}
+          />
+        </div>
+      </div>
     </div>
   );
 }
