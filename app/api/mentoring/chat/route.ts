@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth/auth-options';
 import { db, chatMessages, users, insights, systemPrompts } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { getAIStream } from '@/lib/ai';
-import { processArchitectCommand } from '@/lib/ai/architect';
+import { processArchitectTurn } from '@/lib/ai/architect';
 import { mentorTools } from '@/lib/ai/tools/definitions';
 import { 
   executeUserStatus, 
@@ -27,6 +27,8 @@ const xai = new OpenAI({
   baseURL: 'https://api.x.ai/v1',
 });
 
+const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
+
 export async function POST(req: NextRequest) {
   try {
     const { sessionId, message, timezone } = await req.json();
@@ -39,25 +41,18 @@ export async function POST(req: NextRequest) {
     const userId = session?.user?.id;
     const userRole = (session?.user as any)?.role;
 
-    // 1. ADMIN INTERCEPT: Check for '#' Sovereignty Command
+    // --- SOVEREIGNTY MODE INTERCEPT ---
     if (message.startsWith('#') && userRole === 'admin') {
       const command = message.substring(1);
-      const architectResult = await processArchitectCommand(command, userId as string);
-      
       return new Response(new ReadableStream({
-        start(controller) {
-          const encoder = new TextEncoder();
-          if (architectResult.success) {
-            controller.enqueue(encoder.encode(`Sovereignty acknowledged. **System Updated.**\n\n**Reason:** ${architectResult.explanation}`));
-          } else {
-            controller.enqueue(encoder.encode(`Sovereignty failed: ${architectResult.error}`));
-          }
+        async start(controller) {
+          await processArchitectTurn(command, controller);
           controller.close();
         }
       }));
     }
 
-    // 2. Fetch High-Intelligence Context
+    // --- STANDARD MENTOR MODE ---
     let finalSystemPrompt = "You are a helpful mentor.";
     let userHandle = "Seeker";
 
@@ -79,7 +74,6 @@ export async function POST(req: NextRequest) {
           .orderBy(desc(insights.createdAt))
           .limit(1);
 
-        // Build prompt with BLIND PII (No email, no full name unless in 'name' field)
         const basePrompt = dbPrompt[0]?.content || finalSystemPrompt;
         
         const userLocalTime = new Date().toLocaleString("en-US", { 
@@ -99,12 +93,10 @@ ${lastInsight[0] ? `- Last Breakthrough: "${lastInsight[0].content}"` : ''}
       }
     }
 
-    // 3. Save user message if member
     if (sessionId !== 0) {
       await db.insert(chatMessages).values({ sessionId, role: 'user', content: message });
     }
 
-    // 4. Fetch history
     const dbHistory = await db.query.chatMessages.findMany({
       where: (msgs, { eq: eqOp }) => eqOp(msgs.sessionId, sessionId),
       orderBy: (msgs, { asc }) => [asc(msgs.createdAt)],
@@ -121,7 +113,6 @@ ${lastInsight[0] ? `- Last Breakthrough: "${lastInsight[0].content}"` : ''}
       { role: 'user', content: message }
     ];
 
-    // 5. Handle AI Turn
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
