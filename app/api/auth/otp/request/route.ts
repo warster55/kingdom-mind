@@ -10,44 +10,39 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase();
 
-    // 1. Check Whitelist
+    // 1. Check User in Database
     const userResult = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
-    const user = userResult[0];
+    let user = userResult[0];
 
-    // If user exists and is NOT approved, we don't send the code
-    if (user && !user.isApproved) {
-      return NextResponse.json({ error: 'WAITLIST_ACTIVE' }, { status: 403 });
-    }
-
-    // If user doesn't exist, we'll allow sending code (registration flow), 
-    // but the `authorize` callback will handle the final lock.
-    // Actually, let's keep it tight: If not approved and not an admin email, block.
-    const ADMIN_EMAILS = ['warren@securesentrypro.com', 'test@kingdommind.app', 'wmoore9706@gmail.com', 'wmoore@securesentrypro.com'];
-    if (!user && !ADMIN_EMAILS.includes(normalizedEmail)) {
-       // In a real production app, you might want to create them as pending here
-       // or just block them. Let's block them if they aren't even in the system.
-       // Actually, let's create them as pending so you can see them in your dashboard!
+    // 2. If user doesn't exist, create them as PENDING
+    if (!user) {
        await db.insert(users).values({
          email: normalizedEmail,
          name: normalizedEmail.split('@')[0],
          isApproved: false,
+         role: 'user'
        }).onConflictDoNothing();
        
        return NextResponse.json({ error: 'WAITLIST_ACTIVE' }, { status: 403 });
     }
 
-    // 2. Generate Code
+    // 3. If user exists but is NOT approved, block code sending
+    if (!user.isApproved) {
+      return NextResponse.json({ error: 'WAITLIST_ACTIVE' }, { status: 403 });
+    }
+
+    // 4. Generate Code (Only for Approved Users)
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // 3. Save Code
+    // 5. Save Code
     await db.insert(verificationCodes).values({
       email: normalizedEmail,
       code,
       expiresAt,
     });
 
-    // 4. Send Email
+    // 6. Send Email
     const emailResult = await sendOTP(normalizedEmail, code);
     if (!emailResult.success) {
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
