@@ -21,10 +21,14 @@ import {
   executeRecallInsight,
   executeSetHabit,
   executeCompleteHabit,
-  executeSwitchView
+  executeSwitchView,
+  executeUpdateUser,
+  executeAssessMood,
+  executeCheckConsistency,
+  executeGenerateParable,
+  executeSearchMemory
 } from '@/lib/ai/tools/handlers';
 import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
-import OpenAI from 'openai';
 
 const xai = new OpenAI({
   apiKey: process.env.XAI_API_KEY,
@@ -93,6 +97,7 @@ export async function POST(req: NextRequest) {
           progress: Math.round(((DOMAINS.indexOf(user.currentDomain) + 1) / DOMAINS.length) * 100),
           lastInsight: lastInsightResult[0]?.content,
           localTime: userLocalTime,
+          hasCompletedOnboarding: user.hasCompletedOnboarding,
           baseInstructions: dbPromptResult[0]?.content
         });
       }
@@ -190,6 +195,11 @@ export async function POST(req: NextRequest) {
           else if (name === 'setHabit') result = await executeSetHabit(userId as string, args.title, args.domain, args.description, args.frequency);
           else if (name === 'completeHabit') result = await executeCompleteHabit(userId as string, args.title);
           else if (name === 'switchView') result = await executeSwitchView(args.view);
+          else if (name === 'updateUser') result = await executeUpdateUser(userId as string, args.name, args.hasCompletedOnboarding);
+          else if (name === 'assessMood') result = await executeAssessMood(args.sentiment);
+          else if (name === 'checkConsistency') result = await executeCheckConsistency(userId as string);
+          else if (name === 'generateParable') result = await executeGenerateParable(args.theme, args.context);
+          else if (name === 'searchMemory') result = await executeSearchMemory(userId as string, args.query);
           
           return {
             tool_call_id: tc.id,

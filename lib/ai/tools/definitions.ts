@@ -200,6 +200,72 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'updateUser',
+      description: "Updates the user's profile information. Call this during onboarding when the user provides their name, or if they ask to change their name/details.",
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'The name the user wants to be called' },
+          hasCompletedOnboarding: { type: 'boolean', description: 'Set to true when the user finishes the initiation ritual' }
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'assessMood',
+      description: "Analyzes the emotional tone of the user's input. Call this internally to calibrate your response tone (e.g., 'Defeated' -> Encouraging, 'Arrogant' -> Challenging).",
+      parameters: {
+        type: 'object',
+        properties: {
+          sentiment: { type: 'string', enum: ['Positive', 'Negative', 'Neutral', 'Anxious', 'Angry', 'Defeated', 'Hopeful'], description: 'The detected sentiment' }
+        },
+        required: ['sentiment'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'checkConsistency',
+      description: "Checks the user's recent habit completion rate. Call this if the user is making big promises to see if their actions match their words.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generateParable',
+      description: "Generates a custom, modern-day parable to illustrate a point. Call this when a direct explanation isn't landing.",
+      parameters: {
+        type: 'object',
+        properties: {
+          theme: { type: 'string', description: 'The moral or lesson of the parable' },
+          context: { type: 'string', description: 'The user\'s current situation (e.g., "overwhelmed executive", "stuck artist")' }
+        },
+        required: ['theme', 'context'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'searchMemory',
+      description: "Searches the user's entire history of insights and chats for specific keywords. Use this to find connections between current struggles and past events (e.g. 'wife', 'money', 'fear').",
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'The keyword or topic to search for in the memory banks' }
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'createCheckoutSession',
       description: "Generates a subscription link. Call this ONLY if the user explicitly asks to subscribe or pay.",
       parameters: { type: 'object', properties: {}, required: [] },

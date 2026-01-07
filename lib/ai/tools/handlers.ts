@@ -1,5 +1,5 @@
-import { db, users, mentoringSessions, insights } from '@/lib/db';
-import { eq, and } from 'drizzle-orm';
+import { db, users, mentoringSessions, insights, habits } from '@/lib/db';
+import { eq, and, desc, sql as drizzleSql } from 'drizzle-orm';
 import { ToolResult } from './definitions';
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
@@ -211,6 +211,63 @@ export async function executeRecallInsight(userId: string, domain?: string): Pro
   }
 }
 
+export async function executeAssessMood(sentiment: string): Promise<ToolResult> {
+  // This is a cognitive tool; it helps the AI 'think' about the user.
+  // The value is returned to the context so the AI can use it.
+  return { success: true, data: { detected_mood: sentiment, recommended_tone: sentiment === 'Defeated' ? 'High-Compassion' : 'High-Challenge' } };
+}
+
+export async function executeCheckConsistency(userId: string): Promise<ToolResult> {
+  try {
+    const recentHabits = await db.select().from(habits)
+      .where(eq(habits.userId, parseInt(userId)))
+      .orderBy(desc(habits.createdAt))
+      .limit(5);
+    
+    const activeCount = recentHabits.filter(h => h.isActive).length;
+    const completedCount = recentHabits.filter(h => h.streak > 0).length;
+    const rate = activeCount > 0 ? (completedCount / activeCount) * 100 : 0;
+
+    return { 
+      success: true, 
+      data: { 
+        consistency_rate: `${rate}%`, 
+        status: rate < 50 ? 'Inconsistent' : 'Reliable',
+        message: rate < 50 ? 'User talks more than they act. Challenge them.' : 'User is disciplined. Push them harder.'
+      } 
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeGenerateParable(theme: string, context: string): Promise<ToolResult> {
+  // This signal tells the AI to shift into "Storyteller Mode" for the next response.
+  return { success: true, data: { action: 'GENERATE_STORY', theme, context } };
+}
+
+export async function executeSearchMemory(userId: string, query: string): Promise<ToolResult> {
+  try {
+    // Basic search implementation (would be vector search in a larger system)
+    const results = await db.select().from(insights)
+      .where(and(
+        eq(insights.userId, parseInt(userId)),
+        drizzleSql`content ILIKE ${`%${query}%`}`
+      ))
+      .limit(3);
+
+    return {
+      success: true,
+      data: {
+        matches: results.map(r => ({ date: r.createdAt, insight: r.content })),
+        count: results.length
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function executeSetHabit(userId: string, title: string, domain: string, description: string, frequency: 'daily' | 'weekly' = 'daily'): Promise<ToolResult> {
   try {
     const [newHabit] = await db.insert(habits).values({
@@ -244,6 +301,21 @@ export async function executeCompleteHabit(userId: string, title: string): Promi
       .where(eq(habits.id, habit.id));
 
     return { success: true, data: { status: 'anchored', streak: habit.streak + 1 } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeUpdateUser(userId: string, name?: string, hasCompletedOnboarding?: boolean): Promise<ToolResult> {
+  try {
+    const updates: any = {};
+    if (name) updates.name = name;
+    if (typeof hasCompletedOnboarding === 'boolean') updates.hasCompletedOnboarding = hasCompletedOnboarding;
+
+    if (Object.keys(updates).length === 0) return { success: true, data: { status: 'no_changes' } };
+
+    await db.update(users).set(updates).where(eq(users.id, parseInt(userId)));
+    return { success: true, data: { status: 'updated', updates } };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
