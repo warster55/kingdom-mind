@@ -58,47 +58,43 @@ export async function POST(req: NextRequest) {
 
     // --- STANDARD MENTOR MODE ---
     let finalSystemPrompt = "You are a helpful mentor.";
-    let userHandle = "Seeker";
 
     if (sessionId !== 0 && userId) {
       const userResult = await db.select().from(users).where(eq(users.id, parseInt(userId))).limit(1);
       const user = userResult[0];
 
       if (user) {
-        userHandle = user.name || "Seeker";
-        
         // --- RESONANCE INCREMENT (Stellar Score) ---
         const domainColumn = `resonance${user.currentDomain}` as keyof typeof user;
         await db.update(users)
           .set({ [domainColumn]: sql`${users[domainColumn]} + 1` })
           .where(eq(users.id, user.id));
 
-        const dbPrompt = await db.select().from(systemPrompts)
+        // Pull active prompt from DB
+        const dbPromptResult = await db.select().from(systemPrompts)
           .where(eq(systemPrompts.isActive, true))
           .orderBy(desc(systemPrompts.createdAt))
           .limit(1);
         
-        const lastInsight = await db.select().from(insights)
+        const lastInsightResult = await db.select().from(insights)
           .where(eq(insights.userId, user.id))
           .orderBy(desc(insights.createdAt))
           .limit(1);
-
-        const basePrompt = dbPrompt[0]?.content || finalSystemPrompt;
         
         const userLocalTime = new Date().toLocaleString("en-US", { 
           timeZone: timezone || user.timezone || 'UTC',
           hour: 'numeric', minute: 'numeric', hour12: true, weekday: 'long'
         });
 
-        finalSystemPrompt = `
-${basePrompt}
-
-USER CONTEXT:
-- Name: ${userHandle}
-- Domain: ${user.currentDomain}
-- Time: ${userLocalTime}
-${lastInsight[0] ? `- Last Breakthrough: "${lastInsight[0].content}"` : ''}
-`.trim();
+        // Use the new High-Intelligence Prompt Engine with DB-driven base instructions
+        finalSystemPrompt = buildSanctuaryPrompt({
+          userName: user.name || "Seeker",
+          currentDomain: user.currentDomain,
+          progress: Math.round(((DOMAINS.indexOf(user.currentDomain) + 1) / DOMAINS.length) * 100),
+          lastInsight: lastInsightResult[0]?.content,
+          localTime: userLocalTime,
+          baseInstructions: dbPromptResult[0]?.content
+        });
       }
     }
 
