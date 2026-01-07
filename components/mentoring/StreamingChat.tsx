@@ -228,19 +228,18 @@ export function StreamingChat({
 
           {/* AI RESPONSE */}
           {lastAiMessage && (
-            <motion.div
-              key={`ai-${lastAiMessage.id}`}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
-              transition={{ duration: 1 }}
-              className={cn(
-                "w-full text-center font-serif italic",
-                isMobile ? "text-xl leading-relaxed" : "text-3xl leading-loose",
-                isArchitect ? "text-red-600 font-mono" : "text-stone-100"
-              )}
-            >
-              {displayedContent}
+                          <motion.div
+                            key={`ai-${lastAiMessage.id}`}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
+                            transition={{ duration: 1 }}
+                            className={cn(
+                              "w-full text-center font-serif italic",
+                              isMobile ? "text-lg md:text-xl leading-relaxed" : "text-2xl md:text-3xl leading-loose",
+                              isArchitect ? "text-red-600 font-mono" : "text-stone-100"
+                            )}
+                          >              {displayedContent}
               {isPacing && <span className="animate-pulse ml-1 opacity-50">_</span>}
             </motion.div>
           )}

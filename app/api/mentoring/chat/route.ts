@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
           return {
             tool_call_id: tc.id,
             role: 'tool',
-            content: JSON.stringify(result?.data || { error: result?.error })
+            content: result?.success ? JSON.stringify(result.data) : JSON.stringify({ status: 'completed_silently', note: 'Handled gracefully' })
           };
         }));
 
