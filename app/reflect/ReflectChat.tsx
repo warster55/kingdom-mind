@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
 import { ActiveFocusCard } from '@/components/progress/ActiveFocusCard';
 import { Message } from '@/components/chat/ChatMessage';
@@ -13,6 +15,10 @@ interface ReflectChatProps {
 
 export function ReflectChat({ sessionId, initialMessages, systemPrompt }: ReflectChatProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const [mode, setMode] = useState<'mentor' | 'architect'>('mentor');
+
+  const isAdmin = (session?.user as any)?.role === 'admin';
 
   const handleReset = async () => {
     await fetch(`/api/mentoring/sessions/${sessionId}`, {
@@ -21,6 +27,22 @@ export function ReflectChat({ sessionId, initialMessages, systemPrompt }: Reflec
       body: JSON.stringify({ status: 'completed' }),
     });
     router.refresh();
+  };
+
+  const handleMessageSent = async (content: string) => {
+    if (!isAdmin) return false;
+
+    if (content === '#activate') {
+      setMode('architect');
+      return true; // Don't send to API
+    }
+
+    if (content === '#exit' || content === '#deactivate') {
+      setMode('mentor');
+      return true; // Don't send to API
+    }
+
+    return false;
   };
 
   return (
@@ -33,17 +55,19 @@ export function ReflectChat({ sessionId, initialMessages, systemPrompt }: Reflec
       </header>
 
       {/* Main Chat Canvas */}
-      <div className="flex-1 flex flex-col h-full bg-stone-50 dark:bg-stone-950 transition-colors duration-700 relative">
+      <div className="flex-1 flex flex-col h-full transition-colors duration-1000 relative">
         <StreamingChat 
           sessionId={sessionId}
           initialMessages={initialMessages}
           systemPrompt={systemPrompt}
           onReset={handleReset}
+          onMessageSent={handleMessageSent}
+          mode={mode}
         />
       </div>
 
       {/* Persistence Sidebar (The Journey) */}
-      <ActiveFocusCard />
+      {mode === 'mentor' && <ActiveFocusCard />}
     </div>
   );
 }

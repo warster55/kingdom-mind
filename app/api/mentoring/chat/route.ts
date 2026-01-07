@@ -31,7 +31,7 @@ const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'A
 
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, message, timezone } = await req.json();
+    const { sessionId, message, timezone, mode = 'mentor' } = await req.json();
     const session = await getServerSession(authOptions);
 
     if (sessionId !== 0 && !session) {
@@ -41,9 +41,13 @@ export async function POST(req: NextRequest) {
     const userId = session?.user?.id;
     const userRole = (session?.user as any)?.role;
 
-    // --- SOVEREIGNTY MODE INTERCEPT ---
-    if (message.startsWith('#') && userRole === 'admin') {
-      const command = message.substring(1);
+    // --- SOVEREIGNTY MODE INTERCEPT (Architect Mode) ---
+    if ((message.startsWith('#') || mode === 'architect') && userRole === 'admin') {
+      const command = message.startsWith('#') ? message.substring(1) : message;
+      
+      // If just a "#command" without being in persistent architect mode, we still process it.
+      // If mode is persistent 'architect', every message goes here.
+      
       return new Response(new ReadableStream({
         async start(controller) {
           await processArchitectTurn(command, controller);
@@ -97,10 +101,12 @@ ${lastInsight[0] ? `- Last Breakthrough: "${lastInsight[0].content}"` : ''}
       await db.insert(chatMessages).values({ sessionId, role: 'user', content: message });
     }
 
+    const historyLimit = mode === 'architect' ? 50 : 15;
+
     const dbHistory = await db.query.chatMessages.findMany({
       where: (msgs, { eq: eqOp }) => eqOp(msgs.sessionId, sessionId),
       orderBy: (msgs, { asc }) => [asc(msgs.createdAt)],
-      limit: 15,
+      limit: historyLimit,
     });
     const history = dbHistory.map(msg => ({
       role: msg.role === 'assistant' ? 'assistant' : 'user',

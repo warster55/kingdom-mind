@@ -12,17 +12,23 @@ export interface Message {
 
 interface ChatMessageProps {
   message: Message;
+  className?: string;
+  contentClassName?: string;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, className, contentClassName }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
 
   return (
     <div className={cn(
       "w-full flex flex-col items-center py-12 first:pt-4 animate-fadeIn",
-      !isAssistant && "opacity-60"
+      !isAssistant && "opacity-60",
+      className
     )}>
-      <div className="prose prose-stone dark:prose-invert max-w-none font-serif w-full text-center">
+      <div className={cn(
+        "prose prose-stone dark:prose-invert max-w-none font-serif w-full text-center",
+        contentClassName
+      )}>
         <ReactMarkdown
           components={{
             h2: ({ ...props }) => <h2 className="text-2xl italic font-light text-stone-800 dark:text-stone-100 mb-8" {...props} />,

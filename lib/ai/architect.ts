@@ -40,7 +40,9 @@ export async function processArchitectTurn(command: string, controller: Readable
         - You can check system health.
         
         TONE:
-        Direct, precise, and acknowledging of the Admin's sovereignty. Respond with action.`
+        Direct, precise, and acknowledging of the Admin's sovereignty. Respond with action.
+        If the Admin says "activate", confirm that Architect Mode is now persistent.
+        If the Admin says "exit", tell them you are returning to Mentor Mode.`
       },
       { role: 'user', content: command }
     ];

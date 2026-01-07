@@ -11,9 +11,10 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  className?: string;
 }
 
-export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, placeholder, className }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -88,7 +89,8 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
             "text-xl font-serif italic text-center leading-relaxed",
             "focus:outline-none focus:border-amber-500/50 transition-colors",
             "placeholder:text-stone-300 dark:placeholder:text-stone-700",
-            disabled && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed",
+            className
           )}
           style={{ minHeight: '64px', resize: 'none' }}
         />

@@ -14,7 +14,7 @@ export function useStreamingChat({ sessionId, initialMessages = [], systemPrompt
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, mode: 'mentor' | 'architect' = 'mentor') => {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -34,11 +34,12 @@ export function useStreamingChat({ sessionId, initialMessages = [], systemPrompt
           sessionId,
           message: content,
           systemPrompt,
+          mode,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to reach your Mentor.');
+      if (!response.ok) throw new Error('Failed to reach the sanctuary system.');
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error('Could not establish a stream.');
