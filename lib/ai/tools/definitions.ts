@@ -155,6 +155,37 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'setHabit',
+      description: "Creates a new 'Action Anchor' (habit) for the user. Call this when you want to anchor a mental breakthrough with a practical daily or weekly physical action.",
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'A short, powerful title for the habit (e.g. "Identity Affirmation")' },
+          domain: { type: 'string', description: 'The domain this habit supports' },
+          description: { type: 'string', description: 'The specific instructions for the habit' },
+          frequency: { type: 'string', enum: ['daily', 'weekly'], description: 'How often the habit should be performed' }
+        },
+        required: ['title', 'domain', 'description'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'completeHabit',
+      description: "Marks a specific habit as completed for today. Call this when the user reports that they have executed their action anchor.",
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'The title of the habit being completed' }
+        },
+        required: ['title'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'createCheckoutSession',
       description: "Generates a subscription link. Call this ONLY if the user explicitly asks to subscribe or pay.",
       parameters: { type: 'object', properties: {}, required: [] },

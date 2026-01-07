@@ -6,8 +6,8 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name'),
-  role: text('role').notNull().default('user'), // 'user', 'admin'
-  isApproved: boolean('is_approved').default(false).notNull(), // The Sanctuary Lock
+  role: text('role').notNull().default('user'),
+  isApproved: boolean('is_approved').default(false).notNull(),
   currentDomain: text('current_domain').default('Identity').notNull(),
   timezone: text('timezone').default('UTC').notNull(),
   hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
@@ -20,7 +20,39 @@ export const users = pgTable('users', {
   emailIdx: index('users_email_idx').on(table.email),
 }));
 
-// --- Verification Codes (OTP) ---
+// --- Habits (Action Anchors) ---
+export const habits = pgTable('habits', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  domain: varchar('domain', { length: 50 }).notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  frequency: varchar('frequency', { length: 20 }).default('daily'), // daily, weekly
+  streak: integer('streak').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  lastCompletedAt: timestamp('last_completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('habits_user_id_idx').on(table.userId),
+}));
+
+// --- Insights (The Constellation) ---
+export const insights = pgTable('insights', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'set null' }),
+  domain: varchar('domain', { length: 50 }).notNull(),
+  content: text('content').notNull(),
+  importance: integer('importance').default(1).notNull(), // For visual scaling in the map
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('insights_user_id_idx').on(table.userId),
+}));
+
+// --- System Prompts & More ---
+// (Keeping existing tables: mentoringSessions, chatMessages, domains, systemPrompts, verificationCodes)
+// ... [rest of existing schema]
+
 export const verificationCodes = pgTable('verification_codes', {
   id: serial('id').primaryKey(),
   email: text('email').notNull(),
@@ -31,7 +63,6 @@ export const verificationCodes = pgTable('verification_codes', {
   emailIdx: index('verification_codes_email_idx').on(table.email),
 }));
 
-// --- Mentoring Sessions ---
 export const mentoringSessions = pgTable('mentoring_sessions', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -45,11 +76,10 @@ export const mentoringSessions = pgTable('mentoring_sessions', {
   userIdIdx: index('mentoring_sessions_user_id_idx').on(table.userId),
 }));
 
-// --- Chat Messages ---
 export const chatMessages = pgTable('chat_messages', {
   id: serial('id').primaryKey(),
   sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'cascade' }).notNull(),
-  role: varchar('role', { length: 20 }).notNull(), // 'user', 'assistant', 'system'
+  role: varchar('role', { length: 20 }).notNull(),
   content: text('content').notNull(),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -57,7 +87,6 @@ export const chatMessages = pgTable('chat_messages', {
   sessionIdIdx: index('chat_messages_session_id_idx').on(table.sessionId),
 }));
 
-// --- Domains (The 7 Pillars) ---
 export const domains = pgTable('domains', {
   id: serial('id').primaryKey(),
   slug: varchar('slug', { length: 50 }).notNull().unique(),
@@ -67,130 +96,33 @@ export const domains = pgTable('domains', {
   overview: text('overview').notNull(),
 });
 
-// --- Insights (Session Breakthroughs) ---
-
-export const insights = pgTable('insights', {
-
-  id: serial('id').primaryKey(),
-
-  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-
-  sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'set null' }),
-
-  domain: varchar('domain', { length: 50 }).notNull(),
-
-  content: text('content').notNull(),
-
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-
-}, (table) => ({
-
-  userIdIdx: index('insights_user_id_idx').on(table.userId),
-
-}));
-
-
-
-// --- System Prompts (The Dynamic Brain) ---
-
-
-
 export const systemPrompts = pgTable('system_prompts', {
-
-
-
   id: serial('id').primaryKey(),
-
-
-
   version: integer('version').notNull(),
-
-
-
   content: text('content').notNull(),
-
-
-
   changeLog: text('change_log'),
-
-
-
-  isActive: boolean('is_approved').default(true).notNull(), // Using 'is_approved' column name for active status to match naming patterns
-
-
-
+  isActive: boolean('is_approved').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-
-
-
 });
 
-
-
-
-
-
-
 // --- Relations ---
-
-
-
 export const usersRelations = relations(users, ({ many }) => ({
-
-
-
   sessions: many(mentoringSessions),
-
-
-
   insights: many(insights),
-
-
-
+  habits: many(habits),
 }));
-
-
 
 export const mentoringSessionsRelations = relations(mentoringSessions, ({ many, one }) => ({
-
   user: one(users, { fields: [mentoringSessions.userId], references: [users.id] }),
-
   messages: many(chatMessages),
-
   insights: many(insights),
-
 }));
 
-
-
-export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
-
-  session: one(mentoringSessions, { fields: [chatMessages.sessionId], references: [mentoringSessions.id] }),
-
+export const habitsRelations = relations(habits, ({ one }) => ({
+  user: one(users, { fields: [habits.userId], references: [users.id] }),
 }));
-
-
 
 export const insightsRelations = relations(insights, ({ one }) => ({
-
   user: one(users, { fields: [insights.userId], references: [users.id] }),
-
   session: one(mentoringSessions, { fields: [insights.sessionId], references: [mentoringSessions.id] }),
-
 }));
-
-
-
-// --- Types ---
-
-export type User = typeof users.$inferSelect;
-
-export type VerificationCode = typeof verificationCodes.$inferSelect;
-
-export type MentoringSession = typeof mentoringSessions.$inferSelect;
-
-export type ChatMessage = typeof chatMessages.$inferSelect;
-
-export type Domain = typeof domains.$inferSelect;
-
-export type Insight = typeof insights.$inferSelect;

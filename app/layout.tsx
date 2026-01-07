@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 import SessionProvider from '@/components/providers/SessionProvider';
 import QueryProvider from '@/components/providers/QueryProvider';
+import { SanctuaryNav } from '@/components/layout/SanctuaryNav';
 
 const serif = Crimson_Pro({
   variable: '--font-serif',
@@ -39,6 +40,7 @@ export default function RootLayout({
         <SessionProvider>
           <QueryProvider>
             <ThemeProvider>
+              <SanctuaryNav />
               {children}
             </ThemeProvider>
           </QueryProvider>
