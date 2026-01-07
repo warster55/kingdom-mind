@@ -10,7 +10,9 @@ import {
   executeApproveUser, 
   executeClearSanctuary, 
   executeAscendDomain, 
-  executePeepTheGates 
+  executePeepTheGates,
+  executeSeekWisdom,
+  executeScribeReflection
 } from '@/lib/ai/tools/handlers';
 import OpenAI from 'openai';
 
@@ -119,6 +121,8 @@ export async function POST(req: NextRequest) {
           else if (name === 'clearSanctuary') result = await executeClearSanctuary(sessionId);
           else if (name === 'ascendDomain') result = await executeAscendDomain(userId);
           else if (name === 'peepTheGates') result = await executePeepTheGates(userId);
+          else if (name === 'seekWisdom') result = await executeSeekWisdom(args.query);
+          else if (name === 'scribeReflection') result = await executeScribeReflection(userId, sessionId, args.domain, args.summary);
           
           return {
             tool_call_id: tc.id,

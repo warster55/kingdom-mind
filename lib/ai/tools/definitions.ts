@@ -69,6 +69,35 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'seekWisdom',
+      description: "Searches for contextually relevant Bible verses to support the user's current situation or breakthrough. Call this when you want to provide spiritual foundation for your guidance.",
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'The topic or theme to find scripture for (e.g. "peace during anxiety", "finding purpose")' }
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'scribeReflection',
+      description: "Summarizes the key breakthroughs and insights from the current session and saves them as a permanent reflection for the user. Call this at the end of a session or after a major breakthrough.",
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string', description: 'A poetic and concise summary of the session breakthroughs' },
+          domain: { type: 'string', description: 'The domain this reflection belongs to' }
+        },
+        required: ['summary', 'domain'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'createCheckoutSession',
       description: "Generates a subscription link. Call this ONLY if the user explicitly asks to subscribe or pay.",
       parameters: { type: 'object', properties: {}, required: [] },

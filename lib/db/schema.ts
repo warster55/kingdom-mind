@@ -66,19 +66,82 @@ export const domains = pgTable('domains', {
   overview: text('overview').notNull(),
 });
 
-// --- Relations ---
-export const mentoringSessionsRelations = relations(mentoringSessions, ({ many, one }) => ({
-  user: one(users, { fields: [mentoringSessions.userId], references: [users.id] }),
-  messages: many(chatMessages),
+// --- Insights (Session Breakthroughs) ---
+
+export const insights = pgTable('insights', {
+
+  id: serial('id').primaryKey(),
+
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+
+  sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'set null' }),
+
+  domain: varchar('domain', { length: 50 }).notNull(),
+
+  content: text('content').notNull(),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+
+}, (table) => ({
+
+  userIdIdx: index('insights_user_id_idx').on(table.userId),
+
 }));
+
+
+
+// --- Relations ---
+
+export const usersRelations = relations(users, ({ many }) => ({
+
+  sessions: many(mentoringSessions),
+
+  insights: many(insights),
+
+}));
+
+
+
+export const mentoringSessionsRelations = relations(mentoringSessions, ({ many, one }) => ({
+
+  user: one(users, { fields: [mentoringSessions.userId], references: [users.id] }),
+
+  messages: many(chatMessages),
+
+  insights: many(insights),
+
+}));
+
+
 
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+
   session: one(mentoringSessions, { fields: [chatMessages.sessionId], references: [mentoringSessions.id] }),
+
 }));
 
+
+
+export const insightsRelations = relations(insights, ({ one }) => ({
+
+  user: one(users, { fields: [insights.userId], references: [users.id] }),
+
+  session: one(mentoringSessions, { fields: [insights.sessionId], references: [mentoringSessions.id] }),
+
+}));
+
+
+
 // --- Types ---
+
 export type User = typeof users.$inferSelect;
+
 export type VerificationCode = typeof verificationCodes.$inferSelect;
+
 export type MentoringSession = typeof mentoringSessions.$inferSelect;
+
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
 export type Domain = typeof domains.$inferSelect;
+
+export type Insight = typeof insights.$inferSelect;
