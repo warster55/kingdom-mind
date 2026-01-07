@@ -194,9 +194,6 @@ export async function executeSetAtmosphere(theme?: string, tone?: string): Promi
 export async function executeRecallInsight(userId: string, domain?: string): Promise<ToolResult> {
   try {
     let query = db.select().from(insights).where(eq(insights.userId, parseInt(userId)));
-    
-    // Note: Drizzle query builder needs proper chaining for conditional 'where'
-    // Simplified for now:
     const allInsights = await query;
     const filtered = domain 
       ? allInsights.filter(i => i.domain.toLowerCase() === domain.toLowerCase())
@@ -209,6 +206,44 @@ export async function executeRecallInsight(userId: string, domain?: string): Pro
         insights: filtered.slice(-5).map(i => ({ domain: i.domain, content: i.content, date: i.createdAt }))
       }
     };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeSetHabit(userId: string, title: string, domain: string, description: string, frequency: 'daily' | 'weekly' = 'daily'): Promise<ToolResult> {
+  try {
+    const [newHabit] = await db.insert(habits).values({
+      userId: parseInt(userId),
+      title,
+      domain,
+      description,
+      frequency,
+    }).returning();
+
+    return { success: true, data: { status: 'anchor_set', habit: newHabit.title } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeCompleteHabit(userId: string, title: string): Promise<ToolResult> {
+  try {
+    const habitResult = await db.select().from(habits)
+      .where(and(eq(habits.userId, parseInt(userId)), eq(habits.title, title)))
+      .limit(1);
+    
+    const habit = habitResult[0];
+    if (!habit) return { success: false, error: 'Habit not found.' };
+
+    await db.update(habits)
+      .set({ 
+        streak: habit.streak + 1, 
+        lastCompletedAt: new Date() 
+      })
+      .where(eq(habits.id, habit.id));
+
+    return { success: true, data: { status: 'anchored', streak: habit.streak + 1 } };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

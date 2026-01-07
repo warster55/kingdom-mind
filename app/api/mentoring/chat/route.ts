@@ -18,7 +18,9 @@ import {
   executeSoulSearch,
   executeBroadcast,
   executeSetAtmosphere,
-  executeRecallInsight
+  executeRecallInsight,
+  executeSetHabit,
+  executeCompleteHabit
 } from '@/lib/ai/tools/handlers';
 import OpenAI from 'openai';
 
@@ -186,6 +188,8 @@ ${lastInsight[0] ? `- Last Breakthrough: "${lastInsight[0].content}"` : ''}
           else if (name === 'broadcast') result = await executeBroadcast(userId as string, args.message);
           else if (name === 'setAtmosphere') result = await executeSetAtmosphere(args.theme, args.tone);
           else if (name === 'recallInsight') result = await executeRecallInsight(userId as string, args.domain);
+          else if (name === 'setHabit') result = await executeSetHabit(userId as string, args.title, args.domain, args.description, args.frequency);
+          else if (name === 'completeHabit') result = await executeCompleteHabit(userId as string, args.title);
           
           return {
             tool_call_id: tc.id,
