@@ -98,6 +98,63 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'soulSearch',
+      description: "Admin Only: Searches for a user by email and returns their journey summary, including active domain and progress.",
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', description: 'The email of the user to look up' }
+        },
+        required: ['email'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'broadcast',
+      description: "Admin Only: Sends a message or announcement to every approved user in the sanctuary. Use this for poetic nudges or system updates.",
+      parameters: {
+        type: 'object',
+        properties: {
+          message: { type: 'string', description: 'The announcement content' }
+        },
+        required: ['message'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'setAtmosphere',
+      description: "Adjusts the sanctuary environment. Can change the UI theme or the AI mentor's tone.",
+      parameters: {
+        type: 'object',
+        properties: {
+          theme: { type: 'string', enum: ['light', 'dark', 'stone'], description: 'The visual theme' },
+          tone: { type: 'string', enum: ['Poetic', 'Direct', 'Gentle', 'Challenging'], description: 'The AI mentoring tone' }
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'recallInsight',
+      description: "Retrieves previous breakthroughs and insights the user has had in the sanctuary. Use this to remind them of their journey and past commitments.",
+      parameters: {
+        type: 'object',
+        properties: {
+          domain: { type: 'string', description: 'Optional: Filter by specific domain' }
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'createCheckoutSession',
       description: "Generates a subscription link. Call this ONLY if the user explicitly asks to subscribe or pay.",
       parameters: { type: 'object', properties: {}, required: [] },

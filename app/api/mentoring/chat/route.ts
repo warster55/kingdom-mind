@@ -12,7 +12,11 @@ import {
   executeAscendDomain, 
   executePeepTheGates,
   executeSeekWisdom,
-  executeScribeReflection
+  executeScribeReflection,
+  executeSoulSearch,
+  executeBroadcast,
+  executeSetAtmosphere,
+  executeRecallInsight
 } from '@/lib/ai/tools/handlers';
 import OpenAI from 'openai';
 
@@ -123,6 +127,10 @@ export async function POST(req: NextRequest) {
           else if (name === 'peepTheGates') result = await executePeepTheGates(userId);
           else if (name === 'seekWisdom') result = await executeSeekWisdom(args.query);
           else if (name === 'scribeReflection') result = await executeScribeReflection(userId, sessionId, args.domain, args.summary);
+          else if (name === 'soulSearch') result = await executeSoulSearch(userId, args.email);
+          else if (name === 'broadcast') result = await executeBroadcast(userId, args.message);
+          else if (name === 'setAtmosphere') result = await executeSetAtmosphere(args.theme, args.tone);
+          else if (name === 'recallInsight') result = await executeRecallInsight(userId, args.domain);
           
           return {
             tool_call_id: tc.id,

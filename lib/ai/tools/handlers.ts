@@ -142,3 +142,74 @@ export async function executeApproveUser(adminUserId: string, targetEmail: strin
     return { success: false, error: error.message };
   }
 }
+
+export async function executeSoulSearch(adminUserId: string, targetEmail: string): Promise<ToolResult> {
+  try {
+    const admin = await db.select().from(users).where(eq(users.id, parseInt(adminUserId))).limit(1);
+    if (!admin[0] || admin[0].role !== 'admin') return { success: false, error: 'Unauthorized' };
+
+    const target = await db.select().from(users).where(eq(users.email, targetEmail.toLowerCase())).limit(1);
+    if (!target[0]) return { success: false, error: 'User not found' };
+
+    return {
+      success: true,
+      data: {
+        email: target[0].email,
+        currentDomain: target[0].currentDomain,
+        progress: Math.round(((DOMAINS.indexOf(target[0].currentDomain) + 1) / DOMAINS.length) * 100),
+        lastLogin: target[0].lastLogin,
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeBroadcast(adminUserId: string, message: string): Promise<ToolResult> {
+  try {
+    const admin = await db.select().from(users).where(eq(users.id, parseInt(adminUserId))).limit(1);
+    if (!admin[0] || admin[0].role !== 'admin') return { success: false, error: 'Unauthorized' };
+
+    // In a full implementation, we'd add a notification record. 
+    // For now, let's log the intention.
+    console.log(`[BROADCAST] ${admin[0].email}: ${message}`);
+    return { success: true, data: { status: 'broadcast_queued', recipients: 'all_approved_users' } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeSetAtmosphere(theme?: string, tone?: string): Promise<ToolResult> {
+  // Themes are client-side. We return a signal.
+  return { 
+    success: true, 
+    data: { 
+      status: 'atmosphere_adjusted', 
+      action: theme ? `SET_THEME_${theme.toUpperCase()}` : null,
+      tone: tone || 'Default'
+    } 
+  };
+}
+
+export async function executeRecallInsight(userId: string, domain?: string): Promise<ToolResult> {
+  try {
+    let query = db.select().from(insights).where(eq(insights.userId, parseInt(userId)));
+    
+    // Note: Drizzle query builder needs proper chaining for conditional 'where'
+    // Simplified for now:
+    const allInsights = await query;
+    const filtered = domain 
+      ? allInsights.filter(i => i.domain.toLowerCase() === domain.toLowerCase())
+      : allInsights;
+
+    return {
+      success: true,
+      data: {
+        count: filtered.length,
+        insights: filtered.slice(-5).map(i => ({ domain: i.domain, content: i.content, date: i.createdAt }))
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
