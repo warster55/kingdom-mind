@@ -11,8 +11,6 @@ export function RootChat() {
   const { data: session, status } = useSession();
   const [isEntering, setIsEntering] = useState(false);
 
-  // If we are authenticated, the app/page.tsx will have redirected us to /reflect
-  // but as a fallback, we show a loader here.
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -21,16 +19,14 @@ export function RootChat() {
     );
   }
 
-  const handleEnterSanctuary = () => {
-    setIsEntering(true);
-  };
+  // If already logged in, the parent page will handle the redirect.
+  // This component is for the Guest experience.
 
-  if (!isEntering && !session) {
-    return <WelcomePage onEnter={handleEnterSanctuary} />;
+  if (!isEntering) {
+    return <WelcomePage onEnter={() => setIsEntering(true)} />;
   }
 
-  // Conversational Login State
-  const loginSystemPrompt = "You are the Gatekeeper of Kingdom Mind. Your goal is to welcome the user and ask for their email address to grant them access to the sanctuary. Be warm, poetic, and concise.";
+  const loginSystemPrompt = "You are the Gatekeeper of Kingdom Mind. Your goal is to welcome the user and ask for their email address to grant them access to the sanctuary. Be warm, poetic, and concise. IF the user shares an email, tell them you are opening the gates.";
   
   const initialLoginMessages: Message[] = [
     {
@@ -41,22 +37,19 @@ export function RootChat() {
     }
   ];
 
-  const handleLoginChat = async (content: string) => {
-    // Simple regex to check if the user sent an email
+  const handleMessageIntercept = async (content: string) => {
     const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    
     if (emailMatch) {
       const email = emailMatch[0];
-      // Perform the sign-in. This will trigger the redirect to /reflect on success.
+      // Trigger the sign-in
       await signIn('credentials', { email, callbackUrl: '/reflect' });
-    } else {
-      // If not an email, let the AI respond normally or ask again (handled by StreamingChat)
-      return false; 
+      return true; // We handled it
     }
+    return false;
   };
 
   return (
-    <main className="flex flex-col h-screen bg-stone-50 dark:bg-stone-950 transition-colors duration-700 overflow-hidden">
+    <main className="flex flex-col h-screen bg-stone-50 dark:bg-stone-950 transition-colors duration-700 overflow-hidden relative">
        <header className="absolute top-0 left-0 right-0 p-8 flex justify-center z-10 pointer-events-none">
         <h1 className="text-stone-300 dark:text-stone-700 text-[10px] uppercase tracking-[0.5em] font-bold">
           Kingdom Mind
@@ -64,10 +57,11 @@ export function RootChat() {
       </header>
       
       <StreamingChat 
-        sessionId={0} // 0 indicates a login session
+        sessionId={0}
         initialMessages={initialLoginMessages}
         systemPrompt={loginSystemPrompt}
         onReset={() => setIsEntering(false)}
+        onMessageSent={handleMessageIntercept}
       />
     </main>
   );
