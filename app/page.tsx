@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { redirect } from 'next/navigation';
-import { WelcomePage } from '@/components/chat/WelcomePage';
+import { RootChat } from '@/components/chat/RootChat';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,5 +12,5 @@ export default async function Home() {
     redirect('/reflect');
   }
 
-  return <WelcomePage />;
+  return <RootChat />;
 }

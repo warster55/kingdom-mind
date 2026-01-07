@@ -4,25 +4,33 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: process.env.CI ? 2 : 1,
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:4000',
+    baseURL: process.env.BASE_URL || 'http://localhost:4000',
     trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
-      name: 'setup',
+      name: 'local-setup',
       testMatch: /auth\.setup\.ts/,
     },
     {
-      name: 'chromium',
+      name: 'local-chromium',
       use: { 
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
       },
-      dependencies: ['setup'],
+      dependencies: ['local-setup'],
+    },
+    {
+      name: 'production',
+      use: { 
+        ...devices['Desktop Chrome'],
+        baseURL: 'https://kingdomind.com',
+      },
     },
   ],
 });

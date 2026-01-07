@@ -1,13 +1,15 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { Sparkles, Heart, Shield, ArrowRight } from 'lucide-react';
 
-export function WelcomePage() {
+interface WelcomePageProps {
+  onEnter: () => void;
+}
+
+export function WelcomePage({ onEnter }: WelcomePageProps) {
   return (
     <div className="flex flex-col min-h-screen bg-stone-50 dark:bg-stone-950 font-serif overflow-hidden">
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
-        {/* Soft Background Glows */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-200/20 dark:bg-amber-900/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-stone-200/40 dark:bg-stone-800/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -23,7 +25,7 @@ export function WelcomePage() {
 
           <div className="pt-8 flex flex-col items-center gap-8">
             <button
-              onClick={() => signIn('credentials')}
+              onClick={onEnter}
               className="group relative flex items-center gap-4 px-12 py-5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full text-lg font-medium hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-700 animate-slideUp"
             >
               <span className="text-stone-700 dark:text-stone-300">Enter the Sanctuary</span>
