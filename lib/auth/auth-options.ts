@@ -4,7 +4,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db, users, verificationCodes } from "@/lib/db";
 import { eq, and, gt } from "drizzle-orm";
 
-const ADMIN_EMAILS = ['warren@securesentrypro.com', 'test@kingdommind.app', 'wmoore9706@gmail.com'];
+const ADMIN_EMAILS = ['warren@securesentrypro.com', 'test@kingdommind.app', 'wmoore9706@gmail.com', 'wmoore@securesentrypro.com'];
 
 export const authOptions: NextAuthOptions = {
   // @ts-ignore

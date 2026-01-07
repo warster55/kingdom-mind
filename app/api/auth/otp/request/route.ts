@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // If user doesn't exist, we'll allow sending code (registration flow), 
     // but the `authorize` callback will handle the final lock.
     // Actually, let's keep it tight: If not approved and not an admin email, block.
-    const ADMIN_EMAILS = ['warren@securesentrypro.com', 'test@kingdommind.app', 'wmoore9706@gmail.com'];
+    const ADMIN_EMAILS = ['warren@securesentrypro.com', 'test@kingdommind.app', 'wmoore9706@gmail.com', 'wmoore@securesentrypro.com'];
     if (!user && !ADMIN_EMAILS.includes(normalizedEmail)) {
        // In a real production app, you might want to create them as pending here
        // or just block them. Let's block them if they aren't even in the system.
