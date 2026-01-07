@@ -3,6 +3,7 @@ import { Crimson_Pro, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 import SessionProvider from '@/components/providers/SessionProvider';
+import QueryProvider from '@/components/providers/QueryProvider';
 
 const serif = Crimson_Pro({
   variable: '--font-serif',
@@ -36,9 +37,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${serif.variable} ${sans.variable} ${mono.variable} font-serif antialiased bg-background-primary text-text-primary transition-colors duration-500`}>
         <SessionProvider>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
+          <QueryProvider>
+            <ThemeProvider>
+              {children}
+            </ThemeProvider>
+          </QueryProvider>
         </SessionProvider>
       </body>
     </html>
