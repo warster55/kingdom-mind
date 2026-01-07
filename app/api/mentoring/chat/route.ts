@@ -29,11 +29,7 @@ import {
   executeSearchMemory
 } from '@/lib/ai/tools/handlers';
 import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
-
-const xai = new OpenAI({
-  apiKey: process.env.XAI_API_KEY,
-  baseURL: 'https://api.x.ai/v1',
-});
+import { xai } from '@/lib/ai/client';
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
 

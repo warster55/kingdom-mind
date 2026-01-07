@@ -2,12 +2,7 @@ import { db, systemPrompts } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { architectTools } from './tools/architect-definitions';
 import { executeArchitectQuery, executeUpdatePrompt, executeSystemHealth } from './tools/architect-handlers';
-import OpenAI from 'openai';
-
-const xai = new OpenAI({
-  apiKey: process.env.XAI_API_KEY,
-  baseURL: 'https://api.x.ai/v1',
-});
+import { xai } from './client';
 
 /**
  * Sovereignty Mode: Architect handles system-level reasoning and manipulation.
