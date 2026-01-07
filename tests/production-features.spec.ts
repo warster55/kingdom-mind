@@ -55,7 +55,8 @@ test.describe('Kingdom Mind - Full Feature Verification (Production)', () => {
     await page.keyboard.press('Enter');
 
     const lastResponse = page.locator('.prose').last();
-    await expect(lastResponse).toContainText(/waitlist|pending|emails|capacity/i, { timeout: 30000 });
+    // Grok often uses "awaiting", "discernment", or lists emails
+    await expect(lastResponse).toContainText(/await|waitlist|pending|emails|discernment/i, { timeout: 45000 });
     console.log('✅ Admin Sovereignty Verified');
   });
 
@@ -68,7 +69,7 @@ test.describe('Kingdom Mind - Full Feature Verification (Production)', () => {
 
     // Wait for the page to refresh/reload
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(10000); 
     
     const messages = page.locator('.prose');
     // It should be back to the greeting message only

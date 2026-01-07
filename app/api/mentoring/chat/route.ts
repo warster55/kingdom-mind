@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { db, chatMessages, users, insights as insightsTable } from '@/lib/db';
+import { db, chatMessages, users, insights } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { getAIStream } from '@/lib/ai';
 import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
@@ -41,17 +41,20 @@ export async function POST(req: NextRequest) {
     const userId = session?.user?.id;
     let finalSystemPrompt = clientSystemPrompt;
 
-    // 1. If it's a member session, build the High-Intelligence Prompt
+    // 1. Build the High-Intelligence Prompt for members
     if (sessionId !== 0 && userId) {
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, parseInt(userId))
-      });
+      const userResult = await db.select().from(users).where(eq(users.id, parseInt(userId))).limit(1);
+      const user = userResult[0];
 
       if (user) {
-        const lastInsight = await db.query.insightsTable.findFirst({
-          where: eq(insightsTable.userId, user.id),
-          orderBy: [desc(insightsTable.createdAt)]
-        });
+        const lastInsightResult = await db
+          .select()
+          .from(insights)
+          .where(eq(insights.userId, user.id))
+          .orderBy(desc(insights.createdAt))
+          .limit(1);
+        
+        const lastInsight = lastInsightResult[0];
 
         finalSystemPrompt = buildSanctuaryPrompt({
           userName: user.name || 'Seeker',
@@ -71,9 +74,9 @@ export async function POST(req: NextRequest) {
     let history: any[] = [];
     if (sessionId !== 0) {
       const dbHistory = await db.query.chatMessages.findMany({
-        where: (msgs, { eq }) => eq(msgs.sessionId, sessionId),
+        where: (msgs, { eq: eqOp }) => eqOp(msgs.sessionId, sessionId),
         orderBy: (msgs, { asc }) => [asc(msgs.createdAt)],
-        limit: 15, // Increased context for smarter mentor
+        limit: 15,
       });
       history = dbHistory.map(msg => ({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
