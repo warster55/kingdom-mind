@@ -31,7 +31,6 @@ export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
         onSend(text);
         setInput('');
         setShowMenu(false);
-        // Clear launching text after animation
         setTimeout(() => setLaunchingText(null), 2000);
       }
     }
@@ -49,7 +48,7 @@ export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
   };
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto pb-12 pt-4 px-4 md:px-0 z-[100]">
+    <div className="relative w-full max-w-3xl mx-auto pb-8 md:pb-12 pt-4 px-6 md:px-0 z-[100] transition-all duration-300">
       
       {/* THE STARDUST LAUNCH ANIMATION */}
       <AnimatePresence>
@@ -59,13 +58,13 @@ export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
             animate={{ 
               opacity: 0, 
               scale: 0.2, 
-              y: -500,
+              y: -300, // Reduced launch height for mobile visibility
               filter: 'blur(10px)'
             }}
-            transition={{ duration: 1.5, ease: "easeIn" }}
+            transition={{ duration: 1.2, ease: "easeIn" }}
             className="absolute left-0 right-0 text-center pointer-events-none"
           >
-            <span className="text-xl font-serif italic text-stone-100 opacity-60">
+            <span className="text-lg md:text-xl font-serif italic text-stone-100 opacity-60">
               {launchingText}
             </span>
           </motion.div>
@@ -82,12 +81,12 @@ export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
           placeholder={placeholder || "Share what's on your heart..."}
           className={cn(
             "w-full bg-transparent border-b border-stone-200 dark:border-stone-800 py-4",
-            "text-xl font-serif italic text-center leading-relaxed transition-all duration-700",
+            "text-lg md:text-xl font-serif italic text-center leading-relaxed transition-all duration-700",
             "focus:outline-none focus:border-amber-500/50",
-            "placeholder:text-stone-300 dark:placeholder:text-stone-700",
+            "placeholder:text-stone-500 dark:placeholder:text-stone-700",
             className
           )}
-          style={{ minHeight: '64px', resize: 'none' }}
+          style={{ minHeight: '60px', resize: 'none' }}
         />
         <div className="absolute top-1/2 -translate-y-1/2 right-0 opacity-0 group-focus-within:opacity-20 transition-opacity">
           <Sparkles className="w-4 h-4 text-amber-500" />
