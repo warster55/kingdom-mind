@@ -10,6 +10,16 @@ export const users = pgTable('users', {
   isApproved: boolean('is_approved').default(false).notNull(),
   currentDomain: text('current_domain').default('Identity').notNull(),
   timezone: text('timezone').default('UTC').notNull(),
+  
+  // --- Sanctuary Resonance (Stellar Score) ---
+  resonanceIdentity: integer('resonance_identity').default(0).notNull(),
+  resonancePurpose: integer('resonance_purpose').default(0).notNull(),
+  resonanceMindset: integer('resonance_mindset').default(0).notNull(),
+  resonanceRelationships: integer('resonance_relationships').default(0).notNull(),
+  resonanceVision: integer('resonance_vision').default(0).notNull(),
+  resonanceAction: integer('resonance_action').default(0).notNull(),
+  resonanceLegacy: integer('resonance_legacy').default(0).notNull(),
+
   hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
   onboardingStep: integer('onboarding_step').default(0).notNull(),
   onboardingData: jsonb('onboarding_data'),
@@ -27,7 +37,7 @@ export const habits = pgTable('habits', {
   domain: varchar('domain', { length: 50 }).notNull(),
   title: text('title').notNull(),
   description: text('description'),
-  frequency: varchar('frequency', { length: 20 }).default('daily'), // daily, weekly
+  frequency: varchar('frequency', { length: 20 }).default('daily'),
   streak: integer('streak').default(0).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   lastCompletedAt: timestamp('last_completed_at'),
@@ -43,16 +53,13 @@ export const insights = pgTable('insights', {
   sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'set null' }),
   domain: varchar('domain', { length: 50 }).notNull(),
   content: text('content').notNull(),
-  importance: integer('importance').default(1).notNull(), // For visual scaling in the map
+  importance: integer('importance').default(1).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index('insights_user_id_idx').on(table.userId),
 }));
 
-// --- System Prompts & More ---
-// (Keeping existing tables: mentoringSessions, chatMessages, domains, systemPrompts, verificationCodes)
-// ... [rest of existing schema]
-
+// --- Verification Codes ---
 export const verificationCodes = pgTable('verification_codes', {
   id: serial('id').primaryKey(),
   email: text('email').notNull(),
@@ -63,6 +70,7 @@ export const verificationCodes = pgTable('verification_codes', {
   emailIdx: index('verification_codes_email_idx').on(table.email),
 }));
 
+// --- Mentoring Sessions ---
 export const mentoringSessions = pgTable('mentoring_sessions', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -76,6 +84,7 @@ export const mentoringSessions = pgTable('mentoring_sessions', {
   userIdIdx: index('mentoring_sessions_user_id_idx').on(table.userId),
 }));
 
+// --- Chat Messages ---
 export const chatMessages = pgTable('chat_messages', {
   id: serial('id').primaryKey(),
   sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'cascade' }).notNull(),
@@ -87,6 +96,7 @@ export const chatMessages = pgTable('chat_messages', {
   sessionIdIdx: index('chat_messages_session_id_idx').on(table.sessionId),
 }));
 
+// --- Domains ---
 export const domains = pgTable('domains', {
   id: serial('id').primaryKey(),
   slug: varchar('slug', { length: 50 }).notNull().unique(),
@@ -96,6 +106,7 @@ export const domains = pgTable('domains', {
   overview: text('overview').notNull(),
 });
 
+// --- System Prompts ---
 export const systemPrompts = pgTable('system_prompts', {
   id: serial('id').primaryKey(),
   version: integer('version').notNull(),

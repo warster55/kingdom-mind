@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { db, chatMessages, users, insights, systemPrompts } from '@/lib/db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { getAIStream } from '@/lib/ai';
 import { processArchitectTurn } from '@/lib/ai/architect';
 import { mentorTools } from '@/lib/ai/tools/definitions';
@@ -23,6 +23,7 @@ import {
   executeCompleteHabit,
   executeSwitchView
 } from '@/lib/ai/tools/handlers';
+import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
 import OpenAI from 'openai';
 
 const xai = new OpenAI({
@@ -47,10 +48,6 @@ export async function POST(req: NextRequest) {
     // --- SOVEREIGNTY MODE INTERCEPT (Architect Mode) ---
     if ((message.startsWith('#') || mode === 'architect') && userRole === 'admin') {
       const command = message.startsWith('#') ? message.substring(1) : message;
-      
-      // If just a "#command" without being in persistent architect mode, we still process it.
-      // If mode is persistent 'architect', every message goes here.
-      
       return new Response(new ReadableStream({
         async start(controller) {
           await processArchitectTurn(command, controller);
@@ -70,7 +67,12 @@ export async function POST(req: NextRequest) {
       if (user) {
         userHandle = user.name || "Seeker";
         
-        // Pull latest prompt from DB
+        // --- RESONANCE INCREMENT (Stellar Score) ---
+        const domainColumn = `resonance${user.currentDomain}` as keyof typeof user;
+        await db.update(users)
+          .set({ [domainColumn]: sql`${users[domainColumn]} + 1` })
+          .where(eq(users.id, user.id));
+
         const dbPrompt = await db.select().from(systemPrompts)
           .where(eq(systemPrompts.isActive, true))
           .orderBy(desc(systemPrompts.createdAt))

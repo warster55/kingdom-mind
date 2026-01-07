@@ -3,18 +3,25 @@
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Message } from './ChatMessage';
+
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+}
 
 interface ChatMessageProps {
   message: Message;
   className?: string;
   contentClassName?: string;
   isFloating?: boolean;
-  position?: { x: number; y: number };
+  position?: { x: string | number; y: string | number };
   scale?: number;
   opacity?: number;
   blur?: number;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 export function ChatMessage({ 
@@ -26,14 +33,15 @@ export function ChatMessage({
   scale = 1,
   opacity = 1,
   blur = 0,
-  onClick
+  onClick,
+  style
 }: ChatMessageProps) {
   const isAssistant = message.role === 'assistant';
 
   if (isFloating && position) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.8, x: position.x, y: position.y + 20 }}
+        initial={{ opacity: 0, scale: 0.8, x: position.x, y: position.y }}
         animate={{ 
           opacity, 
           scale, 
@@ -45,9 +53,10 @@ export function ChatMessage({
         transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
         onClick={onClick}
         className={cn(
-          "absolute cursor-pointer group pointer-events-auto",
+          "absolute cursor-pointer group pointer-events-auto flex items-center justify-center",
           className
         )}
+        style={style}
       >
         {/* The Drift Animation (Subtle oscillation) */}
         <motion.div
@@ -77,7 +86,7 @@ export function ChatMessage({
     );
   }
 
-  // Standard non-floating fallback (used for the User Echo)
+  // Standard non-floating fallback
   return (
     <div className={cn(
       "w-full flex flex-col items-center animate-fadeIn",
@@ -89,7 +98,7 @@ export function ChatMessage({
       )}>
         <ReactMarkdown
           components={{
-            p: ({ ...props }) => <p className="text-lg md:text-xl leading-relaxed opacity-40 italic" {...props} />,
+            p: ({ ...props }) => <p className="text-lg md:text-xl leading-relaxed italic" {...props} />,
           }}
         >
           {message.content}

@@ -6,11 +6,7 @@ import { Loader2, Sparkles, Anchor, Compass } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Insight, Habit } from '@/lib/db/schema';
-
-interface SpatialMessage extends Message {
-  x: number;
-  y: number;
-}
+import { useQuery } from '@tanstack/react-query';
 
 interface StreamingChatProps {
   messages: Message[];
@@ -18,7 +14,7 @@ interface StreamingChatProps {
   error: string | null;
   insights: Insight[];
   habits: Habit[];
-  currentDomain: string;
+  mode?: 'mentor' | 'architect';
 }
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
@@ -39,52 +35,117 @@ export function StreamingChat({
   error,
   insights,
   habits,
-  currentDomain
+  mode = 'mentor'
 }: StreamingChatProps) {
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Handle Parallax
+  // 1. Fetch Live Resonance Status
+  const { data: status } = useQuery({
+    queryKey: ['user-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/user/status');
+      return res.json();
+    },
+    refetchInterval: 10000,
+  });
+
+  const activeDomain = status?.activeDomain || 'Identity';
+  const resonance = status?.resonance || {};
+
+  // 2. Parallax Effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ 
-        x: (e.clientX / window.innerWidth - 0.5) * 30, 
-        y: (e.clientY / window.innerHeight - 0.5) * 30 
+        x: (e.clientX / window.innerWidth - 0.5) * 40, 
+        y: (e.clientY / window.innerHeight - 0.5) * 40 
       });
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Spatial Logic: Assign positions to messages
+  // 3. THE NEBULA GENERATOR (Canvas based for performance)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+
+    const render = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Render Resonance Stars
+      DOMAINS.forEach((domain, i) => {
+        const count = resonance[domain] || 0;
+        const angle = (i / DOMAINS.length) * Math.PI * 2;
+        const centerX = canvas.width / 2 + Math.cos(angle) * (canvas.width * 0.35);
+        const centerY = canvas.height / 2 + Math.sin(angle) * (canvas.height * 0.35);
+
+        // Generate 'count' particles around this domain center
+        for (let j = 0; j < count; j++) {
+          // Deterministic seed based on j and domain
+          const starSeed = j * 1.5 + i;
+          const r = (Math.sin(starSeed) * 0.5 + 0.5) * (canvas.width * 0.1);
+          const theta = starSeed * 137.5; // Golden angle for even distribution
+          
+          const x = centerX + Math.cos(theta) * r;
+          const y = centerY + Math.sin(theta) * r;
+          
+          ctx.beginPath();
+          ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+          ctx.fillStyle = domain === activeDomain ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.2)';
+          ctx.fill();
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [resonance, activeDomain]);
+
+  // 4. ACTIVE CONVERSATION LOGIC (Radial Drift)
   const spatialMessages = useMemo(() => {
     const aiMessages = messages.filter(m => m.role === 'assistant');
     return aiMessages.map((msg, idx) => {
       const age = aiMessages.length - 1 - idx;
-      
-      // Deterministic "Star" position based on message ID
       const seed = parseInt(msg.id.slice(-6)) || Math.random() * 1000;
       const angle = (seed % 360) * (Math.PI / 180);
       
-      // The older the message, the further it drifts from center
-      const drift = age === 0 ? 0 : 25 + (age * 10); 
+      // Use vw/vh for distance
+      const driftDist = age === 0 ? 0 : 15 + (age * 8); 
       
       return {
         ...msg,
-        x: Math.cos(angle) * drift,
-        y: Math.sin(angle) * drift,
+        x: Math.cos(angle) * driftDist,
+        y: Math.sin(angle) * (driftDist * 0.8),
         age
       };
     });
   }, [messages]);
 
-  // Constellation Logic for Major Stars (Insights)
+  // 5. MAJOR CONSTELLATION LOGIC (Insights)
   const starMap = useMemo(() => {
-    return insights.map(insight => ({
-      ...insight,
-      x: (Math.sin(insight.id * 123.456) * 0.5 + 0.5) * 80 + 10,
-      y: (Math.cos(insight.id * 789.012) * 0.5 + 0.5) * 80 + 10,
-    }));
+    return insights.map(insight => {
+      const domainIndex = DOMAINS.indexOf(insight.domain);
+      const angle = (domainIndex / DOMAINS.length) * Math.PI * 2;
+      const baseLeft = 50 + Math.cos(angle) * 35;
+      const baseTop = 50 + Math.sin(angle) * 35;
+      
+      // Jitter star within its domain region
+      const seed = insight.id * 42;
+      const x = baseLeft + (Math.sin(seed) * 10);
+      const y = baseTop + (Math.cos(seed) * 10);
+
+      return { ...insight, x, y };
+    });
   }, [insights]);
 
   const constellations = useMemo(() => {
@@ -99,98 +160,111 @@ export function StreamingChat({
   return (
     <div className="flex-1 w-full h-full relative overflow-hidden bg-stone-950">
       
-      {/* 1. BACKGROUND: CELESTIAL GEOGRAPHY & STARFIELD */}
-      <motion.div 
-        style={{ x: -mousePos.x * 0.5, y: -mousePos.y * 0.5 }}
-        className="absolute inset-0 pointer-events-none opacity-30"
-      >
-        {/* Ghost Domain Labels */}
+      {/* LAYER 1: NEBULA DUST (Canvas) */}
+      <canvas 
+        ref={canvasRef}
+        className="absolute inset-0 z-0 opacity-50 transition-opacity duration-1000"
+        style={{ transform: `translate(${-mousePos.x * 0.2}px, ${-mousePos.y * 0.2}px)` }}
+      />
+
+      {/* LAYER 2: CELESTIAL GEOGRAPHY (Domain Labels) */}
+      <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
         {DOMAINS.map((domain, i) => {
-          const isActive = currentDomain === domain;
+          const isActive = activeDomain === domain;
           const angle = (i / DOMAINS.length) * Math.PI * 2;
           const left = 50 + Math.cos(angle) * 35;
           const top = 50 + Math.sin(angle) * 35;
+
           return (
-            <div key={domain} style={{ left: `${left}%`, top: `${top}%` }} className="absolute -translate-x-1/2 -translate-y-1/2">
+            <motion.div
+              key={domain}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isActive ? 0.2 : 0.05 }}
+              style={{ left: `${left}%`, top: `${top}%` }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 select-none"
+            >
               <span className={cn(
                 "text-[4vw] font-serif italic uppercase tracking-[1em] whitespace-nowrap transition-all duration-1000",
-                isActive ? "text-amber-500/20" : "text-stone-900"
-              )}>{domain}</span>
-            </div>
+                isActive ? "text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.4)]" : "text-stone-700"
+              )}>
+                {domain}
+              </span>
+            </motion.div>
           );
         })}
-      </motion.div>
+      </div>
 
-      {/* 2. THE CONSTELLATION LAYER (Insights/Breakthroughs) */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        <motion.div style={{ x: mousePos.x * 0.2, y: mousePos.y * 0.2 }} className="w-full h-full relative">
+      {/* LAYER 3: MAJOR CONSTELLATIONS (Insights) */}
+      <div className="absolute inset-0 z-20 pointer-events-none">
+        <motion.div style={{ x: mousePos.x * 0.3, y: mousePos.y * 0.3 }} className="w-full h-full relative">
           <svg className="absolute inset-0 w-full h-full overflow-visible">
-            {Object.entries(constellations).map(([domain, stars]) => (
-              <g key={domain}>
-                {stars.map((star, i) => {
-                  const next = stars[i+1];
-                  if (!next) return null;
-                  return <line key={star.id} x1={`${star.x}%`} y1={`${star.y}%`} x2={`${next.x}%`} y2={`${next.y}%`} className={cn("stroke-[0.5] fill-none", DOMAIN_COLORS[domain]?.split(' ')[3])} />;
-                })}
-              </g>
-            ))}
+            {Object.entries(constellations).map(([domain, stars]) => {
+              if (stars.length < 2) return null;
+              const colorClass = DOMAIN_COLORS[domain]?.split(' ')[3] || "stroke-stone-800/20";
+              return (
+                <g key={domain}>
+                  {stars.map((star, i) => {
+                    const next = stars[i+1];
+                    if (!next) return null;
+                    return (
+                      <line 
+                        key={`${star.id}-${next.id}`} 
+                        x1={`${star.x}%`} y1={`${star.y}%`} 
+                        x2={`${next.x}%`} y2={`${next.y}%`} 
+                        className={cn("stroke-[1] fill-none opacity-40", colorClass)} 
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })}
           </svg>
           {starMap.map((star) => {
             const style = DOMAIN_COLORS[star.domain] || DOMAIN_COLORS['Mindset'];
+            const [, bgCol, shadowCol] = style.split(' ');
             return (
-              <div key={star.id} style={{ left: `${star.x}%`, top: `${star.y}%` }} className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
-                <div className={cn("w-3 h-3 rounded-full shadow-lg", style.split(' ')[1], style.split(' ')[2])} />
+              <div 
+                key={star.id} 
+                style={{ left: `${star.x}%`, top: `${star.y}%` }} 
+                className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto group cursor-help"
+                onClick={() => setFocusedMessageId(star.id.toString())}
+              >
+                <div className={cn("w-3 h-3 rounded-full shadow-lg transition-all duration-700 group-hover:scale-150", bgCol, shadowCol)} />
               </div>
             );
           })}
         </motion.div>
       </div>
 
-      {/* 3. THE PRESENCE LAYER (Active Conversation & Echoes) */}
-      <div className="absolute inset-0 z-20 flex items-center justify-center">
+      {/* LAYER 4: ACTIVE CONVERSATION (The Now) */}
+      <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
         <AnimatePresence mode="popLayout">
           {spatialMessages.map((msg) => {
             const isLast = msg.age === 0;
-            const isCondensed = msg.age > 5;
             const isFocused = focusedMessageId === msg.id;
-
-            // The magical condensation logic
-            if (isCondensed && !isFocused) {
-              return (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 1, scale: 0.5 }}
-                  animate={{ 
-                    opacity: 0.4, 
-                    scale: 0.1, 
-                    x: msg.x, 
-                    y: msg.y,
-                    filter: 'blur(2px)'
-                  }}
-                  className="absolute w-2 h-2 bg-white rounded-full shadow-sm pointer-events-auto cursor-help"
-                  onClick={() => setFocusedMessageId(msg.id)}
-                />
-              );
-            }
-
+            
             return (
               <ChatMessage
                 key={msg.id}
                 message={msg}
                 isFloating
-                position={{ x: msg.x, y: msg.y }}
+                position={{ x: `${msg.x}vw`, y: `${msg.y}vh` } as any}
                 scale={isLast ? 1 : Math.max(0.4, 1 - (msg.age * 0.15))}
                 opacity={isLast ? 1 : Math.max(0.1, 0.6 - (msg.age * 0.2))}
                 blur={isLast ? 0 : msg.age * 2}
                 onClick={() => setFocusedMessageId(isFocused ? null : msg.id)}
-                contentClassName={isLast ? "text-3xl text-stone-100" : "text-stone-500"}
+                contentClassName={cn(
+                  "transition-all duration-1000",
+                  isLast ? "text-3xl md:text-4xl text-stone-100" : "text-stone-500",
+                  focusedMessageId === msg.id && "text-white"
+                )}
               />
             );
           })}
         </AnimatePresence>
       </div>
 
-      {/* 4. THE SANCTUARY PULSE */}
+      {/* LAYER 5: SANCTUARY PULSE */}
       <AnimatePresence>
         {isStreaming && (
           <motion.div 
@@ -202,6 +276,11 @@ export function StreamingChat({
         )}
       </AnimatePresence>
 
+      {error && (
+        <div className="absolute top-1/2 -translate-y-1/2 text-red-500 font-serif italic text-sm z-50">
+          {error}
+        </div>
+      )}
     </div>
   );
 }
