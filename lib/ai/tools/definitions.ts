@@ -31,8 +31,32 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'clearSanctuary',
+      description: "Archives the current chat session and starts a fresh one. Call this when the user requests to 'clear chat', 'start over', or 'reset session'.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'ascendDomain',
+      description: "Moves the user to the next domain in the 7-domain sequence. Call this when the user has achieved a major breakthrough in their current domain and is ready for the next level.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'peepTheGates',
+      description: "Admin Only: Returns a list of users currently on the waitlist (pending approval).",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'approveUser',
-      description: "Approves a user for entry into the sanctuary. Call this ONLY when an administrator (role: admin) requests to approve a specific email address.",
+      description: "Admin Only: Approves a user for entry into the sanctuary. Call this ONLY when an administrator requests to approve a specific email address.",
       parameters: {
         type: 'object',
         properties: {

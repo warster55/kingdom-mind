@@ -2,22 +2,27 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle } from 'lucide-react';
-
-const DOMAINS = [
-  'Identity',
-  'Purpose',
-  'Mindset',
-  'Relationships',
-  'Vision',
-  'Action',
-  'Legacy'
-];
+import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
 
 export function ActiveFocusCard() {
-  // We'll use a mock status for now, then hook it to the real API
-  const activeDomain = 'Identity';
-  const progress = 15;
+  const { data, isLoading } = useQuery({
+    queryKey: ['user-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/user/status');
+      return res.json();
+    },
+    refetchInterval: 5000, // Sync with AI changes
+  });
+
+  if (isLoading || !data) {
+    return (
+      <div className="hidden lg:flex flex-col w-80 h-full border-l border-stone-100 dark:border-stone-900 bg-stone-50/50 dark:bg-stone-950/50 p-12 items-center justify-center">
+        <Loader2 className="w-4 h-4 animate-spin text-amber-600/20" />
+      </div>
+    );
+  }
+
+  const { activeDomain, progress, domains } = data;
 
   return (
     <div className="hidden lg:flex flex-col w-80 h-full border-l border-stone-100 dark:border-stone-900 bg-stone-50/50 dark:bg-stone-950/50 p-12 overflow-y-auto">
@@ -27,9 +32,9 @@ export function ActiveFocusCard() {
             The Journey
           </h2>
           <div className="space-y-6">
-            {DOMAINS.map((domain, index) => {
+            {domains.map((domain: string, index: number) => {
               const isActive = domain === activeDomain;
-              const isCompleted = index < DOMAINS.indexOf(activeDomain);
+              const isCompleted = domains.indexOf(activeDomain) > index;
 
               return (
                 <div 

@@ -4,7 +4,14 @@ import { authOptions } from '@/lib/auth/auth-options';
 import { db, chatMessages } from '@/lib/db';
 import { getAIStream } from '@/lib/ai';
 import { mentorTools } from '@/lib/ai/tools/definitions';
-import { executeUserStatus, executeUpdateProgress } from '@/lib/ai/tools/handlers';
+import { 
+  executeUserStatus, 
+  executeUpdateProgress, 
+  executeApproveUser, 
+  executeClearSanctuary, 
+  executeAscendDomain, 
+  executePeepTheGates 
+} from '@/lib/ai/tools/handlers';
 import OpenAI from 'openai';
 
 const xai = new OpenAI({
@@ -63,7 +70,6 @@ export async function POST(req: NextRequest) {
     });
 
     async function processTurn(controller: ReadableStreamDefaultController, currentMessages: any[]) {
-      // If sessionId is 0, we use basic streaming (no tools for gatekeeper)
       if (sessionId === 0) {
         const { stream: basicStream } = await getAIStream(message, currentMessages.slice(0, -1));
         for await (const chunk of basicStream) {
@@ -72,7 +78,6 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      // Member turn with Tool Support
       const response = await xai.chat.completions.create({
         model: process.env.XAI_MODEL || 'grok-4-latest',
         messages: currentMessages,
@@ -102,19 +107,18 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Process Tools if any
       if (toolCalls.length > 0) {
         const toolResults = await Promise.all(toolCalls.map(async (tc) => {
           let result;
-          if (tc.function.name === 'getUserStatus') result = await executeUserStatus(userId);
-          else if (tc.function.name === 'updateProgress') {
-            const args = JSON.parse(tc.function.arguments);
-            result = await executeUpdateProgress(userId, args.domain, args.note);
-          }
-          else if (tc.function.name === 'approveUser') {
-            const args = JSON.parse(tc.function.arguments);
-            result = await executeApproveUser(userId, args.email);
-          }
+          const name = tc.function.name;
+          const args = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
+
+          if (name === 'getUserStatus') result = await executeUserStatus(userId);
+          else if (name === 'updateProgress') result = await executeUpdateProgress(userId, args.domain, args.note);
+          else if (name === 'approveUser') result = await executeApproveUser(userId, args.email);
+          else if (name === 'clearSanctuary') result = await executeClearSanctuary(sessionId);
+          else if (name === 'ascendDomain') result = await executeAscendDomain(userId);
+          else if (name === 'peepTheGates') result = await executePeepTheGates(userId);
           
           return {
             tool_call_id: tc.id,
@@ -131,7 +135,6 @@ export async function POST(req: NextRequest) {
 
         await processTurn(controller, nextMessages);
       } else if (fullAssistantContent) {
-        // Finalize
         await db.insert(chatMessages).values({ sessionId, role: 'assistant', content: fullAssistantContent });
       }
     }

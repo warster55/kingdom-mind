@@ -36,7 +36,7 @@ export async function sendOTP(email: string, code: string) {
         Data: `${code} is your Kingdom Mind entry code`,
       },
     },
-    Source: "sanctuary@kingdomind.com", // We should make sure this is verified or use a verified address
+    Source: "wmoore@securesentrypro.com", // Temporary verified sender for sandbox testing
   };
 
   try {
