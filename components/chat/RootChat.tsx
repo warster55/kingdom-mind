@@ -12,6 +12,7 @@ export function RootChat() {
   const { data: session, status } = useSession();
   const [isEntering, setIsEntering] = useState(false);
   const [waitlistMode, setWaitlistMode] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -37,8 +38,8 @@ export function RootChat() {
   }
 
   // System Prompts
-  const gatekeeperPrompt = "You are the Gatekeeper. Welcome the user and ask for their email to grant entry.";
-  const waitlistPrompt = "The user provided an email that is not yet on the approved list. Kindly explain that we are currently invite-only to ensure every soul receives focused care. Tell them they have been added to the path of interest and to watch their inbox.";
+  const gatekeeperPrompt = "You are the Gatekeeper of Kingdom Mind. Welcome the user warmly and ask for their email address to begin. If they provide an email, you will verify their access.";
+  const waitlistPrompt = "The user has provided an email that is not yet on our approved sanctuary list. Kindly and poetically explain that we are currently invite-only to ensure focused care for every soul. Tell them they have been added to our path of interest and to watch their inbox for a sign.";
 
   const initialMessages: Message[] = waitlistMode ? [
     {
@@ -63,15 +64,21 @@ export function RootChat() {
     const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     if (emailMatch) {
       const email = emailMatch[0];
+      setIsAuthenticating(true);
+      
       const result = await signIn('credentials', { 
         email: email.toLowerCase(), 
         redirect: false 
       });
 
+      setIsAuthenticating(false);
+
       if (result?.error) {
+        // Switch to waitlist mode immediately to show the AI's explanation
         setWaitlistMode(true);
         return true; 
       } else {
+        // Success! Move to the inner sanctuary
         router.push('/reflect');
         return true;
       }
@@ -98,6 +105,15 @@ export function RootChat() {
         }}
         onMessageSent={handleMessageIntercept}
       />
+
+      {isAuthenticating && (
+        <div className="absolute inset-0 bg-stone-50/50 dark:bg-stone-950/50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+            <p className="text-sm font-serif italic text-stone-600">Opening the gates...</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
