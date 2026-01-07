@@ -3,7 +3,6 @@ import { eq, desc } from 'drizzle-orm';
 import { architectTools } from './tools/architect-definitions';
 import { executeArchitectQuery, executeUpdatePrompt, executeSystemHealth } from './tools/architect-handlers';
 import OpenAI from 'openai';
-import OpenAI from 'openai';
 
 const xai = new OpenAI({
   apiKey: process.env.XAI_API_KEY,
