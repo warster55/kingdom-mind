@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
-import { VaultClient } from '@/app/vault/VaultClient';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Message } from '@/components/chat/ChatMessage';
 import { User, Insight, Habit } from '@/lib/db/schema';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { Anchor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ReflectChatProps {
@@ -25,7 +25,6 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
   const router = useRouter();
   const { data: session } = useSession();
   const [mode, setMode] = useState<'mentor' | 'architect'>('mentor');
-  const [view, setView] = useState<'chat' | 'map'>('chat');
 
   const { messages, isStreaming, error, sendMessage } = useStreamingChat({
     sessionId,
@@ -50,7 +49,6 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
       return;
     }
 
-    // Admin Commands
     if (content === '#activate' && isAdmin) {
       setMode('architect');
       return;
@@ -60,89 +58,61 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
       return;
     }
     
-    // Switch View Commands
-    const lowerContent = content.toLowerCase();
-    if (lowerContent.includes('show me the map') || lowerContent.includes('show me the vault') || lowerContent.includes('look up')) {
-      setView('map');
-    } else if (lowerContent.includes('back to chat') || lowerContent.includes('talk to me') || lowerContent.includes('go back')) {
-      setView('chat');
-    }
-
     sendMessage(content, mode);
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden relative">
-      {/* Background Layer */}
-      <div className={cn(
-        "absolute inset-0 transition-colors duration-1000 z-0",
-        view === 'map' ? "bg-stone-950" : "bg-stone-50 dark:bg-stone-950"
-      )} />
-
-      {/* Floating Header */}
-      <header className="absolute top-0 left-0 p-8 z-50 pointer-events-none">
-        <h1 className={cn(
-          "text-[10px] uppercase tracking-[0.5em] font-bold transition-colors duration-1000",
-          view === 'map' ? "text-stone-700" : "text-stone-300 dark:text-stone-700"
-        )}>
+    <div className="flex h-full w-full overflow-hidden relative bg-stone-950">
+      
+      {/* GLOBAL HEADER */}
+      <header className="absolute top-0 left-0 p-8 z-[150] pointer-events-none">
+        <h1 className="text-stone-800 text-[10px] uppercase tracking-[0.5em] font-black opacity-50">
           Kingdom Mind
         </h1>
       </header>
 
-      {/* Primary Interaction Layer */}
+      {/* THE INFINITE HORIZON CANVAS */}
       <div className="flex-1 flex flex-col relative z-10 overflow-hidden">
         
-        {/* Dimension Canvas */}
         <div className="flex-1 relative">
-          {/* Chat Dimension (Non-Scrolling, Auto-Scaling) */}
-          <motion.div 
-            animate={{ 
-              opacity: view === 'chat' ? 1 : 0,
-              scale: view === 'chat' ? 1 : 1.05,
-              filter: view === 'chat' ? 'blur(0px)' : 'blur(40px)'
-            }}
-            transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
-            className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center",
-              view === 'map' ? "pointer-events-none" : "pointer-events-auto"
-            )}
-          >
-            <StreamingChat 
-              messages={messages}
-              isStreaming={isStreaming}
-              error={error}
-              mode={mode}
-            />
-          </motion.div>
-
-          {/* Map Dimension */}
-          <AnimatePresence>
-            {view === 'map' && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.05 }}
-                transition={{ duration: 1.5, ease: [0.4, 0, 0.2, 1] }}
-                className="absolute inset-0 z-20"
-              >
-                <VaultClient 
-                  user={user} 
-                  insights={insights} 
-                  habits={habits} 
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <StreamingChat 
+            messages={messages}
+            isStreaming={isStreaming}
+            error={error}
+            insights={insights}
+            habits={habits}
+            currentDomain={user.currentDomain}
+            mode={mode}
+          />
         </div>
 
-        {/* Global Persistent Input (Always on top) */}
-        <div className="relative z-[100]">
+        {/* SIDEBAR OVERLAY: ACTION ANCHORS (Subtle, persistent) */}
+        <div className="hidden lg:block absolute top-32 right-12 bottom-32 w-64 z-50 pointer-events-none">
+          <div className="flex flex-col h-full items-end justify-start space-y-12">
+            <div className="text-right">
+              <h2 className="text-[10px] uppercase tracking-[0.4em] font-black text-stone-700 mb-6 flex items-center justify-end gap-3">
+                <Anchor className="w-3 h-3 opacity-30" /> Action Anchors
+              </h2>
+              <div className="space-y-6">
+                {habits.slice(0, 3).map((habit) => (
+                  <div key={habit.id} className="opacity-40 hover:opacity-100 transition-opacity pointer-events-auto cursor-help group">
+                    <p className="text-[10px] font-mono text-stone-600 group-hover:text-amber-600 uppercase tracking-widest">{habit.domain} • {habit.streak} DAY STREAK</p>
+                    <p className="text-sm font-serif italic text-stone-400 mt-1">{habit.title}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* PERSISTENT SOVEREIGN INPUT */}
+        <div className="relative z-[200] pb-4">
           <ChatInput 
             onSend={handleSend} 
-            placeholder={view === 'map' ? "[ ARCHITECT MODE ] Talk to the system..." : undefined}
+            placeholder={mode === 'architect' ? "[ ARCHITECT MODE ACTIVE ]" : "Share what's on your heart..."}
             className={cn(
-              "transition-all duration-1000",
-              view === 'map' && "opacity-40 hover:opacity-100 focus-within:opacity-100 font-mono text-stone-400 border-stone-800"
+              "transition-all duration-1000 bg-stone-950/50 backdrop-blur-sm",
+              isStreaming ? "border-amber-900/20" : "border-stone-800"
             )}
           />
         </div>
