@@ -19,11 +19,23 @@
     --accent-600: 251 191 36; /* amber-400 */
   }
 
+  html {
+    height: 100svh; /* Small Viewport Height */
+    width: 100%;
+    overflow: hidden;
+    position: fixed;
+  }
+
   body {
     background-color: rgb(var(--background-primary));
     color: rgb(var(--text-primary));
     transition-property: color, background-color;
     transition-duration: 500ms;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    position: relative;
   }
 }
 
