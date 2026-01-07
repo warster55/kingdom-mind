@@ -1,0 +1,57 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic:
+        - heading "Kingdom Mind" [level=1]
+      - generic [ref=e6]:
+        - generic [ref=e8]:
+          - paragraph [ref=e11]: Where am I in my journey right now?
+          - paragraph [ref=e14]: Find me a Bible verse about my identity.
+          - paragraph [ref=e17]: Who is currently waiting at the gates?
+          - generic [ref=e19]:
+            - paragraph [ref=e20]:
+              - text: Beloved seeker, Gatekeeper Prime, you stand at the dawn of your sacred journey in the domain of
+              - strong [ref=e21]: Identity
+              - text: ", with an overall progress of 14%. Onboarding awaits your completion—let us begin there, if you wish, to anchor your transformation."
+            - paragraph [ref=e22]: "On the essence of identity, reflect on this verse: \"Trust in the LORD with all thine heart; and lean not unto thine own understanding.\" (Proverbs 3:5). It calls you to root your true self in divine wisdom, beyond fleeting self-perception."
+            - paragraph [ref=e23]: "As the Gatekeeper with admin sight, those awaiting at the gates are:"
+            - list [ref=e24]:
+              - listitem [ref=e25]:
+                - generic [ref=e27]: wmoore9706@gmail.com (joined
+          - img [ref=e29]
+        - generic [ref=e32]:
+          - textbox "Share what's on your heart..." [disabled] [ref=e33]
+          - img [ref=e35]
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - heading "The Journey" [level=2] [ref=e41]
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - img [ref=e44]
+              - generic [ref=e46]: Identity
+            - generic [ref=e47]:
+              - img [ref=e48]
+              - generic [ref=e50]: Purpose
+            - generic [ref=e51]:
+              - img [ref=e52]
+              - generic [ref=e54]: Mindset
+            - generic [ref=e55]:
+              - img [ref=e56]
+              - generic [ref=e58]: Relationships
+            - generic [ref=e59]:
+              - img [ref=e60]
+              - generic [ref=e62]: Vision
+            - generic [ref=e63]:
+              - img [ref=e64]
+              - generic [ref=e66]: Action
+            - generic [ref=e67]:
+              - img [ref=e68]
+              - generic [ref=e70]: Legacy
+        - generic [ref=e71]:
+          - heading "Transformation" [level=2] [ref=e72]
+          - generic [ref=e73]: 14%
+```

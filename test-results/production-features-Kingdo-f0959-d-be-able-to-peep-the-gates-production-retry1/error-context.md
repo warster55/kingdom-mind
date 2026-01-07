@@ -1,0 +1,48 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic:
+        - heading "Kingdom Mind" [level=1]
+      - generic [ref=e6]:
+        - generic [ref=e8]:
+          - paragraph [ref=e11]: Where am I in my journey right now?
+          - paragraph [ref=e14]: Find me a Bible verse about my identity.
+          - paragraph [ref=e17]: Who is currently waiting at the gates?
+          - paragraph [ref=e20]: Who is currently waiting at the gates?
+          - img [ref=e22]
+        - generic [ref=e25]:
+          - textbox "Share what's on your heart..." [disabled] [ref=e26]
+          - img [ref=e28]
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - heading "The Journey" [level=2] [ref=e34]
+          - generic [ref=e35]:
+            - generic [ref=e36]:
+              - img [ref=e37]
+              - generic [ref=e39]: Identity
+            - generic [ref=e40]:
+              - img [ref=e41]
+              - generic [ref=e43]: Purpose
+            - generic [ref=e44]:
+              - img [ref=e45]
+              - generic [ref=e47]: Mindset
+            - generic [ref=e48]:
+              - img [ref=e49]
+              - generic [ref=e51]: Relationships
+            - generic [ref=e52]:
+              - img [ref=e53]
+              - generic [ref=e55]: Vision
+            - generic [ref=e56]:
+              - img [ref=e57]
+              - generic [ref=e59]: Action
+            - generic [ref=e60]:
+              - img [ref=e61]
+              - generic [ref=e63]: Legacy
+        - generic [ref=e64]:
+          - heading "Transformation" [level=2] [ref=e65]
+          - generic [ref=e66]: 14%
+```

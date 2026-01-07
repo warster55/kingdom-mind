@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { db, chatMessages } from '@/lib/db';
+import { db, chatMessages, users, insights as insightsTable } from '@/lib/db';
+import { eq, desc } from 'drizzle-orm';
 import { getAIStream } from '@/lib/ai';
+import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
 import { mentorTools } from '@/lib/ai/tools/definitions';
 import { 
   executeUserStatus, 
@@ -25,29 +27,53 @@ const xai = new OpenAI({
   baseURL: 'https://api.x.ai/v1',
 });
 
+const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
+
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, message, systemPrompt } = await req.json();
+    const { sessionId, message, systemPrompt: clientSystemPrompt } = await req.json();
     const session = await getServerSession(authOptions);
 
     if (sessionId !== 0 && !session) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
 
-    const userId = session?.user?.id || 'guest';
+    const userId = session?.user?.id;
+    let finalSystemPrompt = clientSystemPrompt;
 
-    // 1. Save user message if member
+    // 1. If it's a member session, build the High-Intelligence Prompt
+    if (sessionId !== 0 && userId) {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, parseInt(userId))
+      });
+
+      if (user) {
+        const lastInsight = await db.query.insightsTable.findFirst({
+          where: eq(insightsTable.userId, user.id),
+          orderBy: [desc(insightsTable.createdAt)]
+        });
+
+        finalSystemPrompt = buildSanctuaryPrompt({
+          userName: user.name || 'Seeker',
+          currentDomain: user.currentDomain,
+          progress: Math.round(((DOMAINS.indexOf(user.currentDomain) + 1) / DOMAINS.length) * 100),
+          lastInsight: lastInsight?.content
+        });
+      }
+    }
+
+    // 2. Save user message if member
     if (sessionId !== 0) {
       await db.insert(chatMessages).values({ sessionId, role: 'user', content: message });
     }
 
-    // 2. Fetch history
+    // 3. Fetch history
     let history: any[] = [];
     if (sessionId !== 0) {
       const dbHistory = await db.query.chatMessages.findMany({
         where: (msgs, { eq }) => eq(msgs.sessionId, sessionId),
         orderBy: (msgs, { asc }) => [asc(msgs.createdAt)],
-        limit: 10,
+        limit: 15, // Increased context for smarter mentor
       });
       history = dbHistory.map(msg => ({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
@@ -56,12 +82,12 @@ export async function POST(req: NextRequest) {
     }
 
     const messages: any[] = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: finalSystemPrompt },
       ...history,
       { role: 'user', content: message }
     ];
 
-    // 3. Handle AI Turn (Recursive for Tool Support)
+    // 4. Handle AI Turn (Recursive for Tool Support)
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -119,18 +145,18 @@ export async function POST(req: NextRequest) {
           const name = tc.function.name;
           const args = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
 
-          if (name === 'getUserStatus') result = await executeUserStatus(userId);
-          else if (name === 'updateProgress') result = await executeUpdateProgress(userId, args.domain, args.note);
-          else if (name === 'approveUser') result = await executeApproveUser(userId, args.email);
+          if (name === 'getUserStatus') result = await executeUserStatus(userId as string);
+          else if (name === 'updateProgress') result = await executeUpdateProgress(userId as string, args.domain, args.note);
+          else if (name === 'approveUser') result = await executeApproveUser(userId as string, args.email);
           else if (name === 'clearSanctuary') result = await executeClearSanctuary(sessionId);
-          else if (name === 'ascendDomain') result = await executeAscendDomain(userId);
-          else if (name === 'peepTheGates') result = await executePeepTheGates(userId);
+          else if (name === 'ascendDomain') result = await executeAscendDomain(userId as string);
+          else if (name === 'peepTheGates') result = await executePeepTheGates(userId as string);
           else if (name === 'seekWisdom') result = await executeSeekWisdom(args.query);
-          else if (name === 'scribeReflection') result = await executeScribeReflection(userId, sessionId, args.domain, args.summary);
-          else if (name === 'soulSearch') result = await executeSoulSearch(userId, args.email);
-          else if (name === 'broadcast') result = await executeBroadcast(userId, args.message);
+          else if (name === 'scribeReflection') result = await executeScribeReflection(userId as string, sessionId, args.domain, args.summary);
+          else if (name === 'soulSearch') result = await executeSoulSearch(userId as string, args.email);
+          else if (name === 'broadcast') result = await executeBroadcast(userId as string, args.message);
           else if (name === 'setAtmosphere') result = await executeSetAtmosphere(args.theme, args.tone);
-          else if (name === 'recallInsight') result = await executeRecallInsight(userId, args.domain);
+          else if (name === 'recallInsight') result = await executeRecallInsight(userId as string, args.domain);
           
           return {
             tool_call_id: tc.id,
