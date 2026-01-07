@@ -34,6 +34,7 @@ export function useStreamingChat({ sessionId, initialMessages = [], systemPrompt
           sessionId,
           message: content,
           systemPrompt,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
 

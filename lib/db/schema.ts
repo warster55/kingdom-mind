@@ -8,7 +8,8 @@ export const users = pgTable('users', {
   name: text('name'),
   role: text('role').notNull().default('user'), // 'user', 'admin'
   isApproved: boolean('is_approved').default(false).notNull(), // The Sanctuary Lock
-  currentDomain: text('current_domain').default('Identity').notNull(), // Tracking 7 domains
+  currentDomain: text('current_domain').default('Identity').notNull(),
+  timezone: text('timezone').default('UTC').notNull(),
   hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
   onboardingStep: integer('onboarding_step').default(0).notNull(),
   onboardingData: jsonb('onboarding_data'),

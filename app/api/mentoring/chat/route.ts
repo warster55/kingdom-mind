@@ -31,7 +31,7 @@ const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'A
 
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, message, systemPrompt: clientSystemPrompt } = await req.json();
+    const { sessionId, message, systemPrompt: clientSystemPrompt, timezone } = await req.json();
     const session = await getServerSession(authOptions);
 
     if (sessionId !== 0 && !session) {
@@ -47,6 +47,11 @@ export async function POST(req: NextRequest) {
       const user = userResult[0];
 
       if (user) {
+        // Update timezone if changed
+        if (timezone && user.timezone !== timezone) {
+          await db.update(users).set({ timezone }).where(eq(users.id, user.id));
+        }
+
         const lastInsightResult = await db
           .select()
           .from(insights)
@@ -56,11 +61,21 @@ export async function POST(req: NextRequest) {
         
         const lastInsight = lastInsightResult[0];
 
+        // Format current local time
+        const userLocalTime = new Date().toLocaleString("en-US", { 
+          timeZone: timezone || user.timezone || 'UTC',
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: true,
+          weekday: 'long'
+        });
+
         finalSystemPrompt = buildSanctuaryPrompt({
           userName: user.name || 'Seeker',
           currentDomain: user.currentDomain,
           progress: Math.round(((DOMAINS.indexOf(user.currentDomain) + 1) / DOMAINS.length) * 100),
-          lastInsight: lastInsight?.content
+          lastInsight: lastInsight?.content,
+          localTime: userLocalTime
         });
       }
     }
