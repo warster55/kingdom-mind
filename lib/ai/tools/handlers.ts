@@ -1,5 +1,5 @@
-import { db, users, mentoringSessions, insights, habits } from '@/lib/db';
-import { eq, and, desc, sql as drizzleSql } from 'drizzle-orm';
+import { db, users, mentoringSessions, insights, habits, curriculum, userProgress } from '@/lib/db';
+import { eq, and, desc, asc, sql as drizzleSql } from 'drizzle-orm';
 import { ToolResult } from './definitions';
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
@@ -189,6 +189,100 @@ export async function executeSetAtmosphere(theme?: string, tone?: string): Promi
       tone: tone || 'Default'
     } 
   };
+}
+
+export async function executeGetCurriculumContext(userId: string): Promise<ToolResult> {
+  try {
+    // 1. Find Active Pillar
+    let activeProgress = await db.select().from(userProgress)
+      .where(and(
+        eq(userProgress.userId, parseInt(userId)),
+        eq(userProgress.status, 'active')
+      ))
+      .limit(1);
+
+    // 2. If no active pillar, start at the beginning (Identity - Pillar 1)
+    if (activeProgress.length === 0) {
+      const firstPillar = await db.select().from(curriculum)
+        .where(and(eq(curriculum.domain, 'Identity'), eq(curriculum.pillarOrder, 1)))
+        .limit(1);
+      
+      if (firstPillar.length > 0) {
+        // Initialize progress
+        const [newProg] = await db.insert(userProgress).values({
+          userId: parseInt(userId),
+          curriculumId: firstPillar[0].id,
+          status: 'active',
+          level: 1
+        }).returning();
+        activeProgress = [newProg];
+      }
+    }
+
+    if (activeProgress.length === 0) return { success: false, error: "Curriculum not initialized." };
+
+    // 3. Fetch Pillar Details
+    const pillar = await db.select().from(curriculum).where(eq(curriculum.id, activeProgress[0].curriculumId)).limit(1);
+    
+    return {
+      success: true,
+      data: {
+        domain: pillar[0].domain,
+        pillar: pillar[0].pillarName,
+        level: activeProgress[0].level,
+        truth: pillar[0].keyTruth,
+        verse: pillar[0].coreVerse,
+        description: pillar[0].description,
+        instruction: `The user is currently working on ${pillar[0].domain}: ${pillar[0].pillarName}. Your goal is to teach the truth: "${pillar[0].keyTruth}". Do not move forward until they grasp this.`
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function executeCompletePillar(userId: string): Promise<ToolResult> {
+  try {
+    // 1. Get Active Pillar
+    const active = await db.select().from(userProgress)
+      .where(and(eq(userProgress.userId, parseInt(userId)), eq(userProgress.status, 'active')))
+      .limit(1);
+
+    if (active.length === 0) return { success: false, error: "No active pillar to complete." };
+
+    // 2. Mark Complete
+    await db.update(userProgress)
+      .set({ status: 'completed', completedAt: new Date() })
+      .where(eq(userProgress.id, active[0].id));
+
+    // 3. Find Next Pillar
+    const currentPillar = await db.select().from(curriculum).where(eq(curriculum.id, active[0].curriculumId)).limit(1);
+    
+    let nextPillar = await db.select().from(curriculum)
+      .where(and(
+        eq(curriculum.domain, currentPillar[0].domain),
+        eq(curriculum.pillarOrder, currentPillar[0].pillarOrder + 1)
+      ))
+      .limit(1);
+
+    // If next pillar exists in domain, advance
+    if (nextPillar.length > 0) {
+      await db.insert(userProgress).values({
+        userId: parseInt(userId),
+        curriculumId: nextPillar[0].id,
+        status: 'active',
+        level: active[0].level
+      });
+      return { success: true, data: { status: 'advanced', next_pillar: nextPillar[0].pillarName, message: "Pillar Complete. The next star has appeared." } };
+    } else {
+      // If no next pillar, domain is mastered. Waiting for ascendDomain tool to be called manually or auto-triggered?
+      // Let's notify the AI to call ascendDomain.
+      return { success: true, data: { status: 'domain_mastered', message: "Domain Complete. Call 'ascendDomain' to move to the next level." } };
+    }
+
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }
 
 export async function executeRecallInsight(userId: string, domain?: string): Promise<ToolResult> {

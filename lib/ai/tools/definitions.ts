@@ -266,6 +266,22 @@ export const mentorTools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'getCurriculumContext',
+      description: "Retrieves the user's current position in the Spiral Curriculum (e.g., 'Identity: Origin'). Call this at the start of a deep session to know exactly what to teach.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'completePillar',
+      description: "Marks the current curriculum pillar as COMPLETED and unlocks the next one. Call this ONLY when the user has demonstrated a clear breakthrough in the specific truth of the current pillar.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'createCheckoutSession',
       description: "Generates a subscription link. Call this ONLY if the user explicitly asks to subscribe or pay.",
       parameters: { type: 'object', properties: {}, required: [] },

@@ -17,6 +17,18 @@ interface StreamingChatProps {
   mode?: 'mentor' | 'architect';
 }
 
+const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
+
+const DOMAIN_COLORS: Record<string, string> = {
+  'Identity': 'text-amber-400 bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.5)] stroke-amber-500/40',
+  'Purpose': 'text-blue-400 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.5)] stroke-blue-500/40',
+  'Mindset': 'text-zinc-300 bg-zinc-400 shadow-[0_0_20px_rgba(161,161,170,0.5)] stroke-zinc-400/40',
+  'Relationships': 'text-rose-300 bg-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.5)] stroke-rose-400/40',
+  'Vision': 'text-emerald-400 bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] stroke-emerald-500/40',
+  'Action': 'text-orange-400 bg-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.5)] stroke-orange-500/40',
+  'Legacy': 'text-purple-400 bg-purple-500 shadow-[0_0_20_rgba(168,85,247,0.5)] stroke-purple-500/40',
+};
+
 export function StreamingChat({ 
   messages,
   isStreaming,
@@ -30,6 +42,7 @@ export function StreamingChat({
   const [displayedContent, setDisplayedContent] = useState('');
   const [isPacing, setIsPacing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
 
   // 1. Detect Mobile
   useEffect(() => {
@@ -39,7 +52,7 @@ export function StreamingChat({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // 2. Fetch Resonance
+  // 2. Fetch Resonance & Curriculum
   const { data: status } = useQuery({
     queryKey: ['user-status'],
     queryFn: async () => {
@@ -51,46 +64,32 @@ export function StreamingChat({
 
   const activeDomain = status?.activeDomain || 'Identity';
   const resonance = status?.resonance || {};
+  const curriculumProgress = status?.curriculum || [];
 
-  // 3. ONE-WAY FLOW LOGIC (The "No Flicker" Core)
+  // 3. Pacing Logic
   const lastAiMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
-  // We grab the last user message ONLY if the AI hasn't replied to it yet (for the Echo)
-  // Logic: If the last message in the WHOLE list is a User message, show it as Echo.
-  // If the last message is Assistant, the User's words have "dissolved".
-  const lastMessageIsUser = messages[messages.length - 1]?.role === 'user';
-  const userEcho = lastMessageIsUser ? messages[messages.length - 1] : null;
-
   const fullContent = lastAiMessage?.content || '';
 
-  // 4. PEACEFUL STREAMER
   useEffect(() => {
     if (!fullContent) {
       setDisplayedContent('');
       return;
     }
-    // Only pace if it's a "fresh" message compared to what we are showing
-    if (displayedContent !== fullContent) {
-      // If content changed drastically (new message), reset
-      if (!fullContent.startsWith(displayedContent) && displayedContent.length > 0) {
-        setDisplayedContent('');
-      }
-      
+    let i = displayedContent.length;
+    if (i < fullContent.length) {
       setIsPacing(true);
       const interval = setInterval(() => {
-        setDisplayedContent(prev => {
-          if (prev.length >= fullContent.length) {
-            clearInterval(interval);
-            setIsPacing(false);
-            return prev;
-          }
-          return fullContent.slice(0, prev.length + 2); // Speed: 2 chars per 30ms
-        });
+        setDisplayedContent(prev => fullContent.slice(0, prev.length + 3));
+        if (displayedContent.length >= fullContent.length) {
+          clearInterval(interval);
+          setIsPacing(false);
+        }
       }, 30);
       return () => clearInterval(interval);
     }
-  }, [fullContent]);
+  }, [fullContent, displayedContent]);
 
-  // 5. BACKGROUND NEBULA (Lite for Mobile)
+  // 4. NEBULA RENDERER
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -130,31 +129,127 @@ export function StreamingChat({
     return () => cancelAnimationFrame(frame);
   }, [resonance, activeDomain, isMobile]);
 
+  // 5. ADAPTIVE PHYSICS
+  const spatialMessages = useMemo(() => {
+    const aiMessages = messages.filter(m => m.role === 'assistant');
+    return aiMessages.map((msg, idx) => {
+      const age = aiMessages.length - 1 - idx;
+      
+      if (isMobile) {
+        return {
+          ...msg,
+          x: 0,
+          y: age === 0 ? 0 : -20 - (age * 15),
+          age
+        };
+      } else {
+        const seed = parseInt(msg.id.slice(-6)) || Math.random() * 1000;
+        const angle = (seed % 360) * (Math.PI / 180);
+        const driftDist = age === 0 ? 0 : 20 + (age * 15);
+        return {
+          ...msg,
+          x: Math.cos(angle) * driftDist,
+          y: Math.sin(angle) * (driftDist * 0.7),
+          age
+        };
+      }
+    });
+  }, [messages, isMobile]);
+
+  // 6. SPIRAL CURRICULUM MAP
+  // Renders the 3 fixed pillars for each domain
+  const spiralMap = useMemo(() => {
+    const allPillars: any[] = [];
+    DOMAINS.forEach((domain, i) => {
+      const angle = (i / DOMAINS.length) * Math.PI * 2;
+      const baseDist = isMobile ? 25 : 30;
+      const baseLeft = 50 + Math.cos(angle) * baseDist;
+      const baseTop = 50 + Math.sin(angle) * baseDist;
+
+      // Create 3 pillars per domain
+      for (let order = 1; order <= 3; order++) {
+        // Find user status for this pillar
+        const prog = curriculumProgress.find((p: any) => p.domain === domain && p.order === order);
+        const status = prog ? prog.status : 'locked';
+        
+        // Arrange pillars in a small triangle/arc around the domain center
+        const offsetAngle = angle + ((order - 2) * 0.2); // Spread slightly
+        const dist = 4; // Distance from domain center
+        const x = baseLeft + Math.cos(offsetAngle) * dist;
+        const y = baseTop + Math.sin(offsetAngle) * dist;
+
+        allPillars.push({ 
+          id: `${domain}-${order}`,
+          domain, 
+          status, 
+          x, 
+          y, 
+          name: prog?.pillarName || `Pillar ${order}` 
+        });
+      }
+    });
+    return allPillars;
+  }, [curriculumProgress, isMobile]);
+
+  const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0];
+
   return (
     <div className="flex-1 w-full h-full relative overflow-hidden flex items-center justify-center">
       
-      {/* THE SKY */}
       <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />
 
-      {/* THE NOW (Evaporating Text) */}
+      {/* CONSTELLATION LAYER (Fixed Pillars) */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        <div className="w-full h-full relative">
+          {spiralMap.map((pillar) => {
+            const style = DOMAIN_COLORS[pillar.domain] || DOMAIN_COLORS['Mindset'];
+            const [, bgCol, shadowCol] = style.split(' ');
+            
+            // Logic for Visual State
+            const isCompleted = pillar.status === 'completed';
+            const isActive = pillar.status === 'active';
+            
+            return (
+              <div 
+                key={pillar.id} 
+                style={{ left: `${pillar.x}%`, top: `${pillar.y}%` }} 
+                className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto group cursor-help"
+                title={pillar.name}
+              >
+                {/* Visual Representation */}
+                <div className={cn(
+                  "rounded-full transition-all duration-1000",
+                  isCompleted ? `w-3 h-3 ${bgCol} ${shadowCol}` : 
+                  isActive ? `w-4 h-4 border-2 border-white animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.5)]` :
+                  "w-2 h-2 border border-stone-800 opacity-20"
+                )} />
+                
+                {/* Pillar Label (Hover/Tap) */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap bg-black/50 px-2 py-1 rounded text-[10px] uppercase tracking-wider text-stone-300 backdrop-blur-sm">
+                  {pillar.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* THE NOW */}
       <div className="relative z-30 w-full max-w-2xl px-6 flex flex-col items-center justify-center space-y-8">
         <AnimatePresence mode="wait">
-          
-          {/* USER ECHO (Only visible while waiting) */}
-          {userEcho && (
+          {lastUserMessage && !isStreaming && (
             <motion.div
-              key={`echo-${userEcho.id}`}
+              key={`user-${lastUserMessage.id}`}
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 0.4, y: 0 }}
-              exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+              animate={{ opacity: 0.3, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 1.5 }}
-              className="absolute bottom-20 text-stone-500 font-serif italic text-base md:text-lg text-center w-full px-4 pointer-events-none"
+              className="text-stone-500 font-serif italic text-base md:text-lg text-center"
             >
-              {userEcho.content}
+              {lastUserMessage.content}
             </motion.div>
           )}
 
-          {/* AI RESPONSE */}
           {lastAiMessage && (
             <motion.div
               key={`ai-${lastAiMessage.id}`}
@@ -163,28 +258,47 @@ export function StreamingChat({
               exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
               transition={{ duration: 1 }}
               className={cn(
-                "w-full text-center font-serif italic pb-12", // Added padding to clear echo
+                "w-full text-center font-serif italic",
                 isMobile ? "text-lg md:text-xl leading-relaxed" : "text-2xl md:text-3xl leading-loose",
                 isArchitect ? "text-red-600 font-mono" : "text-stone-100"
               )}
             >
-              {displayedContent || fullContent} 
-              {/* Fallback to fullContent if pacer hasn't started, ensures no empty flash */}
+              {displayedContent}
               {isPacing && <span className="animate-pulse ml-1 opacity-50">_</span>}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* THE PULSE (Visible during streaming OR pacing) */}
+      {/* DRIFTING MEMORIES */}
+      {!isMobile && (
+        <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
+           <AnimatePresence>
+             {spatialMessages.map((msg) => {
+               if (msg.age === 0 || msg.age > 5) return null;
+               return (
+                 <ChatMessage 
+                   key={msg.id}
+                   message={msg}
+                   isFloating
+                   position={{ x: `${msg.x}vw`, y: `${msg.y}vh` } as any}
+                   scale={Math.max(0.4, 1 - (msg.age * 0.15))}
+                   opacity={Math.max(0.05, 0.4 - (msg.age * 0.15))}
+                   blur={msg.age * 2}
+                 />
+               )
+             })}
+           </AnimatePresence>
+        </div>
+      )}
+
       <AnimatePresence>
         {(isStreaming || isPacing) && (
           <motion.div 
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.15 }}
+            animate={{ opacity: 0.1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.1)_0%,_transparent_60%)] z-0"
+            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(217,119,6,0.05)_0%,_transparent_70%)] z-0"
           />
         )}
       </AnimatePresence>

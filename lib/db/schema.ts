@@ -11,7 +11,7 @@ export const users = pgTable('users', {
   currentDomain: text('current_domain').default('Identity').notNull(),
   timezone: text('timezone').default('UTC').notNull(),
   
-  // --- Sanctuary Resonance (Stellar Score) ---
+  // --- Sanctuary Resonance ---
   resonanceIdentity: integer('resonance_identity').default(0).notNull(),
   resonancePurpose: integer('resonance_purpose').default(0).notNull(),
   resonanceMindset: integer('resonance_mindset').default(0).notNull(),
@@ -21,16 +21,37 @@ export const users = pgTable('users', {
   resonanceLegacy: integer('resonance_legacy').default(0).notNull(),
 
   hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
-  onboardingStep: integer('onboarding_step').default(0).notNull(),
-  onboardingData: jsonb('onboarding_data'),
-  lastLogin: timestamp('last_login'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   emailIdx: index('users_email_idx').on(table.email),
 }));
 
-// --- Habits (Action Anchors) ---
+// --- Curriculum (The Bones) ---
+export const curriculum = pgTable('curriculum', {
+  id: serial('id').primaryKey(),
+  domain: varchar('domain', { length: 50 }).notNull(),
+  pillarName: varchar('pillar_name', { length: 100 }).notNull(),
+  pillarOrder: integer('pillar_order').notNull(),
+  description: text('description').notNull(),
+  keyTruth: text('key_truth').notNull(),
+  coreVerse: text('core_verse'), // Optional scripture anchor
+});
+
+// --- User Progress (The Journey) ---
+export const userProgress = pgTable('user_progress', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  curriculumId: integer('curriculum_id').references(() => curriculum.id).notNull(),
+  status: varchar('status', { length: 20 }).default('locked').notNull(), // locked, active, completed
+  level: integer('level').default(1).notNull(), // The Spiral Level (1, 2, 3...)
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('user_progress_user_id_idx').on(table.userId),
+}));
+
+// --- Habits ---
 export const habits = pgTable('habits', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -42,11 +63,9 @@ export const habits = pgTable('habits', {
   isActive: boolean('is_active').default(true).notNull(),
   lastCompletedAt: timestamp('last_completed_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index('habits_user_id_idx').on(table.userId),
-}));
+});
 
-// --- Insights (The Constellation) ---
+// --- Insights ---
 export const insights = pgTable('insights', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -55,9 +74,7 @@ export const insights = pgTable('insights', {
   content: text('content').notNull(),
   importance: integer('importance').default(1).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index('insights_user_id_idx').on(table.userId),
-}));
+});
 
 // --- Verification Codes ---
 export const verificationCodes = pgTable('verification_codes', {
@@ -66,9 +83,7 @@ export const verificationCodes = pgTable('verification_codes', {
   code: varchar('code', { length: 6 }).notNull(),
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  emailIdx: index('verification_codes_email_idx').on(table.email),
-}));
+});
 
 // --- Mentoring Sessions ---
 export const mentoringSessions = pgTable('mentoring_sessions', {
@@ -78,11 +93,7 @@ export const mentoringSessions = pgTable('mentoring_sessions', {
   topic: varchar('topic', { length: 255 }),
   status: varchar('status', { length: 20 }).default('active'),
   startedAt: timestamp('started_at').defaultNow().notNull(),
-  endedAt: timestamp('ended_at'),
-  summary: text('summary'),
-}, (table) => ({
-  userIdIdx: index('mentoring_sessions_user_id_idx').on(table.userId),
-}));
+});
 
 // --- Chat Messages ---
 export const chatMessages = pgTable('chat_messages', {
@@ -90,20 +101,9 @@ export const chatMessages = pgTable('chat_messages', {
   sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'cascade' }).notNull(),
   role: varchar('role', { length: 20 }).notNull(),
   content: text('content').notNull(),
-  metadata: jsonb('metadata'),
+  xPos: integer('x_pos'), // For spatial UI
+  yPos: integer('y_pos'), // For spatial UI
   createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  sessionIdIdx: index('chat_messages_session_id_idx').on(table.sessionId),
-}));
-
-// --- Domains ---
-export const domains = pgTable('domains', {
-  id: serial('id').primaryKey(),
-  slug: varchar('slug', { length: 50 }).notNull().unique(),
-  name: varchar('name', { length: 100 }).notNull(),
-  orderIndex: integer('order_index').notNull(),
-  coreQuestion: text('core_question').notNull(),
-  overview: text('overview').notNull(),
 });
 
 // --- System Prompts ---
@@ -118,22 +118,10 @@ export const systemPrompts = pgTable('system_prompts', {
 
 // --- Relations ---
 export const usersRelations = relations(users, ({ many }) => ({
-  sessions: many(mentoringSessions),
-  insights: many(insights),
-  habits: many(habits),
+  progress: many(userProgress),
 }));
 
-export const mentoringSessionsRelations = relations(mentoringSessions, ({ many, one }) => ({
-  user: one(users, { fields: [mentoringSessions.userId], references: [users.id] }),
-  messages: many(chatMessages),
-  insights: many(insights),
-}));
-
-export const habitsRelations = relations(habits, ({ one }) => ({
-  user: one(users, { fields: [habits.userId], references: [users.id] }),
-}));
-
-export const insightsRelations = relations(insights, ({ one }) => ({
-  user: one(users, { fields: [insights.userId], references: [users.id] }),
-  session: one(mentoringSessions, { fields: [insights.sessionId], references: [mentoringSessions.id] }),
+export const userProgressRelations = relations(userProgress, ({ one }) => ({
+  user: one(users, { fields: [userProgress.userId], references: [users.id] }),
+  curriculum: one(curriculum, { fields: [userProgress.curriculumId], references: [curriculum.id] }),
 }));

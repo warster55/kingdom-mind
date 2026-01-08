@@ -26,7 +26,9 @@ import {
   executeAssessMood,
   executeCheckConsistency,
   executeGenerateParable,
-  executeSearchMemory
+  executeSearchMemory,
+  executeGetCurriculumContext,
+  executeCompletePillar
 } from '@/lib/ai/tools/handlers';
 import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
 import { xai } from '@/lib/ai/client';
@@ -196,6 +198,8 @@ export async function POST(req: NextRequest) {
           else if (name === 'checkConsistency') result = await executeCheckConsistency(userId as string);
           else if (name === 'generateParable') result = await executeGenerateParable(args.theme, args.context);
           else if (name === 'searchMemory') result = await executeSearchMemory(userId as string, args.query);
+          else if (name === 'getCurriculumContext') result = await executeGetCurriculumContext(userId as string);
+          else if (name === 'completePillar') result = await executeCompletePillar(userId as string);
           
           return {
             tool_call_id: tc.id,
