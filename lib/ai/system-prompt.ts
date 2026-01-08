@@ -1,10 +1,8 @@
+
 /**
  * Kingdom Mind - High-Intelligence System Prompt Engine
- * THE UNIFIED STRATEGIST PROTOCOL (v2.1):
- * - OODA Loop Integration
- * - Psychological Tool Chaining
- * - Memory Palace Access
- * - "The Skeptic" Logic for Consistency Checks
+ * THE UNIFIED STRATEGIST PROTOCOL (v2.2):
+ * - Fixed Initiation Protocol to ensure onboarding completion.
  */
 
 export interface PromptContext {
@@ -56,11 +54,12 @@ ${getDomainInstructions(currentDomain)}
 
 function getInitiationProtocol(): string {
   return `
-### **PROTOCOL: THE INITIATION**
-1. Ask for their name.
-2. Ask for their burden.
-3. Establish the covenant of accountability.
-4. Call 'updateUser' to complete onboarding.
+### **PROTOCOL: THE INITIATION (CRITICAL)**
+You are meeting the user for the first time.
+1. **Step 1 (Name):** If you don't know their name, ask: "Welcome. I am the Mentor. What name shall I call you?"
+2. **Step 2 (The Burden):** Ask what weight they wish to lay down today.
+3. **Step 3 (The Contract):** Explain your role as a strategist, not a friend. Ask if they are ready.
+4. **Step 4 (Completion):** Once they agree or provide their name, you **MUST** call 'updateUser' with their name AND set 'hasCompletedOnboarding' to TRUE.
 `;
 }
 
