@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
@@ -38,7 +38,7 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
 
   const isAdmin = (session?.user as any)?.role === 'admin';
 
-  // VISUAL VIEWPORT LISTENER (The "Squish" Engine)
+  // VISUAL VIEWPORT LISTENER
   useEffect(() => {
     if (!window.visualViewport) return;
 
@@ -46,14 +46,12 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
       if (!window.visualViewport) return;
       const currentHeight = window.visualViewport.height;
       setViewportHeight(`${currentHeight}px`);
-      
-      // Heuristic: If height is < 70% of screen height, keyboard is probably open
       setIsKeyboardOpen(currentHeight < window.screen.height * 0.75);
     };
 
     window.visualViewport.addEventListener('resize', handleResize);
     window.visualViewport.addEventListener('scroll', handleResize);
-    handleResize(); // Init
+    handleResize();
 
     return () => {
       window.visualViewport?.removeEventListener('resize', handleResize);
@@ -101,11 +99,11 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
       style={{ height: viewportHeight }}
     >
       
-      {/* GLOBAL HEADER */}
+      {/* GLOBAL HEADER (Fades out on keyboard open) */}
       <header 
         className={cn(
           "absolute top-0 left-0 p-8 z-[150] pointer-events-none transition-opacity duration-500",
-          isKeyboardOpen ? "opacity-0" : "opacity-50" // Hide header when typing to save space
+          isKeyboardOpen ? "opacity-0" : "opacity-50"
         )}
       >
         <h1 className="text-stone-800 text-[10px] uppercase tracking-[0.5em] font-black">
@@ -116,8 +114,8 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
       {/* THE INFINITE HORIZON CANVAS */}
       <div className="flex-1 flex flex-col relative z-10 overflow-hidden">
         
-        <div className="flex-1 relative flex flex-col">
-          {/* CHAT DIMENSION */}
+        <div className="flex-1 relative flex flex-col min-h-0">
+          {/* CHAT DIMENSION - UNLOCKED SCROLL */}
           <motion.div 
             animate={{ 
               opacity: view === 'chat' ? 1 : 0,
@@ -127,20 +125,21 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
             }}
             transition={{ duration: 2, ease: [0.4, 0, 0.2, 1] }}
             className={cn(
-              "absolute inset-0 flex flex-col items-center",
-              isKeyboardOpen ? "justify-start pt-4" : "justify-center", // Shift text up when keyboard opens
+              "absolute inset-0 flex flex-col",
               view === 'map' ? "pointer-events-none" : "pointer-events-auto"
             )}
           >
-            <StreamingChat 
-              messages={messages}
-              isStreaming={isStreaming}
-              error={error}
-              insights={insights}
-              habits={habits}
-              currentDomain={user.currentDomain}
-              mode={mode}
-            />
+            {/* The Scrollable Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+              <StreamingChat 
+                messages={messages}
+                isStreaming={isStreaming}
+                error={error}
+                insights={insights}
+                habits={habits}
+                mode={mode}
+              />
+            </div>
           </motion.div>
 
           {/* MAP DIMENSION */}
@@ -163,7 +162,7 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
           </AnimatePresence>
         </div>
 
-        {/* SIDEBAR OVERLAY: ACTION ANCHORS (Desktop only) */}
+        {/* SIDEBAR OVERLAY (Desktop only) */}
         <div className="hidden lg:block absolute top-32 right-12 bottom-32 w-64 z-50 pointer-events-none">
           <div className="flex flex-col h-full items-end justify-start space-y-12">
             <div className="text-right">
@@ -185,16 +184,16 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
         {/* PERSISTENT SOVEREIGN INPUT */}
         <div 
           className={cn(
-            "relative z-[200] w-full transition-all duration-300",
-            isKeyboardOpen ? "pb-0" : "pb-8" // Remove padding when keyboard is up
+            "relative z-[200] w-full transition-all duration-300 bg-gradient-to-t from-stone-950 via-stone-950/80 to-transparent pt-12",
+            isKeyboardOpen ? "pb-0" : "pb-8"
           )}
         >
           <ChatInput 
             onSend={handleSend} 
             placeholder={view === 'map' ? "[ ARCHITECT MODE ACTIVE ]" : "Share what's on your heart..."}
             className={cn(
-              "transition-all duration-1000 bg-stone-950/50 backdrop-blur-sm",
-              isStreaming ? "border-amber-900/20" : "border-stone-800"
+              "transition-all duration-1000 bg-stone-950/50 backdrop-blur-md",
+              isStreaming ? "border-amber-900/20 opacity-50 pointer-events-none" : "border-stone-800"
             )}
           />
         </div>
