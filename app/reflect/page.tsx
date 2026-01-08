@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { redirect } from 'next/navigation';
-import { db, mentoringSessions, chatMessages, users } from '@/lib/db';
+import { db, mentoringSessions, chatMessages, users, insights, habits } from '@/lib/db';
 import { eq, desc, and } from 'drizzle-orm';
 import { ReflectChat } from './ReflectChat';
 
