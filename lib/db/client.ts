@@ -12,7 +12,7 @@ const client = postgres(connectionString, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
-  ssl: false,
+  ssl: false, // Keep SSL false for Docker-to-Docker
 });
 
 export const db = drizzle(client, { schema });
