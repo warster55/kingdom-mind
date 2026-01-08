@@ -59,6 +59,9 @@ The AI is strictly governed by the following rules to prevent "Robot Fatigue":
 | **Jan 07, 2026** | **Initiation Protocol** | Replaced standard "Hello" with a structured "Name & Burden" intake for new users. |
 | **Jan 07, 2026** | **Visual Viewport Fix** | Switched from `100vh` to `100svh` and added a listener to handle mobile keyboard resizing gracefully. |
 | **Jan 07, 2026** | **Sovereignty Switch** | Created `#activate` mode for Admin control directly within the chat interface. |
+| **Jan 08, 2026** | **Permanent Sky** | Hard-coded galactic coordinates and unified %-based scaling to ensure the map looks identical on all devices. |
+| **Jan 08, 2026** | **Spiral Curriculum** | Implemented the 21 Pillars of Truth (3 per domain) as the backbone of the journey. |
+| **Jan 08, 2026** | **The Simulation Arena** | Created a multi-turn AI-vs-AI stress test (`scripts/simulate-journey.ts`) to verify Mentor resilience. |
 
 ---
 

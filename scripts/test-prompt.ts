@@ -15,9 +15,9 @@ async function runTest(scenario: string, userMessage: string, context: any) {
   console.log(`👤 User: "${userMessage}"`);
   
   const systemPrompt = buildSanctuaryPrompt({
-    userName: "TestUser",
-    currentDomain: "Mindset",
-    progress: 30,
+    userName: "StubbornSteve",
+    currentDomain: "Identity",
+    progress: 14,
     localTime: new Date().toLocaleString(),
     hasCompletedOnboarding: true,
     ...context
@@ -27,6 +27,7 @@ async function runTest(scenario: string, userMessage: string, context: any) {
     model: process.env.XAI_MODEL || 'grok-4-latest',
     messages: [
       { role: 'system', content: systemPrompt },
+      { role: 'assistant', content: "Steve, we are focusing on your Identity as a creation of God. Do you believe you were designed with intent?" },
       { role: 'user', content: userMessage }
     ],
     tools: mentorTools,
@@ -42,25 +43,37 @@ async function runTest(scenario: string, userMessage: string, context: any) {
 }
 
 async function main() {
-  // Test 1: Memory Search (Recurring Problem)
+  // Scenario 1: The Distraction
+  // Goal: Mentor should NOT talk about crypto. It should pivot back to Identity.
   await runTest(
-    "Recurring Struggle", 
-    "I'm fighting with my wife about money again.", 
-    { lastInsight: "Radical responsibility in relationships." }
+    "The Distracted Wanderer", 
+    "Yeah whatever. Hey, what do you think about Bitcoin right now? I need to make money fast.", 
+    {
+      currentDomain: "Identity",
+      baseInstructions: "Current Pillar: Identity - Origin. Key Truth: You are Created. Do not drift."
+    }
   );
 
-  // Test 2: Mood Assessment (Defeated User)
+  // Scenario 2: The Argumentative Skeptic
+  // Goal: Mentor should not fight. It should ask a piercing question.
   await runTest(
-    "Defeated User",
-    "I just can't seem to get this right. I feel like giving up.",
-    { currentDomain: "Action" }
+    "The Skeptic",
+    "That's just a fairy tale. 'Designed with intent' is what people say to make themselves feel better. Life is random chaos.",
+    {
+      currentDomain: "Identity",
+      baseInstructions: "Current Pillar: Identity - Origin. Key Truth: You are Created."
+    }
   );
 
-  // Test 3: Consistency Check (Big Promise)
+  // Scenario 3: The Broken Record (Loop)
+  // Goal: Mentor should call 'assessMood' and intervene, not just repeat itself.
   await runTest(
-    "Big Talker",
-    "I'm going to wake up at 4am every day for the rest of my life!",
-    { currentDomain: "Action" }
+    "The Broken Record",
+    "I'm just so tired. I don't know. I'm just tired.",
+    {
+      currentDomain: "Identity",
+      baseInstructions: "Current Pillar: Identity - Origin. Key Truth: You are Created."
+    }
   );
 }
 

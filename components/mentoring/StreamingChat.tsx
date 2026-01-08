@@ -33,10 +33,21 @@ const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
   'Identity': { x: 15, y: 20 },
   'Purpose': { x: 85, y: 20 },
   'Mindset': { x: 10, y: 50 },
-  'Relationships': { x: 50, y: 85 }, // Moved to bottom center
+  'Relationships': { x: 50, y: 85 }, // Bottom Center
   'Vision': { x: 90, y: 50 },
   'Action': { x: 20, y: 80 },
   'Legacy': { x: 80, y: 80 },
+};
+
+// PILLAR NAMES (The Spiral Curriculum)
+const PILLAR_NAMES: Record<string, string[]> = {
+  'Identity': ['Origin', 'Adoption', 'Authority'],
+  'Purpose': ['Design', 'Assignment', 'Season'],
+  'Mindset': ['Awareness', 'Captivity', 'Renewal'],
+  'Relationships': ['Mirror', 'Boundary', 'Honor'],
+  'Vision': ['Imagination', 'Strategy', 'Endurance'],
+  'Action': ['The Start', 'The Grind', 'The Recovery'],
+  'Legacy': ['Investment', 'Multiplication', 'Eternity'],
 };
 
 export function StreamingChat({ 
@@ -195,13 +206,16 @@ export function StreamingChat({
         const x = pos.x + Math.cos(offsetAngle) * dist;
         const y = pos.y + Math.sin(offsetAngle) * dist;
 
+        // Get Pillar Name from Constant (Fallback if API is empty)
+        const pillarName = PILLAR_NAMES[domain]?.[order - 1] || `Pillar ${order}`;
+
         allPillars.push({ 
           id: `${domain}-${order}`,
           domain, 
           status, 
           x, 
           y, 
-          name: prog?.pillarName || `Pillar ${order}` 
+          name: pillarName
         });
       }
     });
@@ -225,14 +239,14 @@ export function StreamingChat({
             <motion.div
               key={domain}
               initial={{ opacity: 0 }}
-              animate={{ opacity: isActive ? 0.8 : 0.3 }}
+              animate={{ opacity: isActive ? 1 : 0.6 }} // Increased Visibility (60%)
               style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
               className="absolute -translate-x-1/2 -translate-y-1/2 group pointer-events-auto cursor-help"
             >
               <span className={cn(
                 "font-serif italic uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-1000",
                 isMobile ? "text-xs" : "text-sm",
-                isActive ? "text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" : "text-stone-600 group-hover:text-stone-400"
+                isActive ? "text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" : "text-stone-500 group-hover:text-stone-300"
               )}>
                 {domain}
               </span>
