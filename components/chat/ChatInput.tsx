@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sun, Moon, LogOut, BarChart2, RefreshCw, Sparkles 
+  Sun, Moon, LogOut, BarChart2, RefreshCw
 } from 'lucide-react';
 
 interface ChatInputProps {
@@ -48,7 +48,7 @@ export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
   };
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto pb-8 md:pb-12 pt-4 px-6 md:px-0 z-[100] transition-all duration-300">
+    <div className="relative w-full max-w-3xl mx-auto px-6 md:px-0 z-[100]">
       
       {/* THE STARDUST LAUNCH ANIMATION */}
       <AnimatePresence>
@@ -58,20 +58,20 @@ export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
             animate={{ 
               opacity: 0, 
               scale: 0.2, 
-              y: -300, // Reduced launch height for mobile visibility
+              y: -300, 
               filter: 'blur(10px)'
             }}
             transition={{ duration: 1.2, ease: "easeIn" }}
             className="absolute left-0 right-0 text-center pointer-events-none"
           >
-            <span className="text-lg md:text-xl font-serif italic text-stone-100 opacity-60">
+            <span className="text-xl md:text-2xl font-serif italic text-stone-100 opacity-60">
               {launchingText}
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="relative group">
+      <div className="relative group flex justify-center">
         <textarea
           ref={textareaRef}
           rows={1}
@@ -80,17 +80,14 @@ export function ChatInput({ onSend, placeholder, className }: ChatInputProps) {
           onKeyDown={handleKeyDown}
           placeholder={placeholder || "Share what's on your heart..."}
           className={cn(
-            "w-full bg-transparent border-b border-stone-200 dark:border-stone-800 py-4",
-            "text-lg md:text-xl font-serif italic text-center leading-relaxed transition-all duration-700",
-            "focus:outline-none focus:border-amber-500/50",
-            "placeholder:text-stone-500 dark:placeholder:text-stone-700",
+            "w-full bg-transparent border-none py-4 outline-none ring-0 resize-none",
+            "text-xl md:text-2xl font-serif italic text-center leading-relaxed transition-all duration-700",
+            "placeholder:text-stone-700 dark:placeholder:text-stone-700 placeholder:opacity-50",
+            "focus:placeholder:opacity-20", // Fade placeholder on focus
             className
           )}
-          style={{ minHeight: '60px', resize: 'none' }}
+          style={{ minHeight: '60px' }}
         />
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 opacity-0 group-focus-within:opacity-20 transition-opacity">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-        </div>
       </div>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessage, Message } from '@/components/chat/ChatMessage';
-import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -129,7 +128,7 @@ export function StreamingChat({
     return () => cancelAnimationFrame(frame);
   }, [resonance, activeDomain, isMobile]);
 
-  // 5. ADAPTIVE PHYSICS
+  // 5. ADAPTIVE PHYSICS (Vertical Smoke)
   const spatialMessages = useMemo(() => {
     const aiMessages = messages.filter(m => m.role === 'assistant');
     return aiMessages.map((msg, idx) => {
@@ -156,8 +155,7 @@ export function StreamingChat({
     });
   }, [messages, isMobile]);
 
-  // 6. SPIRAL CURRICULUM MAP
-  // Renders the 3 fixed pillars for each domain
+  // 6. SPIRAL CURRICULUM MAP & LABELS
   const spiralMap = useMemo(() => {
     const allPillars: any[] = [];
     DOMAINS.forEach((domain, i) => {
@@ -168,13 +166,11 @@ export function StreamingChat({
 
       // Create 3 pillars per domain
       for (let order = 1; order <= 3; order++) {
-        // Find user status for this pillar
         const prog = curriculumProgress.find((p: any) => p.domain === domain && p.order === order);
         const status = prog ? prog.status : 'locked';
         
-        // Arrange pillars in a small triangle/arc around the domain center
-        const offsetAngle = angle + ((order - 2) * 0.2); // Spread slightly
-        const dist = 4; // Distance from domain center
+        const offsetAngle = angle + ((order - 2) * 0.2); 
+        const dist = 4; 
         const x = baseLeft + Math.cos(offsetAngle) * dist;
         const y = baseTop + Math.sin(offsetAngle) * dist;
 
@@ -198,14 +194,41 @@ export function StreamingChat({
       
       <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />
 
-      {/* CONSTELLATION LAYER (Fixed Pillars) */}
+      {/* FIXED DOMAIN LABELS */}
+      <div className="absolute inset-0 pointer-events-none z-10">
+        {DOMAINS.map((domain, i) => {
+          const isActive = activeDomain === domain;
+          const angle = (i / DOMAINS.length) * Math.PI * 2;
+          const dist = isMobile ? 25 : 30; // Match the cluster distance
+          const left = 50 + Math.cos(angle) * dist;
+          const top = 50 + Math.sin(angle) * dist;
+
+          return (
+            <motion.div
+              key={domain}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isActive ? 0.8 : 0.3 }}
+              style={{ left: `${left}%`, top: `${top}%` }}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+            >
+              <span className={cn(
+                "font-serif italic uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-1000",
+                isMobile ? "text-xs" : "text-sm",
+                isActive ? "text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" : "text-stone-600"
+              )}>
+                {domain}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* CONSTELLATION LAYER */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         <div className="w-full h-full relative">
           {spiralMap.map((pillar) => {
             const style = DOMAIN_COLORS[pillar.domain] || DOMAIN_COLORS['Mindset'];
             const [, bgCol, shadowCol] = style.split(' ');
-            
-            // Logic for Visual State
             const isCompleted = pillar.status === 'completed';
             const isActive = pillar.status === 'active';
             
@@ -216,18 +239,12 @@ export function StreamingChat({
                 className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto group cursor-help"
                 title={pillar.name}
               >
-                {/* Visual Representation */}
                 <div className={cn(
                   "rounded-full transition-all duration-1000",
                   isCompleted ? `w-3 h-3 ${bgCol} ${shadowCol}` : 
                   isActive ? `w-4 h-4 border-2 border-white animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.5)]` :
-                  "w-2 h-2 border border-stone-600 opacity-50"
+                  "w-2 h-2 border border-stone-600 opacity-40"
                 )} />
-                
-                {/* Pillar Label (Hover/Tap) */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap bg-black/50 px-2 py-1 rounded text-[10px] uppercase tracking-wider text-stone-300 backdrop-blur-sm">
-                  {pillar.name}
-                </div>
               </div>
             );
           })}
