@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
@@ -25,7 +25,9 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
   const { data: session } = useSession();
   const [mode, setMode] = useState<'mentor' | 'architect'>('mentor');
   const [view, setView] = useState<'chat' | 'map'>('chat');
-  const [viewportHeight, setViewportHeight] = useState('100svh');
+  
+  // VIEWPORT STATE
+  const [visualHeight, setVisualHeight] = useState('100%');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const { messages, isStreaming, error, sendMessage } = useStreamingChat({
@@ -36,19 +38,25 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
 
   const isAdmin = (session?.user as any)?.role === 'admin';
 
-  // VISUAL VIEWPORT LISTENER
+  // FIXED VIEWPORT ENGINE (The "Anti-Scroll" Logic)
   useEffect(() => {
     if (!window.visualViewport) return;
 
     const handleResize = () => {
-      if (!window.visualViewport) return;
-      const currentHeight = window.visualViewport.height;
-      setViewportHeight(`${currentHeight}px`);
-      setIsKeyboardOpen(currentHeight < window.screen.height * 0.75);
+      const height = window.visualViewport?.height || window.innerHeight;
+      setVisualHeight(`${height}px`);
+      
+      // If viewport is significantly smaller than screen, keyboard is likely open
+      setIsKeyboardOpen(height < window.screen.height * 0.75);
+      
+      // Force scroll to top to prevent browser "helper" scroll
+      window.scrollTo(0, 0);
     };
 
     window.visualViewport.addEventListener('resize', handleResize);
     window.visualViewport.addEventListener('scroll', handleResize);
+    
+    // Initial set
     handleResize();
 
     return () => {
@@ -93,8 +101,8 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
 
   return (
     <div 
-      className="flex flex-col overflow-hidden relative bg-stone-950 transition-[height] duration-300 ease-out"
-      style={{ height: viewportHeight }}
+      className="fixed inset-0 bg-stone-950 overflow-hidden w-full"
+      style={{ height: visualHeight }} // Hard-lock the height to the visual viewport
     >
       
       {/* GLOBAL HEADER (Fades out on keyboard open) */}
@@ -110,7 +118,7 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
       </header>
 
       {/* THE INFINITE HORIZON CANVAS */}
-      <div className="flex-1 flex flex-col relative z-10 overflow-hidden">
+      <div className="flex-1 flex flex-col relative z-10 w-full h-full">
         
         <div className="flex-1 relative flex flex-col min-h-0">
           {/* MAIN CANVAS */}
@@ -144,15 +152,18 @@ export function ReflectChat({ sessionId, initialMessages, user, insights, habits
         {/* PERSISTENT SOVEREIGN INPUT (Zero UI Mode) */}
         <div 
           className={cn(
-            "relative z-[200] w-full transition-all duration-300 pt-12",
-            isKeyboardOpen ? "pb-0" : "pb-12"
+            "relative z-[200] w-full transition-all duration-300",
+            // Remove padding when keyboard is open to maximize space
+            isKeyboardOpen ? "pb-0 pt-2" : "pb-12 pt-12"
           )}
         >
           <ChatInput 
             onSend={handleSend} 
             placeholder={view === 'map' ? "[ ARCHITECT MODE ACTIVE ]" : "Share what's on your heart..."}
             className={cn(
-              "transition-all duration-1000 bg-transparent border-none shadow-none text-center placeholder:text-stone-700 text-stone-200 text-xl md:text-2xl font-serif italic focus:ring-0",
+              "transition-all duration-1000 bg-transparent border-none shadow-none text-center placeholder:text-stone-700 text-stone-200 font-serif italic focus:ring-0",
+              // Scale down text slightly on keyboard open to save space
+              isKeyboardOpen ? "text-lg" : "text-xl md:text-2xl",
               isStreaming ? "opacity-30 pointer-events-none" : "opacity-80 hover:opacity-100"
             )}
           />
