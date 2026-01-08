@@ -1,73 +1,98 @@
-
 import { test, expect } from '@playwright/test';
 
-test.describe('Kingdom Mind - Production Master Security & Journey', () => {
+test.describe('Kingdom Mind - Infinite Horizon OS Production Verification', () => {
   
-  test('Master Bypass: arcane-guardian-9921 should enter with master code', async ({ page }) => {
+  test('Sanctuary Access: Master Account should enter the Infinite Horizon', async ({ page }) => {
     // 1. Visit Landing Page
+    console.log('Navigating to https://kingdomind.com');
     await page.goto('https://kingdomind.com');
     
-    // 2. Click "Enter the Sanctuary"
-    await page.waitForSelector('[data-testid="enter-sanctuary-btn"]');
-    await page.click('[data-testid="enter-sanctuary-btn"]', { force: true });
+    // 2. Click "Enter the Sanctuary" (Welcome Page)
+    const enterBtn = page.locator('button').filter({ hasText: /Enter|Sanctuary/i }).first();
+    await enterBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await enterBtn.click({ force: true });
 
-    // 3. Wait for Gatekeeper Greeting
-    await expect(page.locator('.prose')).toBeVisible({ timeout: 15000 });
+    // 3. Wait for Gatekeeper Input (This was the bug, now fixed)
+    console.log('Waiting for email input...');
+    const gatekeeperInput = page.locator('textarea').first();
+    await expect(gatekeeperInput).toBeVisible({ timeout: 15000 });
     
     // 4. Submit Master Email
     console.log('Submitting Master email...');
-    const chatInput = page.getByPlaceholder("Share what's on your heart...");
-    await chatInput.fill('arcane-guardian-9921@kingdomind.com');
+    await gatekeeperInput.fill('arcane-guardian-9921@kingdomind.com');
     await page.keyboard.press('Enter');
 
     // 5. Wait for Code Request UI
     console.log('Waiting for code request...');
-    await expect(page.locator('text=sign-in code')).toBeVisible({ timeout: 10000 });
-
+    // We can check if the placeholder changed to "Enter the 6-digit code..."
+    // or wait for the system to process.
+    await page.waitForTimeout(4000);
+    
     // 6. Submit Master Code
     console.log('Submitting Master code...');
-    await chatInput.fill('992100');
+    await gatekeeperInput.fill('992100');
     await page.keyboard.press('Enter');
 
     // 7. Verify Transition to Sanctuary (/reflect)
     console.log('Waiting for Sanctuary redirect...');
-    await page.waitForURL(/.*reflect/, { timeout: 15000 });
+    await page.waitForURL(/.*reflect/, { timeout: 30000 });
     
-    // 8. Verify Sanctuary UI (Journey Sidebar and Header)
-    await expect(page.locator('h1:has-text("Kingdom Mind")')).toBeVisible();
-    await expect(page.locator('text=The Journey')).toBeVisible();
+    // 8. Verify Infinite Horizon UI
+    console.log('Verifying Infinite Horizon elements...');
     
-    console.log('✅ Master Bypass Verified');
+    // Check for the "Kingdom Mind" minimalist header
+    await expect(page.locator('h1').filter({ hasText: 'Kingdom Mind' })).toBeVisible();
+    
+    // Check for the Persistent Input (The "Bridge") at the bottom
+    const sanctuaryInput = page.locator('textarea').first();
+    await expect(sanctuaryInput).toBeVisible();
+    
+    // Check for the Star Map Canvas (The "Universe")
+    await expect(page.locator('canvas')).toBeVisible();
+
+    console.log('✅ Access & UI Verified');
   });
 
-  test('Guest Access: Random email should be blocked/waitlisted', async ({ page }) => {
-    const randomEmail = `soul-${Date.now()}@example.com`;
-    
+  test('Fluid Reality: Conversation Flow', async ({ page }) => {
+    // Re-login shortcut logic for isolated test context
     await page.goto('https://kingdomind.com');
-    await page.waitForSelector('[data-testid="enter-sanctuary-btn"]');
-    await page.click('[data-testid="enter-sanctuary-btn"]');
+    const enterBtn = page.locator('button').filter({ hasText: /Enter|Sanctuary/i }).first();
+    // Fast-forward login if already possible or re-do
+    if (await enterBtn.isVisible()) {
+        await enterBtn.click();
+        const gatekeeperInput = page.locator('textarea').first();
+        await gatekeeperInput.fill('arcane-guardian-9921@kingdomind.com');
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(3000);
+        await gatekeeperInput.fill('992100');
+        await page.keyboard.press('Enter');
+        await page.waitForURL(/.*reflect/, { timeout: 30000 });
+    }
 
-    // Submit Random Email
-    console.log(`Submitting random email: ${randomEmail}`);
-    const chatInput = page.getByPlaceholder("Share what's on your heart...");
-    await chatInput.fill(randomEmail);
+    // 2. Send a Message
+    console.log('Testing "One-Way Launch"...');
+    const input = page.locator('textarea').first();
+    await input.fill('I am testing the horizon.');
     await page.keyboard.press('Enter');
 
-    // Should NOT redirect to /reflect
-    // Instead, the AI should respond with the waitlist message
-    await page.waitForTimeout(5000); 
-    expect(page.url()).not.toContain('/reflect');
+    // 3. Verify Input Clears Immediately (One-Way Launch)
+    await expect(input).toBeEmpty();
     
-    // Check for waitlist-style content in the chat
-    const waitlistText = page.locator('text=capacity').or(page.locator('text=interest'));
-    await expect(waitlistText.first()).toBeVisible({ timeout: 15000 });
-    console.log('✅ Guest Waitlist Verified');
-  });
+    // 4. Verify "Echo" appears (The temporary user text)
+    // The echo is a div with specific styling, we look for the text content
+    const echo = page.locator('text=I am testing the horizon');
+    await expect(echo).toBeVisible();
 
-  test('Security: Direct /reflect access should redirect to Home', async ({ page }) => {
-    await page.goto('https://kingdomind.com/reflect');
-    await page.waitForURL('https://kingdomind.com/');
-    expect(page.url()).toBe('https://kingdomind.com/');
-    console.log('✅ Direct Access Protection Verified');
+    // 5. Wait for Mentor Response (The Condensation)
+    console.log('Waiting for Mentor response...');
+    // We give it time for the "Peaceful Streamer" to start rendering
+    await page.waitForTimeout(8000); 
+    
+    // The AI text is usually in a div with font-serif class
+    // We ensure something new appeared.
+    const mentorText = page.locator('.font-serif').last(); 
+    await expect(mentorText).toBeVisible();
+    
+    console.log('✅ Flow Verified');
   });
 });

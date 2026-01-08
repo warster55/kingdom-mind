@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { WelcomePage } from './WelcomePage';
 import { StreamingChat } from '@/components/mentoring/StreamingChat';
+import { ChatInput } from '@/components/chat/ChatInput';
 import { Message } from '@/components/chat/ChatMessage';
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -143,18 +144,26 @@ export function RootChat() {
         </h1>
       </header>
       
-      <StreamingChat 
-        key={authStep}
-        sessionId={0}
-        initialMessages={initialMessages}
-        systemPrompt={authStep === 'EMAIL' ? emailPrompt : authStep === 'CODE' ? codePrompt : waitlistPrompt}
-        onReset={() => {
-          setAuthStep('EMAIL');
-          setIsEntering(false);
-          router.replace('/');
-        }}
-        onMessageSent={handleMessageIntercept}
-      />
+      <div className="flex-1 relative z-10 flex flex-col overflow-hidden">
+        <div className="flex-1 relative">
+          <StreamingChat 
+            key={authStep}
+            messages={initialMessages}
+            isStreaming={isProcessing}
+            error={null}
+            insights={[]} 
+            habits={[]}
+          />
+        </div>
+
+        <div className="relative z-[200] pb-8 w-full">
+          <ChatInput 
+            onSend={(content) => handleMessageIntercept(content)}
+            placeholder={authStep === 'EMAIL' ? "Enter your email..." : authStep === 'CODE' ? "Enter the 6-digit code..." : "Join the waitlist..."}
+            className="transition-all duration-1000 bg-stone-950/50 backdrop-blur-sm border-stone-800"
+          />
+        </div>
+      </div>
 
       {isProcessing && (
         <div className="absolute inset-0 bg-stone-50/50 dark:bg-stone-950/50 flex items-center justify-center z-50 backdrop-blur-sm">
