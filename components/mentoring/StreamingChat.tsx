@@ -28,6 +28,17 @@ const DOMAIN_COLORS: Record<string, string> = {
   'Legacy': 'text-purple-400 bg-purple-500 shadow-[0_0_20_rgba(168,85,247,0.5)] stroke-purple-500/40',
 };
 
+// FIXED GALACTIC COORDINATES (0-100 scale)
+const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
+  'Identity': { x: 20, y: 25 },
+  'Purpose': { x: 70, y: 20 },
+  'Mindset': { x: 15, y: 60 },
+  'Relationships': { x: 50, y: 50 },
+  'Vision': { x: 85, y: 55 },
+  'Action': { x: 30, y: 85 },
+  'Legacy': { x: 75, y: 80 },
+};
+
 export function StreamingChat({ 
   messages,
   isStreaming,
@@ -88,7 +99,7 @@ export function StreamingChat({
     }
   }, [fullContent, displayedContent]);
 
-  // 4. NEBULA RENDERER
+  // 4. ORGANIC COSMOS RENDERER (Gaussian Nebula)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -103,22 +114,32 @@ export function StreamingChat({
 
       const particleMultiplier = isMobile ? 0.3 : 1; 
 
-      Object.entries(resonance).forEach(([domain, count], i) => {
+      Object.entries(resonance).forEach(([domain, count]) => {
         const adjustedCount = Math.floor((count as number) * particleMultiplier);
-        const angle = (i / 7) * Math.PI * 2;
-        const radiusPercent = isMobile ? 0.25 : 0.3;
-        const cx = canvas.width / 2 + Math.cos(angle) * (canvas.width * radiusPercent);
-        const cy = canvas.height / 2 + Math.sin(angle) * (canvas.height * radiusPercent);
+        const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
+        
+        const cx = (pos.x / 100) * canvas.width;
+        const cy = (pos.y / 100) * canvas.height;
 
         for (let j = 0; j < adjustedCount; j++) {
-          const s = j * 1.5 + i;
-          const r = (Math.sin(s) * 0.5 + 0.5) * (canvas.width * (isMobile ? 0.05 : 0.08));
-          const t = s * 137.5;
-          const x = cx + Math.cos(t) * r;
-          const y = cy + Math.sin(t) * r;
+          // Gaussian Distribution for Organic Cluster
+          const s = j * 1.5; // Seed
+          const u = Math.random();
+          const v = Math.random();
+          // Box-Muller transform for normal distribution
+          const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+          
+          // Spread factor: Mobile is tighter
+          const spread = isMobile ? canvas.width * 0.05 : canvas.width * 0.08;
+          const r = Math.abs(z) * spread; // Distance from center
+          const theta = Math.random() * 2 * Math.PI; // Random angle
+          
+          const x = cx + r * Math.cos(theta);
+          const y = cy + r * Math.sin(theta);
+          
           ctx.beginPath();
           ctx.arc(x, y, isMobile ? 0.8 : 0.6, 0, Math.PI * 2);
-          ctx.fillStyle = domain === activeDomain ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.1)';
+          ctx.fillStyle = domain === activeDomain ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
           ctx.fill();
         }
       });
@@ -155,24 +176,24 @@ export function StreamingChat({
     });
   }, [messages, isMobile]);
 
-  // 6. SPIRAL CURRICULUM MAP & LABELS
+  // 6. PLANETARY SYSTEM (Pillars)
   const spiralMap = useMemo(() => {
     const allPillars: any[] = [];
-    DOMAINS.forEach((domain, i) => {
-      const angle = (i / DOMAINS.length) * Math.PI * 2;
-      const baseDist = isMobile ? 25 : 30;
-      const baseLeft = 50 + Math.cos(angle) * baseDist;
-      const baseTop = 50 + Math.sin(angle) * baseDist;
-
-      // Create 3 pillars per domain
+    DOMAINS.forEach((domain) => {
+      const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
+      
+      // Create 3 pillars per domain orbiting the center
       for (let order = 1; order <= 3; order++) {
         const prog = curriculumProgress.find((p: any) => p.domain === domain && p.order === order);
         const status = prog ? prog.status : 'locked';
         
-        const offsetAngle = angle + ((order - 2) * 0.2); 
-        const dist = 4; 
-        const x = baseLeft + Math.cos(offsetAngle) * dist;
-        const y = baseTop + Math.sin(offsetAngle) * dist;
+        // Arrange pillars in a random but stable triangle around the domain center
+        const seed = domain.charCodeAt(0) + order; 
+        const offsetAngle = (seed * 137.5) * (Math.PI / 180); 
+        const dist = 5; // Orbit distance (percentage)
+        
+        const x = pos.x + Math.cos(offsetAngle) * dist;
+        const y = pos.y + Math.sin(offsetAngle) * dist;
 
         allPillars.push({ 
           id: `${domain}-${order}`,
@@ -185,7 +206,7 @@ export function StreamingChat({
       }
     });
     return allPillars;
-  }, [curriculumProgress, isMobile]);
+  }, [curriculumProgress]);
 
   const lastUserMessage = messages.filter(m => m.role === 'user').slice(-1)[0];
 
@@ -194,27 +215,24 @@ export function StreamingChat({
       
       <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />
 
-      {/* FIXED DOMAIN LABELS */}
+      {/* DOMAIN LABELS (The Suns) */}
       <div className="absolute inset-0 pointer-events-none z-10">
-        {DOMAINS.map((domain, i) => {
+        {DOMAINS.map((domain) => {
           const isActive = activeDomain === domain;
-          const angle = (i / DOMAINS.length) * Math.PI * 2;
-          const dist = isMobile ? 25 : 30; // Match the cluster distance
-          const left = 50 + Math.cos(angle) * dist;
-          const top = 50 + Math.sin(angle) * dist;
+          const pos = DOMAIN_POSITIONS[domain];
 
           return (
             <motion.div
               key={domain}
               initial={{ opacity: 0 }}
               animate={{ opacity: isActive ? 0.8 : 0.3 }}
-              style={{ left: `${left}%`, top: `${top}%` }}
-              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 group pointer-events-auto cursor-help"
             >
               <span className={cn(
                 "font-serif italic uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-1000",
                 isMobile ? "text-xs" : "text-sm",
-                isActive ? "text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" : "text-stone-600"
+                isActive ? "text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" : "text-stone-600 group-hover:text-stone-400"
               )}>
                 {domain}
               </span>
@@ -223,7 +241,7 @@ export function StreamingChat({
         })}
       </div>
 
-      {/* CONSTELLATION LAYER */}
+      {/* PLANETARY LAYER (Pillars) */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         <div className="w-full h-full relative">
           {spiralMap.map((pillar) => {
@@ -245,6 +263,10 @@ export function StreamingChat({
                   isActive ? `w-4 h-4 border-2 border-white animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.5)]` :
                   "w-2 h-2 border border-stone-600 opacity-40"
                 )} />
+                {/* Tiny Label on Hover */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-[8px] uppercase tracking-widest text-stone-400">
+                  {pillar.name}
+                </div>
               </div>
             );
           })}
