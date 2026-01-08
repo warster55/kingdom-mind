@@ -1,0 +1,70 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e4] [cursor=pointer]:
+    - img [ref=e5]
+    - generic [ref=e7]: 1 error
+    - button "Hide Errors" [ref=e8]:
+      - img [ref=e9]
+  - alert [ref=e12]
+  - main [ref=e13]:
+    - generic:
+      - heading "Kingdom Mind" [level=1]
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - generic:
+          - generic [ref=e17]: Identity
+          - generic [ref=e18]: Purpose
+          - generic [ref=e19]: Mindset
+          - generic [ref=e20]: Relationships
+          - generic [ref=e21]: Vision
+          - generic [ref=e22]: Action
+          - generic [ref=e23]: Legacy
+        - generic:
+          - generic:
+            - generic "Origin" [ref=e24]:
+              - generic [ref=e26]: Origin
+            - generic "Adoption" [ref=e27]:
+              - generic [ref=e29]: Adoption
+            - generic "Authority" [ref=e30]:
+              - generic [ref=e32]: Authority
+            - generic "Design" [ref=e33]:
+              - generic [ref=e35]: Design
+            - generic "Assignment" [ref=e36]:
+              - generic [ref=e38]: Assignment
+            - generic "Season" [ref=e39]:
+              - generic [ref=e41]: Season
+            - generic "Awareness" [ref=e42]:
+              - generic [ref=e44]: Awareness
+            - generic "Captivity" [ref=e45]:
+              - generic [ref=e47]: Captivity
+            - generic "Renewal" [ref=e48]:
+              - generic [ref=e50]: Renewal
+            - generic "Mirror" [ref=e51]:
+              - generic [ref=e53]: Mirror
+            - generic "Boundary" [ref=e54]:
+              - generic [ref=e56]: Boundary
+            - generic "Honor" [ref=e57]:
+              - generic [ref=e59]: Honor
+            - generic "Imagination" [ref=e60]:
+              - generic [ref=e62]: Imagination
+            - generic "Strategy" [ref=e63]:
+              - generic [ref=e65]: Strategy
+            - generic "Endurance" [ref=e66]:
+              - generic [ref=e68]: Endurance
+            - generic "The Start" [ref=e69]:
+              - generic [ref=e71]: The Start
+            - generic "The Grind" [ref=e72]:
+              - generic [ref=e74]: The Grind
+            - generic "The Recovery" [ref=e75]:
+              - generic [ref=e77]: The Recovery
+            - generic "Investment" [ref=e78]:
+              - generic [ref=e80]: Investment
+            - generic "Multiplication" [ref=e81]:
+              - generic [ref=e83]: Multiplication
+            - generic "Eternity" [ref=e84]:
+              - generic [ref=e86]: Eternity
+        - generic [ref=e88]: Peace be with you. You have reached the threshold of the sanctuary. To begin your journey of renewal, may I ask for the email address you wish to use?_
+      - textbox "Enter your email..." [active] [ref=e93]
+```

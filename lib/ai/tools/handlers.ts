@@ -336,8 +336,19 @@ export async function executeCheckConsistency(userId: string): Promise<ToolResul
 }
 
 export async function executeGenerateParable(theme: string, context: string): Promise<ToolResult> {
-  // This signal tells the AI to shift into "Storyteller Mode" for the next response.
-  return { success: true, data: { action: 'GENERATE_STORY', theme, context } };
+  // This tool doesn't "do" anything external. It signals the Brain to switch modes.
+  // The returned data acts as a "System Injection" for the next turn.
+  return { 
+    success: true, 
+    data: { 
+      action: 'GENERATE_STORY', 
+      instruction: `[SYSTEM OVERRIDE: PARABLE MODE]
+      You are now a Master Storyteller. Do not give advice. Do not explain.
+      Write a short parable (max 4 sentences) about "${theme}" that mirrors this context: "${context}".
+      Use imagery of nature, ancient craftsmanship, or warfare.
+      End ONLY with a question that forces the user to interpret the story.` 
+    } 
+  };
 }
 
 export async function executeSearchMemory(userId: string, query: string): Promise<ToolResult> {

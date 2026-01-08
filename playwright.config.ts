@@ -26,6 +26,14 @@ export default defineConfig({
       dependencies: ['local-setup'],
     },
     {
+      name: 'warren-personal',
+      testMatch: /warren-journey\.spec\.ts/,
+      use: { 
+        ...devices['Desktop Chrome'],
+      },
+      // NO DEPENDENCIES - Handles its own login
+    },
+    {
       name: 'production',
       use: { 
         ...devices['Desktop Chrome'],

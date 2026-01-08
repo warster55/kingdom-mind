@@ -238,12 +238,12 @@ export const mentorTools: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'generateParable',
-      description: "Generates a custom, modern-day parable to illustrate a point. Call this when a direct explanation isn't landing.",
+      description: "Generates a custom, biblical-style parable tailored to the user's specific situation. Call this when a direct explanation might be rejected, or when the user needs a visual metaphor to grasp a spiritual truth. The parable should be short (under 150 words), metaphorical, and end with a piercing question.",
       parameters: {
         type: 'object',
         properties: {
-          theme: { type: 'string', description: 'The moral or lesson of the parable' },
-          context: { type: 'string', description: 'The user\'s current situation (e.g., "overwhelmed executive", "stuck artist")' }
+          theme: { type: 'string', description: "The core spiritual theme (e.g., 'Patience', 'Foundation', 'Surrender')." },
+          context: { type: 'string', description: "The specific user context to mirror (e.g., 'An architect who is rushing', 'A farmer who fears the rain')." }
         },
         required: ['theme', 'context'],
       },

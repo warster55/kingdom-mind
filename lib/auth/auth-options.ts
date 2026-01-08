@@ -3,6 +3,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db, users, verificationCodes } from "@/lib/db";
 import { eq, and, gt } from "drizzle-orm";
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
 
 export const authOptions: NextAuthOptions = {
   // @ts-ignore
@@ -23,9 +26,18 @@ export const authOptions: NextAuthOptions = {
           const code = credentials.code.trim();
 
           // 1. Check for Master Bypass (Environment Driven)
-          const masterEmail = process.env.TEST_USER_EMAIL?.toLowerCase().trim();
-          const masterCode = process.env.TEST_USER_CODE?.trim();
+          let masterEmail = process.env.TEST_USER_EMAIL?.toLowerCase().trim();
+          let masterCode = process.env.TEST_USER_CODE?.trim();
+
+          // HARDCODE FALLBACK FOR LOCAL DEV
+          if (process.env.NODE_ENV === 'development') {
+             if (!masterEmail) masterEmail = 'arcane-guardian-9921@kingdomind.com';
+             if (!masterCode) masterCode = '992100';
+          }
           
+          console.log(`[Auth DEBUG] Env Email: ${masterEmail}, Env Code: ${masterCode}`);
+          console.log(`[Auth DEBUG] Input Email: ${email}, Input Code: ${code}`);
+
           const isMasterBypass = masterEmail && masterCode && 
                                 email === masterEmail && 
                                 code === masterCode;
@@ -43,7 +55,7 @@ export const authOptions: NextAuthOptions = {
               .limit(1);
 
             // Automation/Local Test Bypass
-            const isLocalTest = (process.env.NODE_ENV === 'test' || process.env.X_TEST_MODE === 'true') && 
+            const isLocalTest = (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development' || process.env.X_TEST_MODE === 'true') && 
                                code === '000000';
 
             if (codeResult.length === 0 && !isLocalTest) {

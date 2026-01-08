@@ -9,10 +9,10 @@ if (!connectionString) {
 }
 
 const client = postgres(connectionString, { 
-  prepare: false,
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  ssl: false,
 });
 
 export const db = drizzle(client, { schema });
