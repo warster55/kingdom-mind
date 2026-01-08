@@ -19,66 +19,71 @@
 - **Tech:** Next.js 15, Framer Motion, Tailwind CSS v4.
 - **Visuals:**
   - **Deep Obsidian:** Permanent dark mode for "Midnight Sky" visibility.
-  - **Bioluminescence:** Domain labels and constellation lines glow to cut through the dark.
-  - **Nebula Engine:** A high-performance HTML5 Canvas particle system that renders "Stardust" based on the user's interaction count.
+  - **Organic Cosmos:** Domain galaxies are distributed organically (not circular) with Gaussian nebula clouds.
+  - **Planetary Pillars:** 3 Fixed "Pillar Stars" orbit each domain label.
 - **Mobile ("Sanctuary Lite"):**
-  - **Vertical Drift:** Messages flow upward (smoke) instead of outward (radial).
-  - **Thumb-Zone:** Input box floats above the keyboard using the `VisualViewport` API to prevent layout crushing.
-  - **Battery Saver:** Particle count reduced by 70% on small screens.
+  - **Fixed Viewport:** App height is locked to `visualViewport` to prevent keyboard scroll jumping.
+  - **Ghost Input:** Input is transparent and borderless.
 
 ### **Backend (The Brain)**
 - **Model:** X.AI (Grok-4-Latest).
-- **Protocol:** "The Silent Strategist" (v2.2).
+- **Protocol:** "The Silent Strategist" (v3.1).
 - **Tools:**
   - `assessMood`: Detects emotional subtext (Radar).
-  - `searchMemory`: Scans past insights for patterns (Memory Palace).
-  - `checkConsistency`: Verifies if the user is keeping their promises (The Skeptic).
-  - `setHabit`: Anchors breakthroughs into physical reality.
-  - `updateUser`: Handles the "Initiation Ritual" for new souls.
+  - `getCurriculumContext`: Identifies the user's exact position in the Spiral.
+  - `generateParable`: Tells custom stories to bypass resistance.
+  - `completePillar`: Awards progress stars.
 
 ---
 
 ## 3. The "Silent Strategist" Protocol
 The AI is strictly governed by the following rules to prevent "Robot Fatigue":
 1.  **3-Sentence Lockdown:** No paragraphs. Tactical brevity only.
-2.  **Clean Memory:** Never reference past breakthroughs (like ADHD) unless the user brings them up first. Every session is a fresh start.
-3.  **Invisible Infrastructure:** Never announce tool usage ("I am setting a habit"). Just do it.
-4.  **The 3-Act Curriculum:**
-    *   **Act I:** Excavate the Lie.
-    *   **Act II:** Confront with Truth (Scripture).
-    *   **Act III:** Anchor with Action (Habit).
+2.  **Parable Trigger:** If the user argues or is stuck, DO NOT ARGUE. Tell a story (`generateParable`).
+3.  **Spiral Check:** Always verify the active Pillar before teaching.
 
 ---
 
-## 4. Decision Log (The History of Pivots)
+## 4. Development Environment (The "Docker Native" Standard)
+*Added Jan 08, 2026*
+
+To prevent environment drift, we strictly adhere to this setup:
+
+| Component | Host Port | Internal Port | Access URL |
+| :--- | :--- | :--- | :--- |
+| **Web App** | `4000` | `4000` | `http://localhost:4000` |
+| **Database** | `5433` | `5432` | `postgres://...:5433/...` |
+
+**Critical Workflows:**
+*   **Running Dev:** `docker compose up` (Runs inside container). **DO NOT** run `npm run dev` on host.
+*   **Running Seeds:** `npx dotenv-cli -e .env.local -- npx tsx scripts/seed-curriculum.ts` (Runs on host, connects via port 5433).
+*   **Auth Bypass:** locally, use code `000000` for any approved email.
+
+---
+
+## 5. Decision Log (The History of Pivots)
 
 | Date | Decision | Rationale |
 | :--- | :--- | :--- |
 | **Jan 07, 2026** | **The Great Clearing** | Removed all sidebars and chat history bubbles. The screen must be empty to focus on the "Now." |
 | **Jan 07, 2026** | **One-Way Launch** | Decoupled local state from server state. User text flies off screen and never re-renders to prevent flicker. |
-| **Jan 07, 2026** | **Initiation Protocol** | Replaced standard "Hello" with a structured "Name & Burden" intake for new users. |
-| **Jan 07, 2026** | **Visual Viewport Fix** | Switched from `100vh` to `100svh` and added a listener to handle mobile keyboard resizing gracefully. |
-| **Jan 07, 2026** | **Sovereignty Switch** | Created `#activate` mode for Admin control directly within the chat interface. |
 | **Jan 08, 2026** | **Permanent Sky** | Hard-coded galactic coordinates and unified %-based scaling to ensure the map looks identical on all devices. |
 | **Jan 08, 2026** | **Spiral Curriculum** | Implemented the 21 Pillars of Truth (3 per domain) as the backbone of the journey. |
-| **Jan 08, 2026** | **The Simulation Arena** | Created a multi-turn AI-vs-AI stress test (`scripts/simulate-journey.ts`) to verify Mentor resilience. |
+| **Jan 08, 2026** | **Parable Engine** | Added `generateParable` tool to allow the Mentor to use storytelling for persuasion. |
+| **Jan 08, 2026** | **Docker Native Dev** | Shifted all local development to run strictly inside Docker containers to avoid OS/Port conflicts. |
 
 ---
 
-## 5. The Roadmap (Future Vision)
+## 6. The Roadmap (Future Vision)
 
 ### **Phase 1: The Covenant (Payments)**
 *   **Goal:** Integrate QuickBooks Online (QBO) for a "Conversational Commerce" flow.
 *   **Strategy:** "Free-to-Start, Subscribe-to-Ascend."
 *   **Trigger:** User completes Domain 1 (Identity) -> AI presents the Covenant (Subscription) to unlock Purpose.
-*   **Tech:** QBO Recurring Sales Receipts + Webhooks.
 
 ### **Phase 2: The Socratic Sniper (Deep Tuning)**
 *   **Goal:** Enhance the prompt to ask devastatingly good questions.
-*   **Method:** Use the local `test-prompt.ts` lab to iterate until the AI stops giving advice and starts uncovering root causes.
-
-### **Phase 3: The Parable Engine**
-*   **Goal:** A tool that generates custom stories based on the user's specific life context (e.g., a story about a coder for a developer).
+*   **Status:** LIVE (v3.1 Protocol).
 
 ---
 

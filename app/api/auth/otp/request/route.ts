@@ -44,6 +44,15 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
+    // SKIP EMAIL IF MASTER USER (Local Dev Noise Reduction)
+    const isMaster = (process.env.TEST_USER_EMAIL && normalizedEmail === process.env.TEST_USER_EMAIL.toLowerCase()) ||
+                     (process.env.NODE_ENV === 'development');
+
+    if (isMaster) {
+      console.log(`[OTP] Bypass: Skipping email for ${normalizedEmail}. Code: ${code}`);
+      return NextResponse.json({ success: true });
+    }
+
     const emailResult = await sendOTP(normalizedEmail, code);
     if (!emailResult.success) {
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });

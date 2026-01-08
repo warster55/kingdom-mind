@@ -22,6 +22,7 @@ services:
       - NEXTAUTH_URL=http://localhost:4000
       - NEXTAUTH_SECRET=super-secret-key-that-is-long-enough-for-encryption-12345
       - GEMINI_API_KEY=AIzaSyAJ4Cl-UiZikGVkoBRgP_FzV8KVA-QoF3k
+      - XAI_API_KEY=${XAI_API_KEY}
       - OLLAMA_BASE_URL=http://3.19.67.252:11434
     depends_on:
       - db

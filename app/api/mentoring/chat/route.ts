@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { db, chatMessages, users, insights, systemPrompts } from '@/lib/db';
-import { eq, desc, sql } from 'drizzle-orm';
+import { db, chatMessages, users, insights, systemPrompts, userProgress, curriculum } from '@/lib/db';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import { getAIStream } from '@/lib/ai';
 import { processArchitectTurn } from '@/lib/ai/architect';
 import { mentorTools } from '@/lib/ai/tools/definitions';
@@ -82,13 +82,29 @@ export async function POST(req: NextRequest) {
           .where(eq(insights.userId, user.id))
           .orderBy(desc(insights.createdAt))
           .limit(1);
+
+        // --- OPTIMIZATION: PRE-FETCH CURRICULUM CONTEXT ---
+        // We fetch the active pillar directly via SQL to save an AI round-trip.
+        const activeProgress = await db.select({
+          pillar: curriculum.pillarName,
+          truth: curriculum.keyTruth,
+          desc: curriculum.description
+        })
+        .from(userProgress)
+        .innerJoin(curriculum, eq(userProgress.curriculumId, curriculum.id))
+        .where(and(eq(userProgress.userId, user.id), eq(userProgress.status, 'active')))
+        .limit(1);
+
+        const currentPillar = activeProgress[0] 
+          ? { name: activeProgress[0].pillar, truth: activeProgress[0].truth }
+          : undefined;
         
         const userLocalTime = new Date().toLocaleString("en-US", { 
           timeZone: timezone || user.timezone || 'UTC',
           hour: 'numeric', minute: 'numeric', hour12: true, weekday: 'long'
         });
 
-        // Use the new High-Intelligence Prompt Engine with DB-driven base instructions
+        // Use the new High-Intelligence Prompt Engine
         finalSystemPrompt = buildSanctuaryPrompt({
           userName: user.name || "Seeker",
           currentDomain: user.currentDomain,
@@ -96,7 +112,8 @@ export async function POST(req: NextRequest) {
           lastInsight: lastInsightResult[0]?.content,
           localTime: userLocalTime,
           hasCompletedOnboarding: user.hasCompletedOnboarding,
-          baseInstructions: dbPromptResult[0]?.content
+          baseInstructions: dbPromptResult[0]?.content,
+          currentPillar // Injecting the pre-fetched pillar
         });
       }
     }

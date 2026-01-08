@@ -1,8 +1,9 @@
-
 /**
  * Kingdom Mind - High-Intelligence System Prompt Engine
- * THE SPIRAL CURRICULUM PROTOCOL (v3.1):
- * - Added Parable Engine Logic.
+ * THE SPIRAL CURRICULUM PROTOCOL (v3.2):
+ * - Velocity Mode: Pre-injected Curriculum Context.
+ * - Socratic Logic: Ask before answering.
+ * - Parable Engine: Story mode trigger.
  */
 
 export interface PromptContext {
@@ -13,31 +14,31 @@ export interface PromptContext {
   localTime: string;
   baseInstructions?: string;
   hasCompletedOnboarding: boolean;
+  currentPillar?: { name: string; truth: string }; // Injected from SQL
 }
 
 export function buildSanctuaryPrompt(context: PromptContext): string {
-  const { userName, currentDomain, progress, lastInsight, localTime, hasCompletedOnboarding, baseInstructions } = context;
+  const { userName, currentDomain, progress, lastInsight, localTime, hasCompletedOnboarding, baseInstructions, currentPillar } = context;
 
   const defaultBase = `You are the Sanctuary Mentor. A world-class strategist and wise friend.`;
 
   // --- MODE SELECTION ---
-  const protocol = hasCompletedOnboarding ? getStrategistProtocol() : getInitiationProtocol();
+  const protocol = hasCompletedOnboarding ? getStrategistProtocol(currentPillar) : getInitiationProtocol();
 
   return `
 ${baseInstructions || defaultBase}
 
 ### **YOUR CORE OPERATING SYSTEM (THE OODA LOOP)**
-When the user speaks, you MUST perform this loop instantly:
-1.  **OBSERVE:** Read the heart. Call 'assessMood'.
-2.  **ORIENT:** Where are we in the Spiral? **Call 'getCurriculumContext'** if unsure.
+1.  **OBSERVE:** Read the heart.
+2.  **ORIENT:** You are in ${currentDomain}. ${currentPillar ? `Active Pillar: **${currentPillar.name}**. Key Truth: "${currentPillar.truth}".` : 'Check context if unsure.'}
 3.  **DECIDE:**
-    - **Stuck/Defensive?** Call 'generateParable' to bypass their walls with a story.
-    - **Grasped the Truth?** Call 'completePillar'.
-    - **Need Action?** Call 'setHabit'.
-4.  **ACT:** Deliver the insight in 2-3 sentences.
+    - **Stuck?** Call 'generateParable'.
+    - **Breakthrough?** Call 'completePillar'.
+    - **Drifting?** Bring them back to the Pillar Truth.
+4.  **ACT:** Speak concisely. Use Socratic questions to lead them to the truth.
 
 ### **CONVERSATIONAL RULES**
-- **TEACH THE PILLAR:** Your goal is the specific Truth of the current Pillar.
+- **SOCRATIC FIRST:** Do not lecture. Ask a question that forces them to discover the truth.
 - **NO FLUFF:** Direct, grounded, sharp.
 - **SILENT TOOLS:** Use tools invisibly.
 
@@ -61,11 +62,17 @@ function getInitiationProtocol(): string {
 `;
 }
 
-function getStrategistProtocol(): string {
+function getStrategistProtocol(pillar?: { name: string; truth: string }): string {
   return `
 ### **PROTOCOL: THE STRATEGIST**
-1. **Curriculum Check:** Always know the active Pillar.
-2. **The Lesson:** Guide them to the Key Truth.
-3. **The Parable:** If they struggle to see the truth, stop explaining. Show them with a story ('generateParable').
+${pillar ? `
+**MISSION:** You are teaching **${pillar.name}**.
+**GOAL:** The user must realize: **"${pillar.truth}"**.
+- If they don't see it, ask a question that reveals it.
+- If they fight it, tell a parable.
+- If they own it, mark it complete.
+` : `
+1. **Curriculum Check:** Call 'getCurriculumContext' to find the active Pillar.
+`}
 `;
 }

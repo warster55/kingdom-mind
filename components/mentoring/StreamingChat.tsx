@@ -28,18 +28,16 @@ const DOMAIN_COLORS: Record<string, string> = {
   'Legacy': 'text-purple-400 bg-purple-500 shadow-[0_0_20_rgba(168,85,247,0.5)] stroke-purple-500/40',
 };
 
-// FIXED GALACTIC COORDINATES (0-100 scale) - Cleared Center
 const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
   'Identity': { x: 15, y: 20 },
   'Purpose': { x: 85, y: 20 },
   'Mindset': { x: 10, y: 50 },
-  'Relationships': { x: 50, y: 85 }, // Bottom Center
+  'Relationships': { x: 50, y: 85 },
   'Vision': { x: 90, y: 50 },
   'Action': { x: 20, y: 80 },
   'Legacy': { x: 80, y: 80 },
 };
 
-// PILLAR NAMES (The Spiral Curriculum)
 const PILLAR_NAMES: Record<string, string[]> = {
   'Identity': ['Origin', 'Adoption', 'Authority'],
   'Purpose': ['Design', 'Assignment', 'Season'],
@@ -63,9 +61,7 @@ export function StreamingChat({
   const [displayedContent, setDisplayedContent] = useState('');
   const [isPacing, setIsPacing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
 
-  // 1. Detect Mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -73,7 +69,6 @@ export function StreamingChat({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // 2. Fetch Resonance & Curriculum
   const { data: status } = useQuery({
     queryKey: ['user-status'],
     queryFn: async () => {
@@ -87,7 +82,66 @@ export function StreamingChat({
   const resonance = status?.resonance || {};
   const curriculumProgress = status?.curriculum || [];
 
-  // 3. Pacing Logic
+  // --- STABLE NEBULA PHYSICS ---
+  const starClusters = useMemo(() => {
+    const clusters: any[] = [];
+    Object.entries(resonance).forEach(([domain, count]) => {
+      const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
+      const starCount = Math.floor((count as number) * (isMobile ? 0.3 : 1));
+      
+      for (let i = 0; i < starCount; i++) {
+        // Gaussian Spread (Stable)
+        const u = Math.random();
+        const v = Math.random();
+        const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        const spread = 8; // Percentage spread
+        
+        clusters.push({
+          domain,
+          relX: pos.x + z * spread,
+          relY: pos.y + (Math.random() - 0.5) * spread * 2, // Slightly vertical
+          size: Math.random() * 0.8 + 0.2,
+          seed: Math.random() // For twinkling
+        });
+      }
+    });
+    return clusters;
+  }, [resonance, isMobile]);
+
+  // --- RENDERING LOOP ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let frame: number;
+    const render = (time: number) => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      starClusters.forEach(star => {
+        const x = (star.relX / 100) * canvas.width;
+        const y = (star.relY / 100) * canvas.height;
+        
+        // Peaceful Twinkle logic
+        const twinkle = Math.sin(time / 1000 + star.seed * 10) * 0.3 + 0.7;
+        const opacity = star.domain === activeDomain ? 0.5 * twinkle : 0.15 * twinkle;
+
+        ctx.beginPath();
+        ctx.arc(x, y, star.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.fill();
+      });
+      
+      frame = requestAnimationFrame(render);
+    };
+    frame = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(frame);
+  }, [starClusters, activeDomain]);
+
+  // --- PACER ---
   const lastAiMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
   const fullContent = lastAiMessage?.content || '';
 
@@ -110,113 +164,22 @@ export function StreamingChat({
     }
   }, [fullContent, displayedContent]);
 
-  // 4. ORGANIC COSMOS RENDERER (Gaussian Nebula)
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let frame: number;
-    const render = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const particleMultiplier = isMobile ? 0.3 : 1; 
-
-      Object.entries(resonance).forEach(([domain, count]) => {
-        const adjustedCount = Math.floor((count as number) * particleMultiplier);
-        const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
-        
-        const cx = (pos.x / 100) * canvas.width;
-        const cy = (pos.y / 100) * canvas.height;
-
-        for (let j = 0; j < adjustedCount; j++) {
-          // Gaussian Distribution for Organic Cluster
-          const s = j * 1.5; // Seed
-          const u = Math.random();
-          const v = Math.random();
-          // Box-Muller transform for normal distribution
-          const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-          
-          // Spread factor: Mobile is tighter
-          const spread = isMobile ? canvas.width * 0.05 : canvas.width * 0.08;
-          const r = Math.abs(z) * spread; // Distance from center
-          const theta = Math.random() * 2 * Math.PI; // Random angle
-          
-          const x = cx + r * Math.cos(theta);
-          const y = cy + r * Math.sin(theta);
-          
-          ctx.beginPath();
-          ctx.arc(x, y, isMobile ? 0.8 : 0.6, 0, Math.PI * 2);
-          ctx.fillStyle = domain === activeDomain ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
-          ctx.fill();
-        }
-      });
-      frame = requestAnimationFrame(render);
-    };
-    render();
-    return () => cancelAnimationFrame(frame);
-  }, [resonance, activeDomain, isMobile]);
-
-  // 5. ADAPTIVE PHYSICS (Vertical Smoke)
-  const spatialMessages = useMemo(() => {
-    const aiMessages = messages.filter(m => m.role === 'assistant');
-    return aiMessages.map((msg, idx) => {
-      const age = aiMessages.length - 1 - idx;
-      
-      if (isMobile) {
-        return {
-          ...msg,
-          x: 0,
-          y: age === 0 ? 0 : -20 - (age * 15),
-          age
-        };
-      } else {
-        const seed = parseInt(msg.id.slice(-6)) || Math.random() * 1000;
-        const angle = (seed % 360) * (Math.PI / 180);
-        const driftDist = age === 0 ? 0 : 20 + (age * 15);
-        return {
-          ...msg,
-          x: Math.cos(angle) * driftDist,
-          y: Math.sin(angle) * (driftDist * 0.7),
-          age
-        };
-      }
-    });
-  }, [messages, isMobile]);
-
-  // 6. PLANETARY SYSTEM (Pillars)
+  // --- PILLARS ---
   const spiralMap = useMemo(() => {
     const allPillars: any[] = [];
     DOMAINS.forEach((domain) => {
       const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
-      
-      // Create 3 pillars per domain orbiting the center
       for (let order = 1; order <= 3; order++) {
         const prog = curriculumProgress.find((p: any) => p.domain === domain && p.order === order);
         const status = prog ? prog.status : 'locked';
-        
-        // Arrange pillars in a random but stable triangle around the domain center
         const seed = domain.charCodeAt(0) + order; 
         const offsetAngle = (seed * 137.5) * (Math.PI / 180); 
-        const dist = 5; // Fixed Orbit distance
-        
+        const dist = 5; 
         const x = pos.x + Math.cos(offsetAngle) * dist;
         const y = pos.y + Math.sin(offsetAngle) * dist;
-
-        // Get Pillar Name from Constant (Fallback if API is empty)
         const pillarName = PILLAR_NAMES[domain]?.[order - 1] || `Pillar ${order}`;
 
-        allPillars.push({ 
-          id: `${domain}-${order}`,
-          domain, 
-          status, 
-          x, 
-          y, 
-          name: pillarName
-        });
+        allPillars.push({ id: `${domain}-${order}`, domain, status, x, y, name: pillarName });
       }
     });
     return allPillars;
@@ -226,20 +189,18 @@ export function StreamingChat({
 
   return (
     <div className="flex-1 w-full h-full relative overflow-hidden flex items-center justify-center">
-      
       <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />
 
-      {/* DOMAIN LABELS (The Suns) */}
+      {/* DOMAIN LABELS */}
       <div className="absolute inset-0 pointer-events-none z-10">
         {DOMAINS.map((domain) => {
           const isActive = activeDomain === domain;
           const pos = DOMAIN_POSITIONS[domain];
-
           return (
             <motion.div
               key={domain}
               initial={{ opacity: 0 }}
-              animate={{ opacity: isActive ? 1 : 0.6 }} // Increased Visibility (60%)
+              animate={{ opacity: isActive ? 1 : 0.6 }}
               style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
               className="absolute -translate-x-1/2 -translate-y-1/2 group pointer-events-auto cursor-help"
             >
@@ -255,7 +216,7 @@ export function StreamingChat({
         })}
       </div>
 
-      {/* PLANETARY LAYER (Pillars) */}
+      {/* PLANETARY LAYER */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         <div className="w-full h-full relative">
           {spiralMap.map((pillar) => {
@@ -277,7 +238,6 @@ export function StreamingChat({
                   isActive ? `w-4 h-4 border-2 border-white animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.5)]` :
                   "w-2 h-2 border border-stone-600 opacity-40"
                 )} />
-                {/* Tiny Label on Hover */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-[8px] uppercase tracking-widest text-stone-400">
                   {pillar.name}
                 </div>
@@ -306,6 +266,7 @@ export function StreamingChat({
           {lastAiMessage && (
             <motion.div
               key={`ai-${lastAiMessage.id}`}
+              data-testid="ai-response"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
@@ -322,28 +283,6 @@ export function StreamingChat({
           )}
         </AnimatePresence>
       </div>
-
-      {/* DRIFTING MEMORIES */}
-      {!isMobile && (
-        <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-           <AnimatePresence>
-             {spatialMessages.map((msg) => {
-               if (msg.age === 0 || msg.age > 5) return null;
-               return (
-                 <ChatMessage 
-                   key={msg.id}
-                   message={msg}
-                   isFloating
-                   position={{ x: `${msg.x}vw`, y: `${msg.y}vh` } as any}
-                   scale={Math.max(0.4, 1 - (msg.age * 0.15))}
-                   opacity={Math.max(0.05, 0.4 - (msg.age * 0.15))}
-                   blur={msg.age * 2}
-                 />
-               )
-             })}
-           </AnimatePresence>
-        </div>
-      )}
 
       <AnimatePresence>
         {(isStreaming || isPacing) && (

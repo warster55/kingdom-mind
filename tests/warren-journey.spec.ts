@@ -36,10 +36,13 @@ test.describe('Warren Moore - Personal Journey Simulation', () => {
     await page.keyboard.press('Enter');
 
     // 6. Verify Mentor Response
-    // We wait for the text to appear.
-    await page.waitForTimeout(8000);
-    const mentorText = page.locator('.font-serif').last();
-    await expect(mentorText).toBeVisible();
+    console.log('Waiting for Mentor response...');
+    const mentorText = page.locator('[data-testid="ai-response"]');
+    // Wait for text to actually populate (streaming takes time)
+    await expect(mentorText).toBeVisible({ timeout: 20000 });
+    await expect(mentorText).not.toBeEmpty();
+    
+    await page.waitForTimeout(2000); // Let it finish streaming
     const textContent = await mentorText.textContent();
     console.log(`🕊️ Mentor Said: "${textContent}"`);
     
