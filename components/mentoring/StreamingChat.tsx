@@ -190,7 +190,7 @@ export function StreamingChat({
         // Arrange pillars in a random but stable triangle around the domain center
         const seed = domain.charCodeAt(0) + order; 
         const offsetAngle = (seed * 137.5) * (Math.PI / 180); 
-        const dist = 5; // Orbit distance (percentage)
+        const dist = 5; // Fixed Orbit distance
         
         const x = pos.x + Math.cos(offsetAngle) * dist;
         const y = pos.y + Math.sin(offsetAngle) * dist;
