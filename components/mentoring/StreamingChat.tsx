@@ -221,7 +221,7 @@ export function StreamingChat({
                   "rounded-full transition-all duration-1000",
                   isCompleted ? `w-3 h-3 ${bgCol} ${shadowCol}` : 
                   isActive ? `w-4 h-4 border-2 border-white animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.5)]` :
-                  "w-2 h-2 border border-stone-800 opacity-20"
+                  "w-2 h-2 border border-stone-600 opacity-50"
                 )} />
                 
                 {/* Pillar Label (Hover/Tap) */}
