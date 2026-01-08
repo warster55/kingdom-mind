@@ -28,15 +28,15 @@ const DOMAIN_COLORS: Record<string, string> = {
   'Legacy': 'text-purple-400 bg-purple-500 shadow-[0_0_20_rgba(168,85,247,0.5)] stroke-purple-500/40',
 };
 
-// FIXED GALACTIC COORDINATES (0-100 scale)
+// FIXED GALACTIC COORDINATES (0-100 scale) - Cleared Center
 const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
-  'Identity': { x: 20, y: 25 },
-  'Purpose': { x: 70, y: 20 },
-  'Mindset': { x: 15, y: 60 },
-  'Relationships': { x: 50, y: 50 },
-  'Vision': { x: 85, y: 55 },
-  'Action': { x: 30, y: 85 },
-  'Legacy': { x: 75, y: 80 },
+  'Identity': { x: 15, y: 20 },
+  'Purpose': { x: 85, y: 20 },
+  'Mindset': { x: 10, y: 50 },
+  'Relationships': { x: 50, y: 85 }, // Moved to bottom center
+  'Vision': { x: 90, y: 50 },
+  'Action': { x: 20, y: 80 },
+  'Legacy': { x: 80, y: 80 },
 };
 
 export function StreamingChat({ 
