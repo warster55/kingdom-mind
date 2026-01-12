@@ -4,8 +4,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { db, chatMessages, users, insights, systemPrompts, userProgress, curriculum, thoughts, mentoringSessions } from '@/lib/db';
 import { eq, desc, and, sql } from 'drizzle-orm';
-import { mentorTools } from '@/lib/ai/tools/definitions';
-import { toolHandlers } from '@/lib/ai/tools/handlers';
 import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
 import { rateLimit } from '@/lib/rate-limit';

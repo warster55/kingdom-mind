@@ -1,6 +1,6 @@
 import { db, systemPrompts, users, mentoringSessions, chatMessages, insights } from '@/lib/db';
 import { eq, desc, sql as drizzleSql } from 'drizzle-orm';
-import { ToolResult } from './definitions';
+import { ToolResult } from './architect-definitions';
 
 export async function executeArchitectQuery(sql: string): Promise<ToolResult> {
   try {
@@ -17,7 +17,7 @@ export async function executeArchitectQuery(sql: string): Promise<ToolResult> {
     
     return {
       success: true,
-      data: result.rows || result
+      data: result
     };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -54,9 +54,9 @@ export async function executeSystemHealth(): Promise<ToolResult> {
     return {
       success: true,
       data: {
-        totalUsers: userCount.rows[0].count,
-        waitingAtGates: pendingCount.rows[0].count,
-        activeSessions24h: sessionCount.rows[0].count,
+        totalUsers: userCount[0].count,
+        waitingAtGates: pendingCount[0].count,
+        activeSessions24h: sessionCount[0].count,
         status: 'Healthy'
       }
     };

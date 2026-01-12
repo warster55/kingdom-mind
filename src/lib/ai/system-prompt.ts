@@ -36,6 +36,8 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
 
   // 3. Fetch User Preferences (The Adaptive Layer)
   let userPrefsText = "Standard Mentor Mode.";
+  // Note: Preferences column not yet migrated to V3 schema. Disabled for now.
+  /*
   if (userId) {
     try {
       const userResult = await db.select({ preferences: users.preferences }).from(users).where(eq(users.id, userId)).limit(1);
@@ -52,6 +54,7 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
       console.warn("Preferences Error:", e);
     }
   }
+  */
 
   // 4. Determine Dynamic Protocol
   const protocol = hasCompletedOnboarding 

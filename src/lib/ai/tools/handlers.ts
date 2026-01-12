@@ -1,8 +1,6 @@
 import { db, users, userProgress, habits, insights, chatMessages, mentoringSessions, thoughts } from '@/lib/db';
 import { eq, desc, sql } from 'drizzle-orm';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
-import { ChatCompletionTool } from 'openai/resources/chat/completions';
-import { mentorTools } from './definitions';
 
 interface ToolResult {
   tool_name: string;
@@ -147,8 +145,8 @@ export const toolHandlers = {
       await db.delete(userProgress).where(eq(userProgress.userId, userId));
       await db.delete(habits).where(eq(habits.userId, userId));
       await db.delete(insights).where(eq(insights.userId, userId));
-      await db.delete(chatMessages).where(eq(chatMessages.userId, userId)); // Assuming chatMessages has userId
-      await db.delete(mentoringSessions).where(eq(mentoringSessions.userId, userId)); // Assuming mentoringSessions has userId
+      // chatMessages will be deleted automatically via cascade when mentoringSessions are deleted
+      await db.delete(mentoringSessions).where(eq(mentoringSessions.userId, userId));
       await db.delete(thoughts).where(eq(thoughts.userId, userId));
       return { tool_name: 'resetJourney', parameters: { userId }, status: 'success', data: { message: 'User journey reset.' }, is_public: true };
     } catch (e: any) {
@@ -167,15 +165,3 @@ export const toolHandlers = {
     }
   },
 };
-
-/**
- * Executes an AI tool call.
- */
-export async function executeTool(userId: number, toolCall: ChatCompletionTool): Promise<ToolResult> {
-  const handler = (toolHandlers as any)[toolCall.function.name];
-  if (!handler) {
-    return { tool_name: toolCall.function.name, parameters: toolCall.function.arguments, status: 'error', error: 'Tool not found.', is_public: false };
-  }
-  const args = JSON.parse(toolCall.function.arguments || '{}');
-  return handler(userId, ...Object.values(args));
-}

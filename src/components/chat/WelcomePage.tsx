@@ -21,8 +21,8 @@ export function WelcomePage({ onEnter }: WelcomePageProps) {
             {/* KINGDOMIND UNIFIED SIGNATURE - MATCHING HEADER STYLE */}
             <h1 className="flex items-baseline justify-center text-amber-500/80 text-4xl md:text-6xl uppercase tracking-[0.2em] font-black drop-shadow-[0_0_30px_rgba(251,191,36,0.3)] animate-fadeIn">
               <span>KINGDO</span>
-              <span className="text-7xl md:text-[10rem] font-normal text-amber-400 font-script mx-[-4px] md:mx-[-12px] transform translate-y-[10px] md:translate-y-[20px] scale-110 drop-shadow-[0_0_35px_rgba(251,191,36,0.5)]">m</span>
-              <span>IND</span>
+              <span className="text-7xl md:text-[10rem] font-normal text-amber-400 font-script transform translate-y-[10px] md:translate-y-[20px] scale-110 drop-shadow-[0_0_35px_rgba(251,191,36,0.5)]">m</span>
+              <span className="ml-2 md:ml-6">IND</span>
             </h1>
             <p className="text-xl md:text-2xl text-stone-400 font-light italic max-w-xl mx-auto leading-relaxed animate-fadeIn">
               {subtitle}

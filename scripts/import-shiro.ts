@@ -3,14 +3,6 @@ import { users, mentoringSessions, chatMessages, insights, habits, thoughts, use
 import { eq, sql } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
-
-const BASE_PATH = './shiro_data';
-
-import { db } from '@/lib/db';
-import { users, mentoringSessions, chatMessages, insights, habits, thoughts, userProgress, curriculum } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
-import fs from 'fs';
-import path from 'path';
 import readline from 'readline';
 
 const BASE_PATH = './shiro_data';

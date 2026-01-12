@@ -35,11 +35,11 @@ export async function GET() {
 
     return NextResponse.json({
       stats: {
-        totalSeekers: parseInt(userCountResult.rows[0]?.count as string || '0'),
-        waitingAtGates: parseInt(pendingCountResult.rows[0]?.count as string || '0'),
-        active24h: parseInt(activeResult.rows[0]?.count as string || '0'),
+        totalSeekers: parseInt(userCountResult[0]?.count as string || '0'),
+        waitingAtGates: parseInt(pendingCountResult[0]?.count as string || '0'),
+        active24h: parseInt(activeResult[0]?.count as string || '0'),
       },
-      galaxy: galaxyData.rows // The array of stars
+      galaxy: galaxyData // The array of stars (postgres-js returns rows directly)
     });
 
   } catch (error: any) {

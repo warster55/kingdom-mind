@@ -49,19 +49,32 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    // SKIP EMAIL FOR TEST DOMAINS, LOCAL DEV, OR MELISSA BYPASS
-    const isMelissa = normalizedEmail === 'melissa@securesentrypro.com';
-    const shouldSkipEmail = isTestUser || isMelissa || (process.env.NODE_ENV === 'development');
+    // --- BYPASS LIST (No Email Needed) ---
+    const bypassEmails = [
+      'wmoore@securesentrypro.com',
+      'melissa@securesentrypro.com',
+      'grace.moore882@gmail.com'
+    ];
+    
+    const isBypassUser = bypassEmails.includes(normalizedEmail) || isTestUser;
+    const shouldSkipEmail = isBypassUser || (process.env.NODE_ENV === 'development');
 
     if (shouldSkipEmail) {
-      console.log(`[Auth] Bypass: Code: ******`); // MASKED FOR SECURITY
+      console.log(`[Auth] Bypass detected for ${normalizedEmail}. Skipping email.`);
       return NextResponse.json({ success: true });
     }
 
     // SEND TO RAW EMAIL (Email only exists in this function's scope)
-    const emailResult = await sendOTP(normalizedEmail, code);
-    if (!emailResult.success) {
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+    try {
+      const emailResult = await sendOTP(normalizedEmail, code);
+      if (!emailResult.success) {
+        // Log but don't crash if it's a known admin (redundancy check)
+        console.error(`[Auth] SES Failed for ${normalizedEmail}`);
+        return NextResponse.json({ error: 'Verification system unavailable.' }, { status: 500 });
+      }
+    } catch (e) {
+      console.error('[Auth] Email Exception:', e);
+      return NextResponse.json({ error: 'Email service error.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

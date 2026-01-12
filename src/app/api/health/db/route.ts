@@ -27,10 +27,10 @@ export async function GET() {
       WHERE cost_metadata IS NOT NULL
     `);
 
-    const totalUsers = parseInt(userCountResult.rows[0]?.count as string || '0');
-    const waitingAtGates = parseInt(pendingCountResult.rows[0]?.count as string || '0');
-    const activeSessions24h = parseInt(sessionCountResult.rows[0]?.count as string || '0');
-    const totalAiCost = parseFloat(costResult.rows[0]?.total_cost as string || '0').toFixed(4);
+    const totalUsers = parseInt(userCountResult[0]?.count as string || '0');
+    const waitingAtGates = parseInt(pendingCountResult[0]?.count as string || '0');
+    const activeSessions24h = parseInt(sessionCountResult[0]?.count as string || '0');
+    const totalAiCost = parseFloat(costResult[0]?.total_cost as string || '0').toFixed(4);
 
     return NextResponse.json({
       totalUsers,

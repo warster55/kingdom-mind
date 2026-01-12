@@ -136,7 +136,7 @@ export function RootChat() {
                 (userRole === 'architect' || userRole === 'admin') ? "cursor-pointer hover:text-white transition-colors" : "pointer-events-none"
               )}
             >m</span>
-            <span className="ml-[1px]">IND</span>
+            <span className="ml-1">IND</span>
           </h1>
           
           <motion.div 
@@ -227,11 +227,11 @@ export function RootChat() {
 
   return (
     <div className="fixed inset-0 w-full bg-stone-950" style={{ height: vvh }}>
-      <header className="absolute top-0 left-0 right-0 p-8 z-[150] pointer-events-none transition-opacity duration-500 flex flex-col items-center">
+      <header className="absolute top-0 left-0 right-0 p-8 z-[150] pointer-events-none transition-opacity duration-500 flex flex-col items-center border-none bg-transparent shadow-none">
         <h1 className="flex items-baseline text-amber-500/80 text-[10px] uppercase tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] mb-3">
           <span>KINGDO</span>
-          <span className="text-lg font-black text-amber-400 ml-[-1px] mr-[0.5px] scale-110 tracking-tighter">M</span>
-          <span>IND</span>
+          <span className="text-lg font-normal text-amber-400 font-script mx-[-1px] transform translate-y-[2px] scale-110">m</span>
+          <span className="ml-1">IND</span>
         </h1>
         <motion.div 
           animate={{ opacity: [0.2, 0.8, 0.2] }}
