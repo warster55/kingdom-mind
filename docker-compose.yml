@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: kingdom-mind-web
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    env_file:
+      - .env.local
+    depends_on:
+      - db
+    networks:
+      - kingdom-net
+
+  db:
+    container_name: kingdom-mind-db
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=kingdom_user
+      - POSTGRES_PASSWORD=kingdom_pass_123
+      - POSTGRES_DB=kingdom_mind
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - kingdom-net
+
+volumes:
+  postgres_data:
+
+networks:
+  kingdom-net:
+    driver: bridge

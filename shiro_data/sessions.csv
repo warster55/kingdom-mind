@@ -1,0 +1,10 @@
+id,user_id,session_number,topic,status,started_at,ended_at,summary
+119,15,1,Daily Reflection,active,2026-01-08 03:52:35.712232,,
+122,15,2,Daily Reflection,completed,2026-01-08 04:14:27.542902,2026-01-08 04:32:55.69,
+254,15,9,Daily Reflection,active,2026-01-11 20:21:33.796447,,
+231,15,3,Daily Reflection,active,2026-01-10 23:46:34.644735,,
+234,15,4,Daily Reflection,active,2026-01-11 05:05:04.365399,,
+235,15,5,Daily Reflection,active,2026-01-11 05:15:15.106889,,
+238,15,6,Daily Reflection,active,2026-01-11 05:25:53.723701,,
+242,15,7,Daily Reflection,active,2026-01-11 06:02:54.202493,,
+244,15,8,Daily Reflection,active,2026-01-11 06:32:47.163608,,

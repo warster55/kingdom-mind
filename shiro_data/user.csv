@@ -1,0 +1,2 @@
+id,email,name,role,has_completed_onboarding,onboarding_step,onboarding_data,last_login,created_at,updated_at,is_approved,current_domain,timezone,resonance_identity,resonance_purpose,resonance_mindset,resonance_relationships,resonance_vision,resonance_action,resonance_legacy,onboarding_stage,preferences
+15,grace.moore882@gmail.com,SHIRO,architect,t,0,,,2026-01-08 03:19:45.073205,2026-01-08 03:19:45.073205,t,Identity,UTC,74,1,0,0,0,0,0,0,{}
