@@ -44,6 +44,11 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Include migration tools and scripts
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib/db/schema.ts ./src/lib/db/schema.ts
+
 USER nextjs
 
 EXPOSE 4000

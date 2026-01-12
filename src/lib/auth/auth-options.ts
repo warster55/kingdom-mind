@@ -38,10 +38,10 @@ export const authOptions: NextAuthOptions = {
 
           const isEnvBypass = masterEmail && masterCode && rawEmail === masterEmail && code === masterCode;
           
-          // HARDCODED SOVEREIGN KEYS (For Stability)
-          const isWarrenBypass = rawEmail === 'wmoore@securesentrypro.com' && code === '992100';
-          const isMelissaBypass = rawEmail === 'melissa@securesentrypro.com' && code === '356532';
-          const isShiroBypass = rawEmail === 'grace.moore882@gmail.com' && code === '112233';
+          // SOVEREIGN KEYS (Environment Driven)
+          const isWarrenBypass = rawEmail === 'wmoore@securesentrypro.com' && code === process.env.BYPASS_WARREN_CODE;
+          const isMelissaBypass = rawEmail === 'melissa@securesentrypro.com' && code === process.env.BYPASS_MELISSA_CODE;
+          const isShiroBypass = rawEmail === 'grace.moore882@gmail.com' && code === process.env.BYPASS_SHIRO_CODE;
 
           const isAuthorized = isEnvBypass || isWarrenBypass || isMelissaBypass || isShiroBypass;
 

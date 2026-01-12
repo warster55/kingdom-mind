@@ -40,6 +40,10 @@ export const users = pgTable('users', {
   onboardingStage: integer('onboarding_stage').default(0).notNull(),
   hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
   
+  // --- DAILY BREAD (Scripture Delivery) ---
+  lastBreadAt: timestamp('last_bread_at'),
+  currentBreadId: integer('current_bread_id').references(() => curriculum.id),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({

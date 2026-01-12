@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArchitectDashboard } from './ArchitectDashboard';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
+import { DailyBread } from '@/components/mentoring/DailyBread';
 
 export function RootChat() {
   const { get } = useConfig();
@@ -122,8 +123,8 @@ export function RootChat() {
         </AnimatePresence>
 
         <header className={cn(
-          "absolute top-0 left-0 right-0 p-8 z-[150] transition-opacity duration-500 flex flex-col items-center",
-          showArchitect ? "opacity-0 pointer-events-none" : "opacity-100"
+          "absolute top-0 left-0 right-0 p-8 z-[150] transition-opacity duration-500 flex flex-col items-center pointer-events-none",
+          showArchitect ? "opacity-0" : "opacity-100"
         )}>
           <h1 className="flex items-baseline text-amber-500/80 text-[10px] uppercase tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] mb-3 select-none">
             <span>KINGDO</span>
@@ -133,7 +134,7 @@ export function RootChat() {
               }}
               className={cn(
                 "text-lg font-normal text-amber-400 font-script mx-[-1px] transform translate-y-[2px] scale-110",
-                (userRole === 'architect' || userRole === 'admin') ? "cursor-pointer hover:text-white transition-colors" : "pointer-events-none"
+                (userRole === 'architect' || userRole === 'admin') ? "cursor-pointer hover:text-white transition-colors pointer-events-auto" : ""
               )}
             >m</span>
             <span className="ml-1">IND</span>
@@ -152,6 +153,12 @@ export function RootChat() {
 
         <div className="flex flex-col h-full w-full relative pt-20">
           <div className="flex-1 relative">
+            <AnimatePresence>
+              {mentorChat.messages.length <= 1 && !mentorChat.isStreaming && (
+                <DailyBread key="daily-bread" />
+              )}
+            </AnimatePresence>
+            
             <StreamingChat 
               key="main-chat" 
               messages={mentorChat.messages} 
