@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Shield, Users, Compass, Zap, LogOut, Terminal as TerminalIcon, 
-  ChevronRight, Clock, Heart, DollarSign, Activity, AlertTriangle 
+  Users, AlertTriangle, LogOut, ChevronRight, Activity, DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Message } from '@/components/chat/ChatMessage';
@@ -17,47 +16,89 @@ interface ArchitectDashboardProps {
   onSend: (message: string) => void;
 }
 
+const DOMAIN_COLORS: Record<string, string> = {
+  'Identity': '#fbbf24', // Amber
+  'Purpose': '#3b82f6',  // Blue
+  'Mindset': '#10b981',  // Emerald
+  'Relationships': '#f43f5e', // Rose
+  'Vision': '#8b5cf6',   // Violet
+  'Action': '#f97316',   // Orange
+  'Legacy': '#d946ef'    // Fuchsia
+};
+
 export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: ArchitectDashboardProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
-  const [lastUpdate, setLastUpdate] = useState<string>('');
-  const [activePane, setActivePane] = useState<'WATCHTOWER' | 'GARDEN' | 'TREASURY'>('WATCHTOWER');
+  const [activePane, setActivePane] = useState<'GALAXY' | 'PULSE' | 'ARCHIVES'>('GALAXY');
+  const [hoveredUser, setHoveredUser] = useState<any | null>(null);
 
-  const { data: health, dataUpdatedAt } = useQuery({
-    queryKey: ['system-health'],
+  // 1. Fetch Galaxy Data
+  const { data: galaxyData } = useQuery({
+    queryKey: ['architect-galaxy'],
     queryFn: async () => {
-      const res = await fetch(`/api/health/db?t=${Date.now()}`);
-      return res.json();
-    },
-    refetchInterval: 5000,
-  });
-
-  const { data: recentInsights } = useQuery({
-    queryKey: ['recent-insights'],
-    queryFn: async () => {
-      const res = await fetch(`/api/user/insights?limit=5`);
+      const res = await fetch('/api/architect/galaxy');
       return res.json();
     },
     refetchInterval: 10000,
   });
 
+  // 2. Render Galaxy Logic
   useEffect(() => {
-    if (dataUpdatedAt) setLastUpdate(new Date(dataUpdatedAt).toLocaleTimeString());
-  }, [dataUpdatedAt]);
+    if (activePane !== 'GALAXY' || !galaxyData?.galaxy || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const metrics = [
-    { label: 'Seekers', value: health?.totalUsers || '0', icon: Users, color: 'text-stone-100' },
-    { label: 'Threats', value: '0', icon: AlertTriangle, color: 'text-red-500' },
-    { label: 'Est. Cost', value: `$${((health?.activeSessions24h || 0) * 0.02).toFixed(2)}`, icon: DollarSign, color: 'text-stone-100' },
-    { label: 'Resonance', value: 'Identity', icon: Compass, color: 'text-amber-500' },
-  ];
+    let animationFrame: number;
+    const stars = galaxyData.galaxy.map((user: any, i: number) => ({
+      ...user,
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.max(2, Math.min(8, (user.brightness || 0) * 0.5 + 2)), // Size based on breakthrough count
+      phase: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.05 + 0.02
+    }));
 
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, isStreaming]);
+    const render = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 800;
+      canvas.height = canvas.parentElement?.clientHeight || 600;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+      // Draw Grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.beginPath();
+      for (let x = 0; x < canvas.width; x += 100) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+      for (let y = 0; y < canvas.height; y += 100) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+      ctx.stroke();
+
+      // Draw Stars
+      stars.forEach((star: any) => {
+        // Drift
+        star.y -= star.speed;
+        if (star.y < 0) star.y = canvas.height;
+
+        // Pulse
+        const pulse = Math.sin(Date.now() * 0.002 + star.phase) * 0.2 + 0.8;
+        
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = DOMAIN_COLORS[star.domain] || '#a8a29e';
+        ctx.shadowBlur = 10 * pulse;
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Hover Effect Logic (Simplified proximity check could go here)
+      });
+
+      animationFrame = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animationFrame);
+  }, [activePane, galaxyData]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && inputValue.trim()) {
@@ -69,29 +110,30 @@ export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: Ar
   return (
     <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[1000] bg-[#080706] flex flex-col font-mono text-stone-300"
+      className="fixed inset-0 z-[1000] bg-[#050505] flex flex-col font-mono text-stone-300"
     >
-      {/* TOP NAV */}
-      <div className="flex items-center justify-between p-6 border-b border-stone-900 bg-stone-950/50">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-            <h2 className="text-white text-xs font-black uppercase tracking-[0.3em]">Command Center</h2>
-          </div>
-          <div className="flex items-center gap-2 text-[8px] text-stone-600 uppercase tracking-tighter">
-            <Clock className="w-2 h-2" />
-            <span>Synced: {lastUpdate}</span>
+      {/* HUD HEADER */}
+      <div className="flex items-center justify-between p-4 border-b border-stone-900 bg-stone-950/80 backdrop-blur">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <Activity className="w-3 h-3 text-red-500 animate-pulse" />
+              <h2 className="text-white text-sm font-black uppercase tracking-[0.2em]">Sovereign View</h2>
+            </div>
+            <span className="text-xs text-stone-400">
+              Seekers: {galaxyData?.stats?.totalSeekers || 0} | Active: {galaxyData?.stats?.active24h || 0}
+            </span>
           </div>
         </div>
 
-        <div className="flex bg-stone-900 p-1 rounded-lg gap-1">
-          {['WATCHTOWER', 'GARDEN', 'TREASURY'].map((p: any) => (
+        <div className="flex bg-stone-900/50 p-1 rounded-lg gap-1 border border-stone-800">
+          {['GALAXY', 'PULSE', 'ARCHIVES'].map((p: any) => (
             <button 
               key={p} 
               onClick={() => setActivePane(p)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-[9px] font-bold transition-all",
-                activePane === p ? "bg-stone-800 text-white shadow-xl" : "text-stone-600 hover:text-stone-400"
+                "px-4 py-1.5 rounded-md text-xs font-bold transition-all",
+                activePane === p ? "bg-stone-800 text-white shadow-lg" : "text-stone-500 hover:text-stone-300"
               )}
             >
               {p}
@@ -99,115 +141,85 @@ export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: Ar
           ))}
         </div>
 
-        <button onClick={onExit} className="p-2 hover:bg-stone-900 rounded-lg transition-colors">
-          <LogOut className="w-4 h-4 text-stone-500" />
+        <button onClick={onExit} className="p-2 hover:bg-red-900/20 text-stone-500 hover:text-red-500 rounded-lg transition-colors">
+          <LogOut className="w-5 h-5" />
         </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* SIDEBAR METRICS */}
-        <div className="w-64 border-r border-stone-900 p-6 space-y-4 hidden md:flex flex-col bg-stone-950/20">
-          <h3 className="text-[10px] text-stone-600 font-bold uppercase tracking-widest mb-2">Live Metrics</h3>
-          {metrics.map((m, i) => (
-            <div key={i} className="bg-stone-900/30 border border-stone-800/50 p-4 rounded-xl flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <m.icon className="w-3 h-3 text-stone-600" />
-                <span className="text-[8px] text-stone-600 uppercase font-bold">{m.label}</span>
+        
+        {/* LEFT PANE: VISUALIZATION */}
+        <div className="flex-1 relative bg-black/50 overflow-hidden">
+          {activePane === 'GALAXY' && (
+            <div className="absolute inset-0">
+              <canvas ref={canvasRef} className="w-full h-full block" />
+              <div className="absolute bottom-6 left-6 p-5 bg-stone-900/90 border border-stone-800 rounded-xl backdrop-blur-md shadow-2xl">
+                <h3 className="text-xs font-black text-stone-300 uppercase mb-3 tracking-widest">Domain Resonance</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                  {Object.entries(DOMAIN_COLORS).map(([d, c]) => (
+                    <div key={d} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ background: c, color: c }} />
+                      <span className="text-xs text-stone-300 font-medium">{d}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <span className={cn("text-lg font-black", m.color)}>{m.value}</span>
             </div>
-          ))}
+          )}
+
+          {activePane === 'PULSE' && (
+            <div className="p-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+               <div className="bg-stone-900/40 border border-stone-800 p-8 rounded-3xl backdrop-blur-sm">
+                 <div className="text-stone-400 text-sm font-bold uppercase mb-3 flex items-center gap-2 tracking-wider">
+                   <DollarSign className="w-5 h-5 text-green-500" /> Total Provision Cost
+                 </div>
+                 <div className="text-5xl font-black text-white">${galaxyData?.stats?.totalAiCost || '0.00'}</div>
+               </div>
+               <div className="bg-stone-900/40 border border-stone-800 p-8 rounded-3xl backdrop-blur-sm">
+                 <div className="text-stone-400 text-sm font-bold uppercase mb-3 flex items-center gap-2 tracking-wider">
+                   <Users className="w-5 h-5 text-amber-500" /> Waiting at Gates
+                 </div>
+                 <div className="text-5xl font-black text-amber-500">{galaxyData?.stats?.waitingAtGates || 0}</div>
+               </div>
+            </div>
+          )}
         </div>
 
-        {/* MAIN DISPLAY PANE */}
-        <div className="flex-1 flex flex-col min-w-0 p-6">
-          <div className="flex-1 flex flex-col min-h-0 bg-stone-950/50 border border-stone-900 rounded-2xl overflow-hidden shadow-2xl">
-            
-            {/* PANE CONTENT */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide" ref={scrollRef}>
-              {activePane === 'WATCHTOWER' && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 text-stone-500 border-b border-stone-900 pb-2">
-                    <Shield className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Active Intelligence Log</span>
-                  </div>
-                  <div className="space-y-4">
-                    {messages.map((msg, i) => (
-                      <div key={msg.id || i} className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className={cn("text-[8px] font-bold px-1 rounded", msg.role === 'user' ? "bg-stone-800 text-stone-500" : "bg-red-950/30 text-red-500")}>
-                            {msg.role === 'user' ? 'INPUT' : 'OUTPUT'}
-                          </span>
-                          <span className="text-stone-700 text-[8px]">{new Date(msg.timestamp).toLocaleTimeString()}</span>
-                        </div>
-                        <p className={cn("text-xs leading-relaxed max-w-2xl", msg.role === 'user' ? "text-stone-400" : "text-stone-100 italic")}>
-                          {msg.content}
-                        </p>
-                      </div>
-                    ))}
-                    {isStreaming && <span className="text-red-500 animate-pulse">_</span>}
-                  </div>
-                </div>
-              )}
-
-              {activePane === 'GARDEN' && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 text-amber-500 border-b border-stone-900 pb-2">
-                    <Heart className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Harvested Insights</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3">
-                    {recentInsights?.length > 0 ? recentInsights.map((insight: any, i: number) => (
-                      <div key={i} className="bg-stone-900/50 p-4 rounded-xl border border-stone-800/30">
-                        <div className="text-[8px] text-amber-600 uppercase font-black mb-1">{insight.domain}</div>
-                        <p className="text-xs text-stone-200 italic">"{insight.content}"</p>
-                      </div>
-                    )) : (
-                      <div className="text-center py-12 text-stone-700 italic text-xs">Waiting for seeds to sprout...</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activePane === 'TREASURY' && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 text-stone-100 border-b border-stone-900 pb-2">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Provision Ledger</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-6 bg-stone-900/50 rounded-2xl border border-stone-800/30">
-                      <div className="text-[8px] text-stone-500 uppercase font-bold mb-2">Token Usage (24h)</div>
-                      <div className="text-3xl font-black text-white">{(health?.activeSessions24h || 0) * 150} <span className="text-xs text-stone-600 uppercase tracking-widest">Tokens</span></div>
-                    </div>
-                    <div className="p-6 bg-amber-950/10 rounded-2xl border border-amber-900/20">
-                      <div className="text-[8px] text-amber-600 uppercase font-bold mb-2">Offerings Received</div>
-                      <div className="text-3xl font-black text-amber-500">$0.00 <span className="text-xs text-amber-800 uppercase tracking-widest">Total</span></div>
-                    </div>
-                  </div>
-                </div>
-              )}
+        {/* RIGHT PANE: ARCHITECT CHAT */}
+        <div className="w-96 border-l border-stone-900 bg-stone-950 flex flex-col shadow-2xl">
+          <div className="p-4 border-b border-stone-900 bg-stone-900/40">
+            <div className="flex items-center gap-2 text-stone-300 font-bold uppercase tracking-widest text-xs">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+              <span>Architect Interface</span>
             </div>
-
-            {/* COMMAND BAR (Only in Watchtower) */}
-            {activePane === 'WATCHTOWER' && (
-              <div className="p-4 bg-stone-900/50 border-t border-stone-900">
-                <div className="flex items-center gap-3 bg-stone-950 border border-stone-800 p-2.5 rounded-xl">
-                  <ChevronRight className="w-4 h-4 text-red-600 shrink-0" />
-                  <input 
-                    ref={inputRef} type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown} placeholder="Execute sovereignty command..."
-                    className="flex-1 bg-transparent border-none outline-none text-xs text-white placeholder:text-stone-700"
-                  />
-                </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 font-sans">
+            {messages.map((msg, i) => (
+              <div key={i} className={cn("text-sm p-4 rounded-2xl border leading-relaxed", msg.role === 'user' ? "bg-stone-900 border-stone-800 text-stone-200" : "bg-blue-950/10 border-blue-900/20 text-blue-100 italic shadow-inner")}>
+                <div className="font-black text-[10px] uppercase mb-2 tracking-tighter opacity-40">{msg.role}</div>
+                {msg.content}
               </div>
-            )}
+            ))}
+            {isStreaming && <div className="text-blue-400 text-sm animate-pulse font-bold tracking-widest">THINKING...</div>}
+          </div>
+
+          <div className="p-6 border-t border-stone-900 bg-stone-900/40">
+            <div className="flex items-center gap-3 bg-stone-950 border border-stone-800 p-3 rounded-2xl focus-within:border-blue-500/50 transition-all shadow-inner">
+              <ChevronRight className="w-5 h-5 text-blue-500" />
+              <input 
+                ref={inputRef} 
+                type="text" 
+                value={inputValue} 
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown} 
+                placeholder="Query system..."
+                className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder:text-stone-700"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="p-4 text-center border-t border-stone-900 bg-stone-950/50">
-        <p className="text-[7px] text-stone-700 uppercase tracking-[0.5em]">Sovereign Control Interface • v3.0.0-genesis</p>
       </div>
     </motion.div>
   );

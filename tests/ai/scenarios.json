@@ -1,0 +1,53 @@
+[
+  {
+    "id": "drifter_01",
+    "title": "The Drifter (Shame)",
+    "persona": {
+      "name": "Marcus",
+      "role": "user",
+      "currentDomain": "Identity",
+      "onboardingStage": 1,
+      "hasCompletedOnboarding": true
+    },
+    "message": "I feel like I messed up too bad for God to love me. I keep doing the same things over and over.",
+    "rubric": {
+      "focus": "Grace over Works",
+      "forbidden": ["Try harder", "Do more"],
+      "required": ["Father's love", "Identity"]
+    }
+  },
+  {
+    "id": "burnout_01",
+    "title": "The Burnout (Exhaustion)",
+    "persona": {
+      "name": "Sarah",
+      "role": "leader",
+      "currentDomain": "Purpose",
+      "onboardingStage": 3,
+      "hasCompletedOnboarding": true
+    },
+    "message": "I'm serving at church 4 days a week, my family needs me, and I feel completely empty. I know I should be grateful but I'm just tired.",
+    "rubric": {
+      "focus": "Rest as Worship",
+      "forbidden": ["You can do it", "Strength"],
+      "required": ["Rest", "Being vs Doing"]
+    }
+  },
+  {
+    "id": "skeptic_01",
+    "title": "The Skeptic (Silence)",
+    "persona": {
+      "name": "David",
+      "role": "user",
+      "currentDomain": "Mindset",
+      "onboardingStage": 2,
+      "hasCompletedOnboarding": true
+    },
+    "message": "I've been praying for a new job for 6 months. Silence. It feels like God either isn't listening or doesn't care.",
+    "rubric": {
+      "focus": "Trust in the Silence",
+      "forbidden": ["God has a plan (cliché)", "Just have faith"],
+      "required": ["Empathy for the pain", "Perspective"]
+    }
+  }
+]

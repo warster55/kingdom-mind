@@ -52,15 +52,18 @@ export async function processArchitectTurn(command: string, controller: Readable
     async function runArchitectLoop(currentMessages: any[]) {
       console.log(`[Architect] Processing Turn: ${command.substring(0, 50)}...`);
       
+      const modelId = process.env.XAI_ARCHITECT_MODEL || 'grok-4-1-fast-reasoning';
       const response = await xai.chat.completions.create({
-        model: process.env.XAI_MODEL || 'grok-4-latest',
+        model: modelId,
         messages: currentMessages,
         tools: architectTools,
         tool_choice: 'auto',
         stream: true,
+        stream_options: { include_usage: true },
       });
 
       let fullContent = '';
+      let usageData = { prompt_tokens: 0, completion_tokens: 0 };
       const toolCalls: any[] = [];
 
       for await (const chunk of response) {
@@ -77,6 +80,18 @@ export async function processArchitectTurn(command: string, controller: Readable
             if (tc.function?.arguments) current.function.arguments += tc.function.arguments;
           });
         }
+        if (chunk.usage) {
+          usageData = chunk.usage;
+        }
+      }
+
+      // Track Architect Cost (Same pricing for Fast Reasoning: $0.20/$0.50)
+      if (usageData.prompt_tokens > 0) {
+        const cost = (usageData.prompt_tokens * 0.20 / 1e6) + (usageData.completion_tokens * 0.50 / 1e6);
+        console.log(`[Architect Cost] $${cost.toFixed(6)} (${usageData.prompt_tokens}in/${usageData.completion_tokens}out)`);
+        // Note: Architect doesn't save to chatMessages table directly in this loop, 
+        // but we log it. To save it, we'd need a system_logs table.
+        // For now, logging to stdout is sufficient for debugging, or we can insert into chatMessages if it's a chat turn.
       }
 
       if (toolCalls.length > 0) {

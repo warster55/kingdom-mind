@@ -220,6 +220,10 @@ export function StreamingChat({
     if (!hasMounted) return;
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d'); if (!ctx) return;
+    
+    // Optimization: Create Set outside the loop for O(1) lookups
+    const glowingDomains = new Set(activeResonanceList);
+    
     let frame: number;
     const render = () => {
       canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -236,7 +240,7 @@ export function StreamingChat({
         x = centerX + (x - centerX) * zoomScale;
         y = centerY + (y - centerY) * zoomScale + zoomYOffset;
 
-        const isGlowing = activeResonanceList.includes(star.domain);
+        const isGlowing = glowingDomains.has(star.domain);
         ctx.beginPath(); ctx.arc(x, y, star.size * zoomScale, 0, Math.PI * 2);
         ctx.fillStyle = isGlowing ? `rgba(251, 191, 36, 0.6)` : `rgba(255, 255, 255, ${status?.activeDomain === star.domain ? 0.4 : 0.1})`; 
         ctx.fill();

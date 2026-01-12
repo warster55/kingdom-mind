@@ -28,14 +28,11 @@ export function RootChat() {
 
   const userRole = (session?.user as any)?.role;
 
-  // Use the new hook for authenticated chat
-  const { 
-    messages, 
-    isStreaming, 
-    error, 
-    sendMessage, 
-    setMessages 
-  } = useStreamingChat({ sessionId: 0 });
+  // 1. MENTOR CHAT (Standard)
+  const mentorChat = useStreamingChat({ sessionId: 0 });
+
+  // 2. ARCHITECT CHAT (Sovereign)
+  const architectChat = useStreamingChat({ sessionId: -1 }); // Special ID or just ignore
 
   // --- BEACON STATUS ---
   const [sanctuaryStatus, setSanctuaryStatus] = useState<'thinking' | 'waiting' | 'reading'>('reading');
@@ -54,15 +51,27 @@ export function RootChat() {
 
   // Initialize greeting when authenticated
   useEffect(() => {
-    if (status === 'authenticated' && messages.length === 0) {
-      setMessages([{
+    if (status === 'authenticated' && mentorChat.messages.length === 0) {
+      mentorChat.setMessages([{
         id: 'initial-greeting',
         role: 'assistant',
         content: get('authenticated_greeting', "Welcome back, Seeker. How may I serve you today?"),
         timestamp: new Date()
       }]);
     }
-  }, [status, messages.length, setMessages, get]);
+  }, [status, mentorChat.messages.length, mentorChat.setMessages, get]);
+
+  // Initialize Architect greeting
+  useEffect(() => {
+    if (showArchitect && architectChat.messages.length === 0) {
+      architectChat.setMessages([{
+        id: 'arc-init',
+        role: 'assistant',
+        content: "Architect Protocol Online. Accessing Galaxy...",
+        timestamp: new Date()
+      }]);
+    }
+  }, [showArchitect, architectChat.messages.length, architectChat.setMessages]);
 
   const { data: greeting } = useQuery({
     queryKey: ['greeting', authStep],
@@ -96,7 +105,7 @@ export function RootChat() {
         signOut();
         return;
       }
-      sendMessage(content);
+      mentorChat.sendMessage(content, 'mentor');
     };
 
     return (
@@ -105,20 +114,28 @@ export function RootChat() {
           {showArchitect && (
             <ArchitectDashboard 
               onExit={() => setShowArchitect(false)} 
-              messages={messages} 
-              isStreaming={isStreaming} 
-              onSend={handleAuthenticatedSend} 
+              messages={architectChat.messages} 
+              isStreaming={architectChat.isStreaming} 
+              onSend={(msg) => architectChat.sendMessage(msg, 'architect')} 
             />
           )}
         </AnimatePresence>
 
         <header className={cn(
-          "absolute top-0 left-0 right-0 p-8 z-[150] pointer-events-none transition-opacity duration-500 flex flex-col items-center",
-          showArchitect ? "opacity-0" : "opacity-100"
+          "absolute top-0 left-0 right-0 p-8 z-[150] transition-opacity duration-500 flex flex-col items-center",
+          showArchitect ? "opacity-0 pointer-events-none" : "opacity-100"
         )}>
-          <h1 className="flex items-baseline text-amber-500/80 text-[10px] uppercase tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] mb-3">
+          <h1 className="flex items-baseline text-amber-500/80 text-[10px] uppercase tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] mb-3 select-none">
             <span>KINGDO</span>
-            <span className="text-lg font-normal text-amber-400 font-script mx-[-1px] transform translate-y-[2px] scale-110">m</span>
+            <span 
+              onClick={() => {
+                if (userRole === 'architect' || userRole === 'admin') setShowArchitect(true);
+              }}
+              className={cn(
+                "text-lg font-normal text-amber-400 font-script mx-[-1px] transform translate-y-[2px] scale-110",
+                (userRole === 'architect' || userRole === 'admin') ? "cursor-pointer hover:text-white transition-colors" : "pointer-events-none"
+              )}
+            >m</span>
             <span className="ml-[1px]">IND</span>
           </h1>
           
@@ -137,9 +154,9 @@ export function RootChat() {
           <div className="flex-1 relative">
             <StreamingChat 
               key="main-chat" 
-              messages={messages} 
-              isStreaming={isStreaming} 
-              error={error} 
+              messages={mentorChat.messages} 
+              isStreaming={mentorChat.isStreaming} 
+              error={mentorChat.error} 
               insights={[]} 
               habits={[]} 
               isKeyboardOpen={isKeyboardOpen}
@@ -151,7 +168,7 @@ export function RootChat() {
             "w-full transition-all duration-300 px-4",
             isKeyboardOpen ? "pb-2" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"
           )}>
-            {!isStreaming && (
+            {!mentorChat.isStreaming && (
               <ChatInput onSend={handleAuthenticatedSend} autoFocus placeholder="Speak your heart..." />
             )}
           </div>

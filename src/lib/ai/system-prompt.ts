@@ -16,7 +16,7 @@ export interface PromptContext {
   localTime: string;
   hasCompletedOnboarding: boolean;
   onboardingStage: number;
-  currentPillar?: { name: string; truth: string }; 
+  currentPillar?: { name: string; truth: string; verse: string; description: string }; 
 }
 
 export async function buildSanctuaryPrompt(context: PromptContext): Promise<string> {
@@ -55,7 +55,13 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
 
   // 4. Determine Dynamic Protocol
   const protocol = hasCompletedOnboarding 
-    ? (currentPillar ? `**ACTIVE MISSION:** Guide them to the truth of **${currentPillar.name}**: "${currentPillar.truth}".` : `Call 'getCurriculumContext' to find the next truth.`) 
+    ? (currentPillar 
+        ? `**ACTIVE MISSION:** Guide them to the truth of **${currentPillar.name}**.
+- **TRUTH:** "${currentPillar.truth}"
+- **VERSE:** ${currentPillar.verse}
+- **CONTEXT:** ${currentPillar.description}
+- **GOAL:** Ask a question that helps them realize this truth.`
+        : `**ACTIVE MISSION:** Call 'getCurriculumContext' to find the next truth.`) 
     : getGenesisProtocol(onboardingStage);
 
   // 5. THE GREAT INJECTION

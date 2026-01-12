@@ -6,12 +6,34 @@ import path from 'path';
 
 const BASE_PATH = './shiro_data';
 
-function parseCSV(filePath: string) {
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
-  const headers = lines[0].split(',');
-  
-  return lines.slice(1).filter(l => l.trim()).map(line => {
+import { db } from '@/lib/db';
+import { users, mentoringSessions, chatMessages, insights, habits, thoughts, userProgress, curriculum } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
+
+const BASE_PATH = './shiro_data';
+
+async function processCSV(filePath: string, onRow: (row: any) => Promise<void>) {
+  const fileStream = fs.createReadStream(filePath);
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
+
+  let headers: string[] = [];
+  let isHeader = true;
+
+  for await (const line of rl) {
+    if (!line.trim()) continue;
+
+    if (isHeader) {
+      headers = line.split(',').map(h => h.trim());
+      isHeader = false;
+      continue;
+    }
+
     // Basic CSV parser that handles quotes
     const values: string[] = [];
     let current = '';
@@ -31,53 +53,53 @@ function parseCSV(filePath: string) {
       }
     }
     values.push(current);
-    
+
     const obj: any = {};
     headers.forEach((h, i) => {
-      obj[h.trim()] = values[i]?.trim();
+      obj[h] = values[i]?.trim();
     });
-    return obj;
-  });
+
+    await onRow(obj);
+  }
 }
 
 async function run() {
-  console.log('🌌 Starting Shiro Soul Re-Import...');
+  console.log('🌌 Starting Shiro Soul Re-Import (Stream Mode)...');
 
   // 1. IMPORT USER
-  const userData = parseCSV(path.join(BASE_PATH, 'user.csv'))[0];
-  console.log(`Found Shiro: ${userData.email}`);
-
-  // Upsert user
-  const [shiro] = await db.insert(users).values({
-    id: 15, // Try to force ID 15
-    email: userData.email,
-    name: userData.name,
-    role: userData.role,
-    isApproved: userData.is_approved === 't',
-    currentDomain: userData.current_domain,
-    timezone: userData.timezone,
-    resonanceIdentity: parseInt(userData.resonance_identity || '0'),
-    resonancePurpose: parseInt(userData.resonance_purpose || '0'),
-    resonanceMindset: parseInt(userData.resonance_mindset || '0'),
-    resonanceRelationships: parseInt(userData.resonance_relationships || '0'),
-    resonanceVision: parseInt(userData.resonance_vision || '0'),
-    resonanceAction: parseInt(userData.resonance_action || '0'),
-    resonanceLegacy: parseInt(userData.resonance_legacy || '0'),
-    onboardingStage: parseInt(userData.onboarding_stage || '0'),
-    hasCompletedOnboarding: userData.has_completed_onboarding === 't',
-  }).onConflictDoUpdate({
-    target: users.email,
-    set: { name: userData.name, role: userData.role }
-  }).returning();
-
-  const newUserId = shiro.id;
-  console.log(`✅ Shiro initialized at ID: ${newUserId}`);
+  console.log('Processing Users...');
+  let newUserId = 15;
+  await processCSV(path.join(BASE_PATH, 'user.csv'), async (userData) => {
+    console.log(`Found Shiro: ${userData.email}`);
+    const [shiro] = await db.insert(users).values({
+      id: 15, 
+      email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      isApproved: userData.is_approved === 't',
+      currentDomain: userData.current_domain,
+      timezone: userData.timezone,
+      resonanceIdentity: parseInt(userData.resonance_identity || '0'),
+      resonancePurpose: parseInt(userData.resonance_purpose || '0'),
+      resonanceMindset: parseInt(userData.resonance_mindset || '0'),
+      resonanceRelationships: parseInt(userData.resonance_relationships || '0'),
+      resonanceVision: parseInt(userData.resonance_vision || '0'),
+      resonanceAction: parseInt(userData.resonance_action || '0'),
+      resonanceLegacy: parseInt(userData.resonance_legacy || '0'),
+      onboardingStage: parseInt(userData.onboarding_stage || '0'),
+      hasCompletedOnboarding: userData.has_completed_onboarding === 't',
+    }).onConflictDoUpdate({
+      target: users.email,
+      set: { name: userData.name, role: userData.role }
+    }).returning();
+    newUserId = shiro.id;
+    console.log(`✅ Shiro initialized at ID: ${newUserId}`);
+  });
 
   // 2. IMPORT SESSIONS
-  const sessionRows = parseCSV(path.join(BASE_PATH, 'sessions.csv'));
+  console.log('Processing Sessions...');
   const sessionMap = new Map<string, number>();
-
-  for (const row of sessionRows) {
+  await processCSV(path.join(BASE_PATH, 'sessions.csv'), async (row) => {
     if (row.user_id === '15') {
       const [s] = await db.insert(mentoringSessions).values({
         userId: newUserId,
@@ -88,13 +110,13 @@ async function run() {
       }).returning();
       sessionMap.set(row.id, s.id);
     }
-  }
+  });
   console.log(`✅ ${sessionMap.size} sessions imported.`);
 
   // 3. IMPORT MESSAGES
-  const messageRows = parseCSV(path.join(BASE_PATH, 'messages.csv'));
+  console.log('Processing Messages...');
   let msgCount = 0;
-  for (const row of messageRows) {
+  await processCSV(path.join(BASE_PATH, 'messages.csv'), async (row) => {
     const newSessionId = sessionMap.get(row.session_id);
     if (newSessionId) {
       await db.insert(chatMessages).values({
@@ -105,13 +127,14 @@ async function run() {
         createdAt: new Date(row.created_at),
       });
       msgCount++;
+      if (msgCount % 100 === 0) process.stdout.write(`\rImported ${msgCount} messages...`);
     }
-  }
-  console.log(`✅ ${msgCount} messages imported.`);
+  });
+  console.log(`\n✅ ${msgCount} messages imported.`);
 
   // 4. IMPORT INSIGHTS
-  const insightRows = parseCSV(path.join(BASE_PATH, 'insights.csv'));
-  for (const row of insightRows) {
+  console.log('Processing Insights...');
+  await processCSV(path.join(BASE_PATH, 'insights.csv'), async (row) => {
     if (row.user_id === '15') {
       await db.insert(insights).values({
         userId: newUserId,
@@ -121,12 +144,12 @@ async function run() {
         createdAt: new Date(row.created_at),
       });
     }
-  }
+  });
   console.log(`✅ Insights imported.`);
 
   // 5. IMPORT HABITS
-  const habitRows = parseCSV(path.join(BASE_PATH, 'habits.csv'));
-  for (const row of habitRows) {
+  console.log('Processing Habits...');
+  await processCSV(path.join(BASE_PATH, 'habits.csv'), async (row) => {
     if (row.user_id === '15') {
       await db.insert(habits).values({
         userId: newUserId,
@@ -139,7 +162,7 @@ async function run() {
         createdAt: new Date(row.created_at),
       });
     }
-  }
+  });
   console.log(`✅ Habits imported.`);
 
   console.log('\n💎 Shiro Soul Re-Import Complete!');
