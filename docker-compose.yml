@@ -26,7 +26,7 @@ services:
     restart: always
     environment:
       - POSTGRES_USER=kingdom_user
-      - POSTGRES_PASSWORD=kingdom_pass_123
+      - POSTGRES_PASSWORD=781-1mGLUV_rx9uAQhH5S6VUwoxBykZ0
       - POSTGRES_DB=kingdom_mind
     ports:
       - "127.0.0.1:5433:5432"

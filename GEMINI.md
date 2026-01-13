@@ -1,69 +1,102 @@
-# Kingdom Mind - Project Context
+# GEMINI.md
+
+This file provides guidance to Gemini when working with code in this repository.
 
 ## Mandatory Protocols
-- **READ-ONLY DEFAULT:** I am strictly forbidden from creating, editing, or deleting any files, or executing any shell commands that modify the system, without explicit, per-action permission from the Architect for EVERY specific modification.
-- **PLAN APPROVAL:** The Architect must always approve a full development plan before I execute any code changes or system-modifying commands.
-- **STAY ON TRACK:** Prioritize fixing existing issues and completing current phase tasks. New features or recommendations will be planned but not implemented until current broken functionalities are resolved and the current phase is complete.
-- **SOVEREIGN PROTOCOL:** No code walls, mandatory probes after every change, and the creator's identity must remain erased.
+
+- **READ-ONLY DEFAULT:** Do not create, edit, or delete any files without explicit permission for each specific modification.
+- **PLAN APPROVAL:** The Architect must approve a full development plan before executing any code changes.
+- **STAY ON TRACK:** Prioritize fixing existing issues before implementing new features.
+- **SOVEREIGN PROTOCOL:** The creator's identity must remain invisible. No personal attribution anywhere.
 
 ## Project Overview
-**Kingdom Mind** is a faith-based transformation web application designed to help users "be transformed by the renewing of their mind" (Romans 12:2). It features a "Reflect" design philosophy—minimalist, peaceful, and focus-driven.
 
-- **Production IP:** `3.131.126.239`
+**Kingdom Mind** is a Next.js 16 AI-driven conversational platform for spiritual formation. Users interact with an AI mentor through a persistent chat interface, guided through a 21-step curriculum across 7 life domains (Identity, Purpose, Mindset, Relationships, Vision, Action, Legacy).
 
-### Tech Stack
+**Mission:** A "Living Digital Sanctuary" that guides users through transformation using high-intelligence AI and biblical wisdom.
+
+## Documentation Structure
+
+```
+/README.md      - Brief project introduction
+/ROADMAP.md     - THE MASTER DOCUMENT (all planning, decisions, architecture)
+/CLAUDE.md      - AI instructions for Claude Code
+/GEMINI.md      - AI instructions for Gemini (this file)
+```
+
+**IMPORTANT:** All project decisions, roadmap phases, architecture details, and implementation tasks are documented in **ROADMAP.md**. Refer to that file for comprehensive project context.
+
+## Tech Stack
+
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
-- **Styling:** Tailwind CSS v4 (Stone & Amber palette)
-- **Database:** PostgreSQL (via Drizzle ORM)
-- **Authentication:** NextAuth.js
-- **AI Integration:** OpenAI, Google Generative AI, Anthropic SDK
-- **Testing:** Vitest (Unit), Playwright (E2E)
+- **Styling:** Tailwind CSS v4
+- **Database:** PostgreSQL + Drizzle ORM
+- **Authentication:** TOTP + Seed Phrase (no email)
+- **AI Engine:** OpenRouter (privacy proxy to multiple AI providers)
+- **Infrastructure:** Docker, Cloudflare Tunnels
+- **Payments:** Bitcoin (Lightning Network + On-chain)
 
-## Architecture
+## Development Commands
 
-### The "Reflect" UI
-- **Full-Screen Canvas:** Sidebar is hidden by default (Drawer style).
-- **Minimal Branding:** Centered "Kingdom Mind" title at the top; no persistent header bars.
-- **Warm Aesthetic:** Uses `bg-stone-50` and `font-serif` for a "book-like" and inviting feel.
-- **Reflect States:**
-  - **Idle:** Centered greeting and minimalist Scripture of the Day.
-  - **Active:** Full-width, borderless AI Mentor chat centered for focus.
+```bash
+# Development
+npm run dev                    # Start dev server (port 3000)
 
-### Directory Structure
-- **`app/`**: Next.js App Router.
-  - **`(auth)/reflect/`**: The core "Reflect" experience (kept as `/reflect` route for internal logic).
-  - **`api/mentoring/main`**: Singleton session logic for the chat.
-- **`components/`**: 
-  - **`mentoring/StreamingChat.tsx`**: Main interaction component.
-  - **`progress/ActiveFocusCard.tsx`**: Linear journey driver.
-- **`lib/`**:
-  - **`hooks/useStreamingChat.ts`**: Real-time message orchestration.
-  - **`config/navigation.config.ts`**: Streamlined navigation paths.
+# Database
+npm run db:generate            # Generate Drizzle migrations
+npm run db:push                # Push migrations to database
+npm run db:seed                # Seed curriculum and test data
 
-## Development Workflow
+# Testing
+npm run test                   # Run Playwright E2E tests
 
-### Service Management
-The development server is managed as a **systemd user service**.
-- **Restart Service:** `systemctl --user restart kingdom-mind.service`
-- **Check Status:** `systemctl --user status kingdom-mind.service`
-- **Stop Service:** `systemctl --user stop kingdom-mind.service`
+# Build
+npm run build                  # Production build
+npm run lint                   # ESLint check
 
-### Manual Scripts
-| Command | Description |
-| :--- | :--- |
-| `npm run build` | Verify types and build for production |
-| `npm run db:generate` | Generate Drizzle migrations |
-| `npm run db:push` | Push schema to database |
-| `npm run test:e2e` | Run Playwright journey tests |
+# Utility Scripts
+npx tsx scripts/sovereign-check.ts    # System health probe
+npx tsx scripts/eval-mentor.ts        # AI evaluation suite
+```
 
-## Key Patterns
-- **Linear Journey:** Users are guided through 7 domains one at a time via the "Active Focus" card.
-- **Event-Driven Chat:** External components trigger chat messages via the `trigger-chat-message` custom DOM event.
-- **Concise AI:** System prompts are configured to prioritize short, conversational responses.
+## Architecture Overview
 
-## Current Status
-- **Completed:** Reflect layout overhaul, naming transition (from Dashboard to Reflect), singleton chat, linear journey integration.
-- **Next Steps:** 
-  - Refine library modules to match Reflect aesthetic.
-  - Expand "Active Focus" logic.
+### Dual AI Brain System
+- **The Mentor** (user-facing): Spiritual guidance with streaming responses
+- **The Architect** (admin-only): System management with database query tools
+
+### Key Directories
+- `src/app/api/` - API routes
+- `src/components/chat/` - Chat UI components
+- `src/lib/ai/` - AI providers, system prompts, tools
+- `src/lib/db/schema.ts` - Drizzle ORM schema
+- `src/lib/auth/` - Authentication configuration
+- `scripts/` - Utility scripts
+
+### Core Principles (from ROADMAP.md)
+
+1. **Privacy First** - User data never leaves the system unnecessarily
+2. **Self-Sovereignty** - Users own their identity via cryptographic seed phrases
+3. **Closed Box** - Minimize external service dependencies
+4. **No Attribution** - The app exists to serve, not to promote its creator
+5. **Simplicity** - Fewer features, fewer failure points
+
+## Security Notes
+
+- **Never open source** - Codebase is proprietary and confidential
+- AES-256-GCM encryption for sensitive data
+- All user data encrypted with seed-derived keys
+- Cloudflare tunnel for access (server not directly exposed)
+- No email-based authentication
+
+## For Full Details
+
+See **ROADMAP.md** for:
+- Complete roadmap phases
+- Authentication system design
+- AI infrastructure plans
+- Payment/gift system (Bitcoin/Lightning)
+- Security hardening checklist
+- Curriculum philosophy
+- Architecture diagrams

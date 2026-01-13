@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   title: 'Kingdom Mind',
   description: 'Be transformed by the renewing of your mind - Romans 12:2',
   icons: {
-    icon: '/favicon.ico', // Use the copied favicon.ico
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
   },
 };
 

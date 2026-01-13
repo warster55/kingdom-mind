@@ -5,12 +5,20 @@ import { Message } from '@/components/chat/ChatMessage';
 import { sendSanctuaryMessage } from '@/lib/actions/chat';
 import { readStreamableValue } from '@ai-sdk/rsc';
 
+interface ClientAction {
+  type: 'illuminate' | 'breakthrough';
+  domains?: string[];
+  domain?: string;
+  insight?: string;
+}
+
 interface UseStreamingChatProps {
   sessionId: number;
   initialMessages?: Message[];
+  onClientAction?: (action: ClientAction) => void;
 }
 
-export function useStreamingChat({ sessionId, initialMessages = [] }: UseStreamingChatProps) {
+export function useStreamingChat({ sessionId, initialMessages = [], onClientAction }: UseStreamingChatProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,9 +37,9 @@ export function useStreamingChat({ sessionId, initialMessages = [] }: UseStreami
 
     try {
       // CALL SERVER ACTION
-      const { output } = await sendSanctuaryMessage(
-        sessionId, 
-        content, 
+      const { output, clientActions } = await sendSanctuaryMessage(
+        sessionId,
+        content,
         Intl.DateTimeFormat().resolvedOptions().timeZone,
         mode
       );
@@ -52,9 +60,20 @@ export function useStreamingChat({ sessionId, initialMessages = [] }: UseStreami
         if (delta) {
           assistantContent += delta;
           // Update the specific assistant message in real-time
-          setMessages(prev => prev.map(msg => 
+          setMessages(prev => prev.map(msg =>
             msg.id === assistantId ? { ...msg, content: assistantContent } : msg
           ));
+        }
+      }
+
+      // Process client actions (illuminate domains, breakthroughs, etc.)
+      if (clientActions && onClientAction) {
+        for await (const actions of readStreamableValue(clientActions)) {
+          if (actions && Array.isArray(actions)) {
+            for (const action of actions) {
+              onClientAction(action);
+            }
+          }
         }
       }
 
@@ -68,7 +87,7 @@ export function useStreamingChat({ sessionId, initialMessages = [] }: UseStreami
     } finally {
       setIsStreaming(false);
     }
-  }, [sessionId]);
+  }, [sessionId, onClientAction]);
 
   return {
     messages,

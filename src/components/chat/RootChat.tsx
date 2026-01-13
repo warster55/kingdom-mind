@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { WelcomePage } from './WelcomePage';
-import { StreamingChat } from '@/components/mentoring/StreamingChat';
+import { StreamingChat } from '@/components/chat/StreamingChat';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Message } from '@/components/chat/ChatMessage';
 import { useRouter } from 'next/navigation';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArchitectDashboard } from './ArchitectDashboard';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
-import { DailyBread } from '@/components/mentoring/DailyBread';
+import { DailyBread } from '@/components/chat/DailyBread';
 
 export function RootChat() {
   const { get } = useConfig();
@@ -171,14 +171,16 @@ export function RootChat() {
               isAuthenticated={true}
             />
           </div>
-          <div className={cn(
-            "w-full transition-all duration-300 px-4",
-            isKeyboardOpen ? "pb-2" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"
-          )}>
-            {!mentorChat.isStreaming && (
-              <ChatInput onSend={handleAuthenticatedSend} autoFocus placeholder="Speak your heart..." />
-            )}
-          </div>
+          {!showArchitect && (
+            <div className={cn(
+              "w-full transition-all duration-300 px-4",
+              isKeyboardOpen ? "pb-2" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"
+            )}>
+              {!mentorChat.isStreaming && (
+                <ChatInput onSend={handleAuthenticatedSend} autoFocus placeholder="Speak your heart..." />
+              )}
+            </div>
+          )}
         </div>
       </div>
     );

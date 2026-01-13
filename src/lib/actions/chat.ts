@@ -8,8 +8,9 @@ import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
 import { rateLimit } from '@/lib/rate-limit';
 import { sanitizeResponse } from '@/lib/ai/filter';
-import { xai } from '@/lib/ai/client'; // Import raw X.AI client
+import { xai } from '@/lib/ai/client';
 import { createStreamableValue } from '@ai-sdk/rsc';
+import { mentorTools, executeTool } from '@/lib/ai/tools/mentor-tools';
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
 
@@ -149,14 +150,18 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
   });
   const historyMessages = dbHistory.map(msg => ({ role: (msg.role === 'assistant' ? 'assistant' : 'user') as "assistant" | "user" | "system", content: decrypt(msg.content) }));
 
-      // 6. STREAMING SETUP
+  // 6. STREAMING SETUP WITH TOOL CALLING
   const stream = createStreamableValue('');
+  const clientActionsStream = createStreamableValue<any[]>([]);
 
   (async () => {
     try {
-      console.log('sendSanctuaryMessage: Executing direct X.AI request...');
-      
+      console.log('sendSanctuaryMessage: Executing X.AI request with tools...');
+
       const modelId = process.env.XAI_CHAT_MODEL || 'grok-4-1-fast-non-reasoning';
+      const userIdInt = userId ? parseInt(userId) : 0;
+
+      // First API call with tools
       const completion = await xai.chat.completions.create({
         model: modelId,
         messages: [
@@ -164,63 +169,126 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
           ...historyMessages,
           { role: 'user', content: message }
         ],
+        tools: mentorTools,
+        tool_choice: 'auto',
         stream: true,
-        stream_options: { include_usage: true }, // Ensure usage is sent
+        stream_options: { include_usage: true },
       });
 
       let fullContent = '';
       let usageData = { prompt_tokens: 0, completion_tokens: 0 };
+      const toolCalls: Array<{ id: string; name: string; arguments: string }> = [];
+      const clientActions: any[] = [];
+      const resonanceLog: string[] = [];
 
+      // Process the stream
       for await (const chunk of completion) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          fullContent += content;
-          stream.update(content);
+        const delta = chunk.choices[0]?.delta;
+
+        // Handle text content
+        if (delta?.content) {
+          fullContent += delta.content;
+          stream.update(delta.content);
         }
+
+        // Handle tool calls
+        if (delta?.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            if (tc.index !== undefined) {
+              if (!toolCalls[tc.index]) {
+                toolCalls[tc.index] = { id: tc.id || '', name: '', arguments: '' };
+              }
+              if (tc.id) toolCalls[tc.index].id = tc.id;
+              if (tc.function?.name) toolCalls[tc.index].name = tc.function.name;
+              if (tc.function?.arguments) toolCalls[tc.index].arguments += tc.function.arguments;
+            }
+          }
+        }
+
         if (chunk.usage) {
           usageData = chunk.usage;
         }
       }
 
-      console.log('sendSanctuaryMessage: Direct stream finished.', usageData);
-      const cleanContent = sanitizeResponse(fullContent);
-      
-      // --- BREAKTHROUGH STAR LOGIC ---
-      // Parse [RESONANCE: Domain] tags and update DB
-      const resonanceRegex = /\[RESONANCE:\s*(\w+)\]/g;
-      const resonanceMatches = [...fullContent.matchAll(resonanceRegex)];
-      const uniqueResonances = [...new Set(resonanceMatches.map(m => m[1]))]; // De-dupe
+      // Execute tool calls and collect client actions
+      for (const tc of toolCalls) {
+        if (tc.name) {
+          try {
+            const args = JSON.parse(tc.arguments || '{}');
+            const result = await executeTool(tc.name, args, userIdInt);
 
-      const resonanceLog: string[] = [];
+            if (result.clientAction) {
+              clientActions.push(result.clientAction);
 
-      if (userId && uniqueResonances.length > 0) {
-        for (const domain of uniqueResonances) {
-          if (DOMAINS.includes(domain)) {
-            console.log(`🌟 BREAKTHROUGH DETECTED: ${domain}`);
-            resonanceLog.push(domain);
-            
-            // Explicit updates for safety
-            if (domain === 'Identity') {
-              await db.update(users).set({ resonanceIdentity: sql`${users.resonanceIdentity} + 1` }).where(eq(users.id, parseInt(userId)));
-            } else if (domain === 'Purpose') {
-              await db.update(users).set({ resonancePurpose: sql`${users.resonancePurpose} + 1` }).where(eq(users.id, parseInt(userId)));
-            } else if (domain === 'Mindset') {
-              await db.update(users).set({ resonanceMindset: sql`${users.resonanceMindset} + 1` }).where(eq(users.id, parseInt(userId)));
-            } else if (domain === 'Relationships') {
-              await db.update(users).set({ resonanceRelationships: sql`${users.resonanceRelationships} + 1` }).where(eq(users.id, parseInt(userId)));
-            } else if (domain === 'Vision') {
-              await db.update(users).set({ resonanceVision: sql`${users.resonanceVision} + 1` }).where(eq(users.id, parseInt(userId)));
-            } else if (domain === 'Action') {
-              await db.update(users).set({ resonanceAction: sql`${users.resonanceAction} + 1` }).where(eq(users.id, parseInt(userId)));
-            } else if (domain === 'Legacy') {
-              await db.update(users).set({ resonanceLegacy: sql`${users.resonanceLegacy} + 1` }).where(eq(users.id, parseInt(userId)));
+              // Track resonance for telemetry
+              if (result.clientAction.type === 'illuminate' && result.clientAction.domains) {
+                resonanceLog.push(...result.clientAction.domains);
+              }
             }
+
+            console.log(`[Tool] ${tc.name} executed:`, result.result);
+          } catch (e) {
+            console.error(`[Tool] Error parsing/executing ${tc.name}:`, e);
           }
         }
       }
 
+      // If we got tool calls but no content, we may need a follow-up call
+      // This handles the non-reasoning model behavior
+      if (toolCalls.length > 0 && !fullContent.trim()) {
+        console.log('sendSanctuaryMessage: Got tools but no content, making follow-up call...');
+
+        // Build tool results for the follow-up
+        const toolResultMessages = toolCalls.map(tc => ({
+          role: 'tool' as const,
+          tool_call_id: tc.id,
+          content: 'Action completed successfully.'
+        }));
+
+        const followUp = await xai.chat.completions.create({
+          model: modelId,
+          messages: [
+            { role: 'system', content: finalSystemPrompt },
+            ...historyMessages,
+            { role: 'user', content: message },
+            {
+              role: 'assistant',
+              content: null,
+              tool_calls: toolCalls.map(tc => ({
+                id: tc.id,
+                type: 'function' as const,
+                function: { name: tc.name, arguments: tc.arguments }
+              }))
+            },
+            ...toolResultMessages
+          ],
+          stream: true,
+          stream_options: { include_usage: true },
+        });
+
+        for await (const chunk of followUp) {
+          const content = chunk.choices[0]?.delta?.content || '';
+          if (content) {
+            fullContent += content;
+            stream.update(content);
+          }
+          if (chunk.usage) {
+            usageData.prompt_tokens += chunk.usage.prompt_tokens || 0;
+            usageData.completion_tokens += chunk.usage.completion_tokens || 0;
+          }
+        }
+      }
+
+      // Send client actions
+      if (clientActions.length > 0) {
+        clientActionsStream.update(clientActions);
+      }
+      clientActionsStream.done();
+
+      console.log('sendSanctuaryMessage: Stream finished.', { usageData, toolCalls: toolCalls.length, clientActions: clientActions.length });
+      const cleanContent = sanitizeResponse(fullContent);
+
       // Calculate Cost (Grok 4.1 Fast Pricing)
-      // Input: $0.20/1M, Output: $0.50/1M
       const costInput = (usageData.prompt_tokens / 1_000_000) * 0.20;
       const costOutput = (usageData.completion_tokens / 1_000_000) * 0.50;
       const totalCost = costInput + costOutput;
@@ -229,7 +297,7 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
         sessionId: activeSessionId,
         role: 'assistant',
         content: encrypt(cleanContent),
-        telemetry: { processing_time_ms: Date.now() - t1, resonance: resonanceLog },
+        telemetry: { processing_time_ms: Date.now() - t1, resonance: resonanceLog, tool_calls: toolCalls.length },
         costMetadata: {
           model: modelId,
           prompt_tokens: usageData.prompt_tokens,
@@ -241,10 +309,11 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
 
       stream.done();
     } catch (e) {
-      console.error("[Direct Stream Error]:", e);
+      console.error("[Stream Error]:", e);
+      clientActionsStream.done();
       stream.error(e);
     }
   })();
 
-  return { output: stream.value };
+  return { output: stream.value, clientActions: clientActionsStream.value };
 }

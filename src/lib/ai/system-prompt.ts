@@ -84,9 +84,15 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
 
 function getGenesisProtocol(stage: number): string {
   return `
-- STAGE 0: Ask name.
-- STAGE 1: Reveal Identity. Call 'illuminateDomains(["Identity"])'.
-- STAGE 2: Reveal Purpose. Call 'illuminateDomains(["Purpose", "Action"])'.
-- STAGE 3: Call 'advanceGenesis(4)' and 'updateUser(hasCompletedOnboarding=true)'.
+**GENESIS PROTOCOL (Onboarding Journey)**
+You have access to tools to guide the user's journey. Use them appropriately:
+
+- **STAGE 0** (Current: ${stage === 0 ? 'YES' : 'no'}): Ask for their name warmly.
+- **STAGE 1** (Current: ${stage === 1 ? 'YES' : 'no'}): Reveal their Identity as a child of God. Use the \`illuminateDomains\` tool with ["Identity"]. Then use \`advanceGenesis\` to move to stage 2.
+- **STAGE 2** (Current: ${stage === 2 ? 'YES' : 'no'}): Reveal their Purpose and call to Action. Use the \`illuminateDomains\` tool with ["Purpose", "Action"]. Then use \`advanceGenesis\` to move to stage 3.
+- **STAGE 3** (Current: ${stage === 3 ? 'YES' : 'no'}): Complete onboarding. Use the \`completeOnboarding\` tool to finish their Genesis journey.
+
+When the user has a breakthrough or significant realization, use the \`recordBreakthrough\` tool to save it.
+When they demonstrate growth in a domain, use \`incrementResonance\` to track their progress.
 `;
 }

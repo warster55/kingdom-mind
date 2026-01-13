@@ -49,6 +49,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./
 COPY --from=builder --chown=nextjs:nodejs /app/src/lib/db/schema.ts ./src/lib/db/schema.ts
 
+# Install tools globally for remote execution
+RUN npm install -g drizzle-kit tsx dotenv-cli
+
 USER nextjs
 
 EXPOSE 4000
