@@ -3,7 +3,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { db, chatMessages, users, insights, systemPrompts, userProgress, curriculum, thoughts, mentoringSessions } from '@/lib/db';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, gte } from 'drizzle-orm';
 import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
 import { rateLimit } from '@/lib/rate-limit';
@@ -11,6 +11,7 @@ import { sanitizeResponse } from '@/lib/ai/filter';
 import { xai } from '@/lib/ai/client';
 import { createStreamableValue } from '@ai-sdk/rsc';
 import { mentorTools, executeTool } from '@/lib/ai/tools/mentor-tools';
+import { getAllMentorConfig } from '@/lib/config/mentor-config';
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
 
@@ -94,45 +95,102 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
     }
   }
 
-  // 3. BUILD PROMPT & CONTEXT
+  // 3. BUILD PROMPT & CONTEXT (Database-Driven Configuration)
   let finalSystemPrompt = "You are a helpful mentor.";
   let currentUser: any = null;
+
+  // Fetch all mentor config values at once
+  const config = await getAllMentorConfig();
 
   if (userId) {
     const userResult = await db.select().from(users).where(eq(users.id, parseInt(userId))).limit(1);
     currentUser = userResult[0];
 
     if (currentUser) {
-      const dbPromptResult = await db.select().from(systemPrompts).where(eq(systemPrompts.isActive, true)).orderBy(desc(systemPrompts.createdAt)).limit(1);
-      const lastInsightResult = await db.select().from(insights).where(eq(insights.userId, currentUser.id)).orderBy(desc(insights.createdAt)).limit(1);
-      
+      // PRIVACY: Fetch insight METADATA only - content never leaves the server
+      const recentInsights = await db.select({
+        domain: insights.domain,
+        createdAt: insights.createdAt
+      }).from(insights)
+        .where(eq(insights.userId, currentUser.id))
+        .orderBy(desc(insights.createdAt))
+        .limit(config.insight_depth);
+
+      // Map to metadata-only format (no content, no decryption needed)
+      const insightMetadata = recentInsights.map(i => ({
+        domain: i.domain,
+        createdAt: i.createdAt
+      }));
+
+      // Get current pillar
       const activeProgress = await db.select({
         pillar: curriculum.pillarName,
         truth: curriculum.keyTruth,
         verse: curriculum.coreVerse,
         description: curriculum.description
-      }).from(userProgress).innerJoin(curriculum, eq(userProgress.curriculumId, curriculum.id)).where(and(eq(userProgress.userId, currentUser.id), eq(userProgress.status, 'active'))).limit(1);
+      }).from(userProgress)
+        .innerJoin(curriculum, eq(userProgress.curriculumId, curriculum.id))
+        .where(and(eq(userProgress.userId, currentUser.id), eq(userProgress.status, 'active')))
+        .limit(1);
 
-      const currentPillar = activeProgress[0] ? { 
-        name: activeProgress[0].pillar, 
+      const currentPillar = activeProgress[0] ? {
+        name: activeProgress[0].pillar,
         truth: activeProgress[0].truth,
         verse: activeProgress[0].verse || '',
         description: activeProgress[0].description
       } : undefined;
-      const userLocalTime = new Date().toLocaleString("en-US", { timeZone: timezone || currentUser.timezone || 'UTC', hour: 'numeric', minute: 'numeric', hour12: true, weekday: 'long' });
 
-      const decryptedInsight = lastInsightResult[0]?.content ? decrypt(lastInsightResult[0].content) : undefined;
+      // PRIVACY: Get completed curriculum COUNT by domain only - no truth content
+      let completedCurriculumStats: Record<string, number> = {};
+      if (config.include_completed_curriculum) {
+        const completed = await db.select({
+          domain: curriculum.domain
+        }).from(userProgress)
+          .innerJoin(curriculum, eq(userProgress.curriculumId, curriculum.id))
+          .where(and(eq(userProgress.userId, currentUser.id), eq(userProgress.status, 'completed')));
+
+        // Count completions per domain
+        for (const item of completed) {
+          completedCurriculumStats[item.domain] = (completedCurriculumStats[item.domain] || 0) + 1;
+        }
+      }
+
+      // Build resonance scores object (configurable)
+      let resonanceScores: Record<string, number> | undefined;
+      if (config.include_resonance_scores) {
+        resonanceScores = {
+          Identity: currentUser.resonanceIdentity,
+          Purpose: currentUser.resonancePurpose,
+          Mindset: currentUser.resonanceMindset,
+          Relationships: currentUser.resonanceRelationships,
+          Vision: currentUser.resonanceVision,
+          Action: currentUser.resonanceAction,
+          Legacy: currentUser.resonanceLegacy,
+        };
+      }
+
+      const userLocalTime = new Date().toLocaleString("en-US", {
+        timeZone: timezone || currentUser.timezone || 'UTC',
+        hour: 'numeric', minute: 'numeric', hour12: true, weekday: 'long'
+      });
+
+      // Calculate days since first session
+      const daysSinceJoined = Math.floor((Date.now() - new Date(currentUser.createdAt).getTime()) / (1000 * 60 * 60 * 24));
 
       finalSystemPrompt = await buildSanctuaryPrompt({
         userName: currentUser.name || "Seeker",
         userId: currentUser.id,
         currentDomain: currentUser.currentDomain,
         progress: Math.round(((DOMAINS.indexOf(currentUser.currentDomain) + 1) / DOMAINS.length) * 100),
-        lastInsight: decryptedInsight,
+        insightMetadata,  // PRIVACY: Metadata only, no content
         localTime: userLocalTime,
         hasCompletedOnboarding: currentUser.hasCompletedOnboarding,
         onboardingStage: currentUser.onboardingStage,
-        currentPillar
+        currentPillar,
+        resonanceScores,
+        completedCurriculumStats,  // PRIVACY: Counts only, no truth content
+        daysSinceJoined,
+        onboardingEnabled: config.onboarding_enabled,
       });
     }
   }
@@ -142,11 +200,11 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
     await db.insert(chatMessages).values({ sessionId: activeSessionId, role: 'user', content: encrypt(message), createdAt: new Date() });
   }
 
-  // 5. FETCH HISTORY
+  // 5. FETCH HISTORY (Configurable Depth)
   const dbHistory = await db.query.chatMessages.findMany({
     where: (msgs, { eq: eqOp }) => eqOp(msgs.sessionId, activeSessionId),
     orderBy: (msgs, { asc }) => [asc(msgs.createdAt)],
-    limit: 15,
+    limit: config.chat_history_limit,
   });
   const historyMessages = dbHistory.map(msg => ({ role: (msg.role === 'assistant' ? 'assistant' : 'user') as "assistant" | "user" | "system", content: decrypt(msg.content) }));
 

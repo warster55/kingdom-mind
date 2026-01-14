@@ -1,0 +1,74 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            XAI_API_KEY=${{ secrets.XAI_API_KEY }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GHCR_TOKEN,GHCR_USER,IMAGE_FULL
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          IMAGE_FULL: ghcr.io/${{ github.repository }}:latest
+        script: |
+          # Login to private registry
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+          # Pull new image
+          docker pull "$IMAGE_FULL"
+
+          # Stop and remove old container
+          docker stop kingdom-mind-web || true
+          docker rm kingdom-mind-web || true
+
+          # Start new container
+          docker run -d --name kingdom-mind-web \
+            --env-file /home/ubuntu/kingdom-mind/.env.local \
+            --network kingdom-mind_default \
+            -p 4000:4000 \
+            --restart unless-stopped \
+            "$IMAGE_FULL"
+
+          # Cleanup old images
+          docker image prune -f

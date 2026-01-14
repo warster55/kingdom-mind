@@ -110,6 +110,7 @@ async function seed() {
 
   await db.insert(appConfig)
     .values([
+      // App UI Config
       { key: 'app_title', value: 'Kingdom Mind', description: 'Main application title' },
       { key: 'app_subtitle', value: 'Be transformed by the renewing of your mind.', description: 'Main application subtitle' },
       { key: 'app_button_enter', value: 'Enter the Sanctuary', description: 'Text for the main entry button' },
@@ -119,6 +120,18 @@ async function seed() {
       { key: 'pacer_period', value: 800, description: 'Period pacing' },
       { key: 'pacer_comma', value: 400, description: 'Comma pacing' },
       { key: 'color_accent', value: '#fbbf24', description: 'Accent color' },
+
+      // Mentor AI Memory Configuration (Database-Driven Tuning)
+      { key: 'mentor_chat_history_limit', value: 15, description: 'Number of messages from current session to include' },
+      { key: 'mentor_cross_session_history_limit', value: 10, description: 'Number of messages from previous sessions to include' },
+      { key: 'mentor_memory_window_days', value: 30, description: 'How far back (in days) to pull cross-session history' },
+      { key: 'mentor_insight_depth', value: 5, description: 'Number of recent insights/breakthroughs to remember' },
+      { key: 'mentor_include_resonance_scores', value: true, description: 'Whether to show 7-domain resonance scores to AI' },
+      { key: 'mentor_include_completed_curriculum', value: true, description: 'Whether to show completed curriculum items' },
+      { key: 'mentor_completed_curriculum_limit', value: 5, description: 'Number of completed truths to show' },
+      { key: 'mentor_onboarding_enabled', value: false, description: 'Whether to use formal Genesis onboarding protocol' },
+      { key: 'mentor_first_session_greeting', value: 'Welcome, Seeker. I am here to walk with you on your journey of transformation. What brings you to the Sanctuary today?', description: 'Greeting for brand new users' },
+      { key: 'mentor_reasoning_for_breakthroughs', value: true, description: 'Use reasoning model for breakthrough moments' },
     ])
     .onConflictDoUpdate({ target: appConfig.key, set: { value: sql`excluded.value` } });
 

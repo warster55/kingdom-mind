@@ -1,11 +1,11 @@
 /**
- * Kingdom Mind - Mentor Tool Definitions
- * Real AI tools that replace text-based function calls
+ * Kingdom Mind - Mentor Tool Definitions (v2.0)
+ * Simplified: No onboarding tools. Curriculum guides organically.
  */
 import OpenAI from 'openai';
 import { db, users, userProgress, curriculum, insights } from '@/lib/db';
-import { eq, and, sql } from 'drizzle-orm';
-import { encrypt } from '@/lib/utils/encryption';
+import { eq, and, sql, desc } from 'drizzle-orm';
+import { encrypt, decrypt } from '@/lib/utils/encryption';
 
 // Tool definitions for the OpenAI-compatible API
 export const mentorTools: OpenAI.ChatCompletionTool[] = [
@@ -33,37 +33,8 @@ export const mentorTools: OpenAI.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'advanceGenesis',
-      description: 'Advance the user to the next stage of their onboarding journey (Genesis Protocol). Only use during initial onboarding.',
-      parameters: {
-        type: 'object',
-        properties: {
-          stage: {
-            type: 'number',
-            description: 'The stage number to advance to (1-4)'
-          }
-        },
-        required: ['stage']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'completeOnboarding',
-      description: 'Mark the user as having completed their onboarding journey. Use when Genesis Protocol is complete.',
-      parameters: {
-        type: 'object',
-        properties: {},
-        required: []
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
       name: 'recordBreakthrough',
-      description: 'Record a spiritual breakthrough or insight the user has achieved. Use when the user has a significant realization or commits to transformation.',
+      description: 'Record a spiritual breakthrough or insight the user has achieved. Use when the user has a significant realization, commitment, or moment of transformation. This permanently saves their anchor point.',
       parameters: {
         type: 'object',
         properties: {
@@ -74,7 +45,7 @@ export const mentorTools: OpenAI.ChatCompletionTool[] = [
           },
           insight: {
             type: 'string',
-            description: 'A brief summary of the breakthrough or insight'
+            description: 'A brief summary of the breakthrough or insight (1-2 sentences)'
           }
         },
         required: ['domain', 'insight']
@@ -85,7 +56,7 @@ export const mentorTools: OpenAI.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'incrementResonance',
-      description: 'Increment the resonance score for a domain when the user demonstrates growth or understanding.',
+      description: 'Increment the resonance score for a domain when the user demonstrates growth, understanding, or engagement with that area of life.',
       parameters: {
         type: 'object',
         properties: {
@@ -96,6 +67,23 @@ export const mentorTools: OpenAI.ChatCompletionTool[] = [
           }
         },
         required: ['domain']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'advanceCurriculum',
+      description: 'Mark a curriculum truth as completed and unlock the next one. Use when the user has fully internalized a truth and is ready to move forward.',
+      parameters: {
+        type: 'object',
+        properties: {
+          curriculumId: {
+            type: 'number',
+            description: 'The ID of the curriculum item to mark as completed'
+          }
+        },
+        required: ['curriculumId']
       }
     }
   }
@@ -113,32 +101,10 @@ export async function executeTool(
     switch (toolName) {
       case 'illuminateDomains': {
         const { domains } = args as { domains: string[] };
-        // This is a client-side action - we return data for the client to handle
         return {
           success: true,
           result: `Illuminated domains: ${domains.join(', ')}`,
           clientAction: { type: 'illuminate', domains }
-        };
-      }
-
-      case 'advanceGenesis': {
-        const { stage } = args as { stage: number };
-        await db.update(users)
-          .set({ onboardingStage: stage })
-          .where(eq(users.id, userId));
-        return {
-          success: true,
-          result: `Advanced to Genesis stage ${stage}`
-        };
-      }
-
-      case 'completeOnboarding': {
-        await db.update(users)
-          .set({ hasCompletedOnboarding: true, onboardingStage: 4 })
-          .where(eq(users.id, userId));
-        return {
-          success: true,
-          result: 'Onboarding completed'
         };
       }
 
@@ -170,6 +136,62 @@ export async function executeTool(
         };
       }
 
+      case 'advanceCurriculum': {
+        const { curriculumId } = args as { curriculumId: number };
+
+        // Mark current truth as completed
+        await db.update(userProgress)
+          .set({ status: 'completed', completedAt: new Date() })
+          .where(and(eq(userProgress.userId, userId), eq(userProgress.curriculumId, curriculumId)));
+
+        // Find and activate the next truth
+        const currentCurriculum = await db.select().from(curriculum)
+          .where(eq(curriculum.id, curriculumId))
+          .limit(1);
+
+        if (currentCurriculum[0]) {
+          const nextCurriculum = await db.select().from(curriculum)
+            .where(eq(curriculum.pillarOrder, currentCurriculum[0].pillarOrder + 1))
+            .limit(1);
+
+          if (nextCurriculum[0]) {
+            // Check if progress record exists, create or update
+            const existingProgress = await db.select().from(userProgress)
+              .where(and(eq(userProgress.userId, userId), eq(userProgress.curriculumId, nextCurriculum[0].id)))
+              .limit(1);
+
+            if (existingProgress[0]) {
+              await db.update(userProgress)
+                .set({ status: 'active' })
+                .where(eq(userProgress.id, existingProgress[0].id));
+            } else {
+              await db.insert(userProgress).values({
+                userId,
+                curriculumId: nextCurriculum[0].id,
+                status: 'active',
+                createdAt: new Date()
+              });
+            }
+
+            // Update user's current domain
+            await db.update(users)
+              .set({ currentDomain: nextCurriculum[0].domain })
+              .where(eq(users.id, userId));
+
+            return {
+              success: true,
+              result: `Completed truth ${curriculumId}, activated ${nextCurriculum[0].pillarName}`,
+              clientAction: { type: 'illuminate', domains: [nextCurriculum[0].domain] }
+            };
+          }
+        }
+
+        return {
+          success: true,
+          result: `Completed truth ${curriculumId}`
+        };
+      }
+
       default:
         return { success: false, error: `Unknown tool: ${toolName}` };
     }
@@ -192,7 +214,6 @@ async function incrementDomainResonance(userId: number, domain: string): Promise
 
   if (!domainColumn) return;
 
-  // Use raw SQL for dynamic column update
   await db.execute(sql`
     UPDATE users
     SET ${sql.identifier(domainColumn)} = ${sql.identifier(domainColumn)} + 1
