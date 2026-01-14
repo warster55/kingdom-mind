@@ -42,33 +42,33 @@ jobs:
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          IMAGE_FULL: ghcr.io/${{ github.repository }}:latest
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: GHCR_TOKEN,GHCR_USER,IMAGE_FULL
-        env:
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          GHCR_USER: ${{ github.actor }}
-          IMAGE_FULL: ghcr.io/${{ github.repository }}:latest
-        script: |
-          # Login to private registry
-          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          script: |
+            # Login to private registry
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-          # Pull new image
-          docker pull "$IMAGE_FULL"
+            # Pull new image
+            docker pull "$IMAGE_FULL"
 
-          # Stop and remove old container
-          docker stop kingdom-mind-web || true
-          docker rm kingdom-mind-web || true
+            # Stop and remove old container
+            docker stop kingdom-mind-web || true
+            docker rm kingdom-mind-web || true
 
-          # Start new container
-          docker run -d --name kingdom-mind-web \
-            --env-file /home/ubuntu/kingdom-mind/.env.local \
-            --network kingdom-mind_default \
-            -p 4000:4000 \
-            --restart unless-stopped \
-            "$IMAGE_FULL"
+            # Start new container
+            docker run -d --name kingdom-mind-web \
+              --env-file /home/ubuntu/kingdom-mind/.env.local \
+              --network kingdom-mind_default \
+              -p 4000:4000 \
+              --restart unless-stopped \
+              "$IMAGE_FULL"
 
-          # Cleanup old images
-          docker image prune -f
+            # Cleanup old images
+            docker image prune -f
