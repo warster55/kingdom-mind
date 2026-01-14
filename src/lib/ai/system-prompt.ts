@@ -20,10 +20,10 @@ export interface PromptContext {
   onboardingStage: number;
   currentPillar?: { name: string; truth: string; verse: string; description: string };
 
-  // Privacy-First Memory (v7.0) - Metadata only, NO content
-  insightMetadata?: Array<{ domain: string; createdAt: Date }>;  // No content field
+  // Memory System v8.0 - PII-free memories with content
+  insightMemories?: Array<{ domain: string; memory: string; createdAt: Date }>;
   resonanceScores?: Record<string, number>;
-  completedCurriculumStats?: Record<string, number>;  // Domain -> count, no truth content
+  completedCurriculumStats?: Record<string, number>;
   daysSinceJoined?: number;
   onboardingEnabled?: boolean;
 }
@@ -32,7 +32,7 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
   const {
     userName, currentDomain, progress, localTime,
     hasCompletedOnboarding, onboardingStage, currentPillar,
-    insightMetadata, resonanceScores, completedCurriculumStats, daysSinceJoined,
+    insightMemories, resonanceScores, completedCurriculumStats, daysSinceJoined,
     onboardingEnabled
   } = context;
 
@@ -48,8 +48,8 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
   const pillars = await db.select().from(sacredPillars).orderBy(asc(sacredPillars.order));
   const pillarText = pillars.map((p, i) => `${i+1}. ${p.content}`).join('\n');
 
-  // 3. Build User Memory Section (Privacy-First: Metadata Only)
-  let userMemoryText = buildUserMemory({ insightMetadata, resonanceScores, completedCurriculumStats, daysSinceJoined });
+  // 3. Build User Memory Section (v8.0: PII-free memories with content)
+  let userMemoryText = buildUserMemory({ insightMemories, resonanceScores, completedCurriculumStats, daysSinceJoined });
 
   // 4. Determine Dynamic Protocol
   let protocol: string;
@@ -81,12 +81,11 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
 }
 
 /**
- * Builds the User Memory section from METADATA ONLY.
- * PRIVACY: No insight content is included - only domain, timestamps, and counts.
- * This protects user PII while still giving the AI useful context.
+ * Builds the User Memory section with PII-free breakthrough memories.
+ * MEMORY SYSTEM v8.0: Includes actual memory content (guaranteed PII-free by AI).
  */
 function buildUserMemory(data: {
-  insightMetadata?: Array<{ domain: string; createdAt: Date }>;
+  insightMemories?: Array<{ domain: string; memory: string; createdAt: Date }>;
   resonanceScores?: Record<string, number>;
   completedCurriculumStats?: Record<string, number>;
   daysSinceJoined?: number;
@@ -120,35 +119,19 @@ function buildUserMemory(data: {
     }
   }
 
-  // Breakthrough Summary (METADATA ONLY - no content)
-  if (data.insightMetadata && data.insightMetadata.length > 0) {
-    // Count breakthroughs by domain
-    const domainCounts: Record<string, number> = {};
-    let mostRecent: Date | null = null;
+  // Past Breakthroughs (PII-FREE MEMORIES with actual content)
+  if (data.insightMemories && data.insightMemories.length > 0) {
+    sections.push('');
+    sections.push('### Past Breakthroughs (Use to guide conversation)');
 
-    for (const insight of data.insightMetadata) {
-      domainCounts[insight.domain] = (domainCounts[insight.domain] || 0) + 1;
-      if (!mostRecent || new Date(insight.createdAt) > mostRecent) {
-        mostRecent = new Date(insight.createdAt);
-      }
+    for (const insight of data.insightMemories) {
+      const daysAgo = Math.floor((Date.now() - new Date(insight.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+      const timeLabel = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? `${daysAgo}d ago` : `${Math.floor(daysAgo / 7)}w ago`;
+      sections.push(`- **${insight.domain}** (${timeLabel}): ${insight.memory}`);
     }
-
-    const totalBreakthroughs = data.insightMetadata.length;
-    const domainSummary = Object.entries(domainCounts)
-      .sort(([, a], [, b]) => b - a)
-      .map(([domain, count]) => `${domain}: ${count}`)
-      .join(', ');
-
-    let recentLabel = '';
-    if (mostRecent) {
-      const daysAgo = Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24));
-      recentLabel = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`;
-    }
-
-    sections.push(`- **Breakthroughs:** ${totalBreakthroughs} total (${domainSummary}), most recent: ${recentLabel}`);
   }
 
-  // Completed Curriculum Summary (COUNTS ONLY - no truth content)
+  // Completed Curriculum Summary
   if (data.completedCurriculumStats && Object.keys(data.completedCurriculumStats).length > 0) {
     const total = Object.values(data.completedCurriculumStats).reduce((a, b) => a + b, 0);
     const summary = Object.entries(data.completedCurriculumStats)

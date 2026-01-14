@@ -34,7 +34,7 @@ export const mentorTools: OpenAI.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'recordBreakthrough',
-      description: 'Record a spiritual breakthrough or insight the user has achieved. Use when the user has a significant realization, commitment, or moment of transformation. This permanently saves their anchor point.',
+      description: 'Record a spiritual breakthrough. CRITICAL: The insight MUST be a PII-FREE summary - NO names (people, companies, places), NO specific dates, NO locations, NO job titles. Extract ONLY the universal spiritual truth. Example: Instead of "realized at my job at Google that promotions don\'t define me", write "Realized career achievements don\'t define self-worth - identity comes from God".',
       parameters: {
         type: 'object',
         properties: {
@@ -45,7 +45,7 @@ export const mentorTools: OpenAI.ChatCompletionTool[] = [
           },
           insight: {
             type: 'string',
-            description: 'A brief summary of the breakthrough or insight (1-2 sentences)'
+            description: 'A PII-FREE summary of the spiritual insight (1-2 sentences, no names/places/dates)'
           }
         },
         required: ['domain', 'insight']

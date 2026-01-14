@@ -107,18 +107,21 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
     currentUser = userResult[0];
 
     if (currentUser) {
-      // PRIVACY: Fetch insight METADATA only - content never leaves the server
+      // MEMORY SYSTEM v8.0: Fetch PII-free insight memories
+      // Content is now guaranteed PII-free (AI strips PII before recording)
       const recentInsights = await db.select({
         domain: insights.domain,
+        content: insights.content,
         createdAt: insights.createdAt
       }).from(insights)
         .where(eq(insights.userId, currentUser.id))
         .orderBy(desc(insights.createdAt))
         .limit(config.insight_depth);
 
-      // Map to metadata-only format (no content, no decryption needed)
-      const insightMetadata = recentInsights.map(i => ({
+      // Decrypt PII-free memories for AI context
+      const insightMemories = recentInsights.map(i => ({
         domain: i.domain,
+        memory: decrypt(i.content),
         createdAt: i.createdAt
       }));
 
@@ -182,13 +185,13 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
         userId: currentUser.id,
         currentDomain: currentUser.currentDomain,
         progress: Math.round(((DOMAINS.indexOf(currentUser.currentDomain) + 1) / DOMAINS.length) * 100),
-        insightMetadata,  // PRIVACY: Metadata only, no content
+        insightMemories,  // MEMORY v8.0: PII-free memories for context
         localTime: userLocalTime,
         hasCompletedOnboarding: currentUser.hasCompletedOnboarding,
         onboardingStage: currentUser.onboardingStage,
         currentPillar,
         resonanceScores,
-        completedCurriculumStats,  // PRIVACY: Counts only, no truth content
+        completedCurriculumStats,
         daysSinceJoined,
         onboardingEnabled: config.onboarding_enabled,
       });
