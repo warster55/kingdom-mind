@@ -82,7 +82,7 @@ export async function registerBiometric(): Promise<BiometricCredential | null> {
   const challenge = generateChallenge();
 
   const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
-    challenge,
+    challenge: challenge as BufferSource,
     rp: {
       name: RP_NAME,
       id: RP_ID,
@@ -150,7 +150,7 @@ export async function authenticateBiometric(credentialId: string): Promise<boole
   const challenge = generateChallenge();
 
   const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
-    challenge,
+    challenge: challenge as BufferSource,
     rpId: RP_ID,
     allowCredentials: [
       {

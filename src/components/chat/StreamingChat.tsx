@@ -171,9 +171,9 @@ export function StreamingChat({
   useEffect(() => {
     if (isPageComplete) return;
     const nextWord = currentWords[wordIndex];
-    let delay = get('pacer_base', 150);
-    if (nextWord?.endsWith('.')) delay = get('pacer_period', 800);
-    else if (nextWord?.endsWith(',')) delay = get('pacer_comma', 400);
+    let delay: number = get('pacer_base', 150);
+    if (nextWord?.endsWith('.')) delay = get<number>('pacer_period', 800);
+    else if (nextWord?.endsWith(',')) delay = get<number>('pacer_comma', 400);
     if (isSurgeActive) delay = delay * 0.2;
     const timer = setTimeout(() => { setWordIndex(prev => prev + 1); }, delay);
     return () => clearTimeout(timer);
