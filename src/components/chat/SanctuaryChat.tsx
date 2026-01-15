@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useSanctuary } from '@/hooks/useSanctuary';
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -10,8 +10,10 @@ import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { InstallGuide } from '@/components/pwa/InstallGuide';
 import { BiometricLock } from '@/components/biometric/BiometricLock';
 import { BiometricSetup } from '@/components/biometric/BiometricSetup';
-import { getBiometricEnabled } from '@/lib/storage/sanctuary-db';
+import { getBiometricEnabled, clearSanctuary, setBiometricEnabled } from '@/lib/storage/sanctuary-db';
+import { isPlatformAuthenticatorAvailable } from '@/lib/biometric/client';
 import { cn } from '@/lib/utils';
+import { Settings, Shield } from 'lucide-react';
 
 export function SanctuaryChat() {
   const {
@@ -32,6 +34,13 @@ export function SanctuaryChat() {
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [hasCompletedFirstMessage, setHasCompletedFirstMessage] = useState(false);
   const [biometricSetupDismissed, setBiometricSetupDismissed] = useState(false);
+
+  // Settings menu states
+  const [showSettings, setShowSettings] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+  const logoTapCount = useRef(0);
+  const logoTapTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Handle visual viewport for mobile keyboards
   useEffect(() => {
@@ -65,11 +74,31 @@ export function SanctuaryChat() {
     }
   }, [isLoading, isNewUser, messages.length]);
 
+  // Check biometric availability on mount
+  useEffect(() => {
+    async function checkBiometric() {
+      const available = await isPlatformAuthenticatorAvailable();
+      const enabled = await getBiometricEnabled();
+      console.log('[Sanctuary] Biometric available:', available);
+      console.log('[Sanctuary] Biometric enabled:', enabled);
+      setBiometricAvailable(available);
+      setBiometricEnabledState(enabled);
+    }
+    checkBiometric();
+  }, []);
+
   // Check if we should show biometric setup (after first message for new users)
   useEffect(() => {
     async function checkBiometricSetup() {
-      if (hasCompletedFirstMessage && isNewUser && !biometricSetupDismissed) {
+      console.log('[Sanctuary] Checking biometric setup:', {
+        hasCompletedFirstMessage,
+        isNewUser,
+        biometricSetupDismissed,
+        biometricAvailable
+      });
+      if (hasCompletedFirstMessage && isNewUser && !biometricSetupDismissed && biometricAvailable) {
         const alreadyEnabled = await getBiometricEnabled();
+        console.log('[Sanctuary] Already enabled:', alreadyEnabled);
         if (!alreadyEnabled) {
           // Small delay to let the chat settle
           setTimeout(() => setShowBiometricSetup(true), 1500);
@@ -77,7 +106,7 @@ export function SanctuaryChat() {
       }
     }
     checkBiometricSetup();
-  }, [hasCompletedFirstMessage, isNewUser, biometricSetupDismissed]);
+  }, [hasCompletedFirstMessage, isNewUser, biometricSetupDismissed, biometricAvailable]);
 
   // Handle biometric unlock
   const handleUnlock = useCallback(() => {
@@ -94,6 +123,36 @@ export function SanctuaryChat() {
   const handleBiometricSetupSkip = useCallback(() => {
     setShowBiometricSetup(false);
     setBiometricSetupDismissed(true);
+  }, []);
+
+  // Manual biometric setup trigger (from settings)
+  const handleManualBiometricSetup = useCallback(() => {
+    setShowSettings(false);
+    setShowBiometricSetup(true);
+  }, []);
+
+  // Debug reset - triple tap logo
+  const handleLogoTap = useCallback(() => {
+    logoTapCount.current += 1;
+
+    if (logoTapTimer.current) {
+      clearTimeout(logoTapTimer.current);
+    }
+
+    if (logoTapCount.current >= 5) {
+      // 5 taps = full reset
+      logoTapCount.current = 0;
+      if (confirm('Reset sanctuary? This will clear all local data.')) {
+        clearSanctuary().then(() => {
+          setBiometricEnabled(false);
+          window.location.reload();
+        });
+      }
+    } else {
+      logoTapTimer.current = setTimeout(() => {
+        logoTapCount.current = 0;
+      }, 500);
+    }
   }, []);
 
   const handleSend = async (content: string) => {
@@ -151,8 +210,21 @@ export function SanctuaryChat() {
   return (
     <div className="fixed inset-0 w-full bg-stone-950" style={{ height: vvh }}>
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 p-8 z-[150] pointer-events-none flex flex-col items-center">
-        <h1 className="flex items-baseline text-amber-500/80 text-[10px] uppercase tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] mb-3">
+      <header className="absolute top-0 left-0 right-0 p-8 z-[150] flex flex-col items-center">
+        {/* Settings button - top right */}
+        <button
+          onClick={() => setShowSettings(true)}
+          className="absolute top-4 right-4 p-2 text-stone-600 hover:text-stone-400 transition-colors"
+          aria-label="Settings"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
+
+        {/* Logo - tappable for debug reset (5 taps) */}
+        <h1
+          onClick={handleLogoTap}
+          className="flex items-baseline text-amber-500/80 text-[10px] uppercase tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] mb-3 cursor-pointer select-none"
+        >
           <span>KINGDO</span>
           <span className="text-lg font-normal text-amber-400 font-script mx-[-1px] transform translate-y-[2px] scale-110">m</span>
           <span className="ml-1">IND</span>
@@ -217,6 +289,73 @@ export function SanctuaryChat() {
           onComplete={handleBiometricSetupComplete}
           onSkip={handleBiometricSetupSkip}
         />
+      )}
+
+      {/* Settings Menu */}
+      {showSettings && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] bg-stone-950/95 flex items-center justify-center p-6"
+          onClick={() => setShowSettings(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="max-w-sm w-full bg-stone-900 rounded-2xl p-6 shadow-2xl border border-stone-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-semibold text-stone-100 mb-6">Settings</h2>
+
+            {/* Biometric Security */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-stone-800/50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Shield className="w-5 h-5 text-amber-400" />
+                  <div>
+                    <div className="text-stone-200 text-sm font-medium">Biometric Lock</div>
+                    <div className="text-stone-500 text-xs">
+                      {biometricAvailable
+                        ? biometricEnabled
+                          ? 'Enabled'
+                          : 'Not enabled'
+                        : 'Not available on this device'}
+                    </div>
+                  </div>
+                </div>
+                {biometricAvailable && !biometricEnabled && (
+                  <button
+                    onClick={handleManualBiometricSetup}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-900 text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Enable
+                  </button>
+                )}
+                {biometricEnabled && (
+                  <span className="text-green-400 text-sm">✓ Active</span>
+                )}
+              </div>
+
+              {/* Debug info */}
+              <div className="p-3 bg-stone-800/30 rounded-xl text-xs text-stone-500 space-y-1">
+                <div>Biometric available: {biometricAvailable ? 'Yes' : 'No'}</div>
+                <div>Biometric enabled: {biometricEnabled ? 'Yes' : 'No'}</div>
+                <div>Is new user: {isNewUser ? 'Yes' : 'No'}</div>
+                <div className="mt-2 text-stone-600">Tap logo 5x to reset</div>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowSettings(false)}
+              className="w-full mt-6 py-3 text-stone-400 hover:text-stone-300 transition-colors"
+            >
+              Close
+            </button>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );
