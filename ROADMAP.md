@@ -1,6 +1,6 @@
 # Kingdom Mind - Product Roadmap
 
-> Last Updated: January 15, 2026 (Sanctuary E2E Test Suite Results)
+> Last Updated: January 15, 2026 (Biometric Security Implementation)
 > Status: Active Development
 
 ---
@@ -1946,6 +1946,55 @@ The sanctuary system has been validated as operational. Key improvements since l
 #### Verdict
 
 **System is stable and functional.** The sanctuary introduction flow works as designed. Technical debt has been reduced significantly. The codebase is ready for continued development on Phase 1 (authentication overhaul).
+
+---
+
+### Biometric Security Implementation (January 15, 2026)
+
+**Critical fixes and enhancements to the biometric authentication system.**
+
+#### Fixed Issues
+
+**1. isNewUser Race Condition Fixed**
+- **Problem:** The `isNewUser` flag was being set to `false` immediately after sending the first message, before the biometric setup prompt could show.
+- **Solution:** `isNewUser` now stays `true` for the entire session, allowing the biometric prompt to appear after the first AI response.
+
+**2. Added Settings Menu**
+- New gear icon in top-right corner of the app
+- Opens a settings modal showing:
+  - Biometric Lock status (available/enabled)
+  - Manual "Enable" button for existing users to set up biometric
+  - Debug info showing biometric availability, enabled status, and user type
+
+**3. Added Debug Reset**
+- Tap the logo 5 times quickly to reset all local data
+- Clears IndexedDB sanctuary data and biometric settings
+- Useful for testing the new user flow
+
+**4. Added Console Logging**
+- Debug logs now show biometric availability check results in browser console
+- Helpful for troubleshooting biometric setup issues
+
+#### Key Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/hooks/useSanctuary.ts` | Removed `isNewUser: false` from sendMessage to fix race condition |
+| `src/components/chat/SanctuaryChat.tsx` | Added settings menu, debug reset, biometric status tracking |
+
+#### How Biometric Now Works
+
+1. **New Users**: After first message, if biometric is available, shows "Protect Your Sanctuary" prompt
+2. **Existing Users**: Can tap settings icon (gear) to manually enable biometric
+3. **Reset for Testing**: Tap logo 5 times to clear all local data
+4. **Lock Screen**: If biometric enabled, shows lock screen on return requiring fingerprint/Face ID
+
+#### IndexedDB Important Note
+
+- IndexedDB is **NOT** cleared when users clear browser cache
+- Must use "Clear & Reset" in browser site settings to fully reset
+- Or use the 5-tap logo reset feature
+- This behavior is by design for data persistence, but important for testing
 
 ---
 
