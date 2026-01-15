@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: km-prod-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env.production.local
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    depends_on:
+      - db
+    networks:
+      - km-prod-net
+
+  db:
+    container_name: km-prod-db
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=kingdom_user
+      - POSTGRES_PASSWORD=781-1mGLUV_rx9uAQhH5S6VUwoxBykZ0
+      - POSTGRES_DB=kingdom_mind
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - km_prod_postgres_data:/var/lib/postgresql/data
+    networks:
+      - km-prod-net
+
+volumes:
+  km_prod_postgres_data:
+
+networks:
+  km-prod-net:
+    driver: bridge

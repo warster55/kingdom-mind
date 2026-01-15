@@ -157,7 +157,7 @@ const MOCK_TEMPLATE = `
 `.trim();
 
 async function mockBuildPrompt(scenario: Scenario) {
-  let finalPrompt = MOCK_TEMPLATE
+  const finalPrompt = MOCK_TEMPLATE
     .replace('{{PILLARS}}', MOCK_PILLARS)
     .replace('{{USER_PREFERENCES}}', 'Standard Mentor Mode.')
     .replace('{{USER_NAME}}', scenario.persona.name)

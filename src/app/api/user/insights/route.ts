@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role;
+    const userRole = (session?.user as { role?: string })?.role;
 
     if (userRole !== 'architect' && userRole !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -31,8 +31,9 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json(cleanInsights);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Insights API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

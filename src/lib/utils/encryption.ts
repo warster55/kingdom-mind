@@ -2,7 +2,11 @@ import crypto from 'node:crypto';
 
 // The key must be 32 bytes (256 bits).
 // We expect a base64 encoded string from process.env.ENCRYPTION_KEY
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'v1-unstable-fallback-key-32-bytes-long!';
+const envKey = process.env.ENCRYPTION_KEY;
+if (!envKey) {
+  throw new Error('ENCRYPTION_KEY environment variable is required');
+}
+const ENCRYPTION_KEY: string = envKey;
 const ALGORITHM = 'aes-256-gcm';
 
 /**

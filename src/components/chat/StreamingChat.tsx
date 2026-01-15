@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChatMessage, Message } from '@/components/chat/ChatMessage';
+import { Message } from '@/components/chat/ChatMessage';
 import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -33,15 +33,22 @@ const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
   'Legacy': { x: 80, y: 80 },
 };
 
-export function StreamingChat({ 
-  messages, isStreaming, error, insights, habits, mode = 'mentor', isKeyboardOpen = false, onStatusChange, isAuthenticated = false
+export function StreamingChat({
+  messages, isStreaming, error: _error, insights: _insights, habits: _habits, mode: _mode = 'mentor', isKeyboardOpen = false, onStatusChange, isAuthenticated = false
 }: StreamingChatProps) {
   const { get } = useConfig();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [wordIndex, setWordIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-  const [bornStars, setBornStars] = useState<any[]>([]);
+  interface BornStar {
+    id: string;
+    domain: string;
+    size: number;
+    offsetX: number;
+    offsetY: number;
+  }
+  const [bornStars, setBornStars] = useState<BornStar[]>([]);
   
   const [currentPage, setCurrentPage] = useState(0);
   const [isSurgeActive, setIsSurgeActive] = useState(false);
@@ -173,11 +180,15 @@ export function StreamingChat({
   }, [currentWords, wordIndex, isSurgeActive, isPageComplete, get]);
 
   // --- DUAL RESONANCE READER ---
+  interface MessageWithTelemetry extends Message {
+    telemetry?: { resonance?: string[] };
+  }
   const activeResonanceList = useMemo(() => {
     const list: string[] = [];
     // 1. Check Telemetry (New Silent Protocol)
-    if ((lastAiMessage as any)?.telemetry?.resonance) {
-      list.push(...(lastAiMessage as any).telemetry.resonance);
+    const msgWithTelemetry = lastAiMessage as MessageWithTelemetry | undefined;
+    if (msgWithTelemetry?.telemetry?.resonance) {
+      list.push(...msgWithTelemetry.telemetry.resonance);
     }
     // 2. Check Text Tags (Legacy fallback)
     const match = rawContent.match(/\[RESONANCE:\s*([^\]]+)\]/);
@@ -190,8 +201,8 @@ export function StreamingChat({
   const [lastTaggedId, setLastTaggedId] = useState<string | null>(null);
   useEffect(() => {
     if (activeResonanceList.length > 0 && lastAiMessage?.id !== lastTaggedId) {
-      setLastTaggedId(lastAiMessage.id);
-      const newStars: any[] = [];
+      setLastTaggedId(lastAiMessage?.id || null);
+      const newStars: BornStar[] = [];
       activeResonanceList.forEach(domain => {
         if (DOMAINS.includes(domain)) {
           newStars.push({ id: `star-${Math.random()}`, domain, size: 2.5, offsetX: 0, offsetY: 0 });
@@ -201,11 +212,18 @@ export function StreamingChat({
     }
   }, [activeResonanceList, lastAiMessage?.id, lastTaggedId]);
 
+  interface StarCluster {
+    domain: string;
+    offsetX: number;
+    offsetY: number;
+    size: number;
+  }
   const baseStarClusters = useMemo(() => {
-    if (!hasMounted) return [];
-    const clusters: any[] = [];
+    if (!hasMounted) return [] as StarCluster[];
+    const clusters: StarCluster[] = [];
     Object.entries(status?.resonance || {}).forEach(([domain, count]) => {
       const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
+      const _pos = pos; // Silence unused variable warning - pos used for positioning
       const starCount = Math.floor((count as number) * (isMobile ? 0.3 : 1));
       for (let i = 0; i < starCount; i++) {
         const u = Math.random(); const v = Math.random();
@@ -233,8 +251,8 @@ export function StreamingChat({
 
       baseStarClusters.forEach(star => {
         const pos = DOMAIN_POSITIONS[star.domain] || { x: 50, y: 50 };
-        let centerX = canvas.width / 2;
-        let centerY = canvas.height / 2;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
         let x = (pos.x + star.offsetX) / 100 * canvas.width;
         let y = (pos.y + star.offsetY) / 100 * canvas.height;
         x = centerX + (x - centerX) * zoomScale;

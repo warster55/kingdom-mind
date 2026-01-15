@@ -34,10 +34,16 @@ const script = Great_Vibes({
 export const metadata: Metadata = {
   title: 'Kingdom Mind',
   description: 'Be transformed by the renewing of your mind - Romans 12:2',
+  manifest: '/manifest.json',
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',
     apple: '/icon.svg',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Kingdom Mind',
   },
 };
 

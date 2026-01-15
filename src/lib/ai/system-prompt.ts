@@ -1,6 +1,5 @@
-import { db, sacredPillars, systemPrompts, users } from '@/lib/db';
+import { db, sacredPillars, systemPrompts } from '@/lib/db';
 import { asc, desc, eq } from 'drizzle-orm';
-import { sql } from 'drizzle-orm'; // Import sql for potential use in appConfig's onConflictDoUpdate
 
 /**
  * Kingdom Mind - The Sovereign Template Engine (v7.0)
@@ -49,7 +48,7 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
   const pillarText = pillars.map((p, i) => `${i+1}. ${p.content}`).join('\n');
 
   // 3. Build User Memory Section (v8.0: PII-free memories with content)
-  let userMemoryText = buildUserMemory({ insightMemories, resonanceScores, completedCurriculumStats, daysSinceJoined });
+  const userMemoryText = buildUserMemory({ insightMemories, resonanceScores, completedCurriculumStats, daysSinceJoined });
 
   // 4. Determine Dynamic Protocol
   let protocol: string;
@@ -67,7 +66,7 @@ export async function buildSanctuaryPrompt(context: PromptContext): Promise<stri
 
   // 5. THE GREAT INJECTION
   // PRIVACY: No insight content is injected - only metadata summaries
-  let finalPrompt = masterTemplate
+  const finalPrompt = masterTemplate
     .replace('{{PILLARS}}', pillarText)
     .replace('{{USER_PREFERENCES}}', userMemoryText)
     .replace('{{USER_NAME}}', userName)

@@ -1,7 +1,18 @@
 import { db, systemPrompts } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { architectTools } from './tools/architect-definitions';
-import { executeArchitectQuery, executeUpdatePrompt, executeSystemHealth } from './tools/architect-handlers';
+import {
+  executeArchitectQuery,
+  executeUpdatePrompt,
+  executeSystemHealth,
+  executeReadFile,
+  executeWriteFile,
+  executeEditFile,
+  executeListFiles,
+  executeSearchCode,
+  executeRunBash,
+  executeProposePlan
+} from './tools/architect-handlers';
 import { xai } from './client';
 import { scrubPII } from '@/lib/utils/privacy';
 
@@ -13,16 +24,41 @@ export async function processArchitectTurn(command: string, controller: Readable
   const encoder = new TextEncoder();
   
   try {
-    const activePrompt = await db.select().from(systemPrompts)
+    // Note: activePrompt could be used for dynamic system prompts in the future
+    await db.select().from(systemPrompts)
       .where(eq(systemPrompts.isActive, true))
       .orderBy(desc(systemPrompts.createdAt))
       .limit(1);
 
-    const messages: any[] = [
+    // Type compatible with xAI SDK ChatCompletionMessageParam
+    interface ChatMessage {
+      role: 'system' | 'user' | 'assistant' | 'tool';
+      content: string;
+      tool_calls?: ToolCall[];
+      tool_call_id?: string;
+    }
+
+    interface ToolCall {
+      id: string;
+      function: {
+        name: string;
+        arguments: string;
+      };
+    }
+
+    interface ToolCallDelta {
+      id?: string;
+      function?: {
+        name?: string;
+        arguments?: string;
+      };
+    }
+
+    const messages: ChatMessage[] = [
       {
         role: 'system',
-        content: `You are the System Architect for Kingdom Mind. 
-        
+        content: `You are the System Architect for Kingdom Mind. You have full CLI power over the codebase.
+
         DATABASE SCHEMA (Master Blueprint):
         - users: id, email, name, role, is_approved, current_domain, resonance_identity... (7 domains)
         - curriculum: id, domain, pillar_name, pillar_order, description, key_truth
@@ -33,29 +69,45 @@ export async function processArchitectTurn(command: string, controller: Readable
         - chat_messages: id, user_id, session_id, role (user/assistant), content
         - system_prompts: id, version, content, is_approved
         - greetings: id, type (LOGIN/RETURN_USER/CODE_REQUEST), content, is_active
-        
+
         PRIVACY LAW:
-        - NEVER reveal PII (emails, names, private history). 
+        - NEVER reveal PII (emails, names, private history).
         - Your output is scrubbed by the Sovereignty Shield, but you must still provide anonymized patterns.
-        
-        POWERS:
+
+        TOOLS AVAILABLE:
+
+        Database:
         - queryDatabase: SQL (SELECT only) using the schema above.
         - updateSystemPrompt: Direct brain surgery on the Mentor.
-        - getSystemHealth: High-level metrics. 
-        
+        - getSystemHealth: High-level metrics.
+
+        File Operations (CLI Power):
+        - readFile: Read file contents (with line numbers). Use startLine/endLine for large files.
+        - writeFile: Create or overwrite a file.
+        - editFile: Surgical text replacement in a file.
+
+        Code Search:
+        - listFiles: List files matching a glob pattern (e.g., "**/*.ts", "src/**/*.tsx").
+        - searchCode: Search for text/regex in files using ripgrep.
+
+        System:
+        - runBash: Execute shell commands (git, npm, etc). 30-second timeout.
+
         TONE:
-        - Direct, professional, sovereign. Respond with data and action.`
+        - Direct, professional, sovereign. Respond with data and action.
+        - When making code changes, explain what you're doing and why.`
       },
       { role: 'user', content: command }
     ];
 
-    async function runArchitectLoop(currentMessages: any[]) {
+    async function runArchitectLoop(currentMessages: ChatMessage[]) {
       console.log(`[Architect] Processing Turn: ${command.substring(0, 50)}...`);
       
       const modelId = process.env.XAI_ARCHITECT_MODEL || 'grok-4-1-fast-reasoning';
+      // Cast to expected xAI SDK type - our ChatMessage is compatible at runtime
       const response = await xai.chat.completions.create({
         model: modelId,
-        messages: currentMessages,
+        messages: currentMessages as Parameters<typeof xai.chat.completions.create>[0]['messages'],
         tools: architectTools,
         tool_choice: 'auto',
         stream: true,
@@ -64,7 +116,7 @@ export async function processArchitectTurn(command: string, controller: Readable
 
       let fullContent = '';
       let usageData = { prompt_tokens: 0, completion_tokens: 0 };
-      const toolCalls: any[] = [];
+      const toolCalls: ToolCall[] = [];
 
       for await (const chunk of response) {
         const delta = chunk.choices[0]?.delta;
@@ -73,7 +125,7 @@ export async function processArchitectTurn(command: string, controller: Readable
           controller.enqueue(encoder.encode(scrubPII(delta.content)));
         }
         if (delta?.tool_calls) {
-          delta.tool_calls.forEach((tc: any) => {
+          delta.tool_calls.forEach((tc: ToolCallDelta) => {
             if (tc.id) toolCalls.push({ id: tc.id, function: { name: '', arguments: '' } });
             const current = toolCalls[toolCalls.length - 1];
             if (tc.function?.name) current.function.name += tc.function.name;
@@ -105,22 +157,35 @@ export async function processArchitectTurn(command: string, controller: Readable
 
           console.log(`[Architect Tool] Calling ${name} with args:`, args);
 
+          // Database tools
           if (name === 'queryDatabase') result = await executeArchitectQuery(args.sql);
           else if (name === 'updateSystemPrompt') result = await executeUpdatePrompt(args.newPrompt, args.explanation);
           else if (name === 'getSystemHealth') result = await executeSystemHealth();
-          
+          // File operations
+          else if (name === 'readFile') result = await executeReadFile(args.path, args.startLine, args.endLine);
+          else if (name === 'writeFile') result = await executeWriteFile(args.path, args.content);
+          else if (name === 'editFile') result = await executeEditFile(args.path, args.oldText, args.newText);
+          // Code search
+          else if (name === 'listFiles') result = await executeListFiles(args.pattern, args.cwd);
+          else if (name === 'searchCode') result = await executeSearchCode(args.pattern, args.path, args.filePattern);
+          // System
+          else if (name === 'runBash') result = await executeRunBash(args.command, args.cwd, args.timeout);
+          // Plan approval
+          else if (name === 'proposePlan') result = await executeProposePlan(args.title, args.summary, args.steps, args.filesAffected);
+          else result = { success: false, error: `Unknown tool: ${name}` };
+
           console.log(`[Architect Tool] ${name} result:`, result?.success ? 'SUCCESS' : 'FAILED');
 
           return {
             tool_call_id: tc.id,
-            role: 'tool',
+            role: 'tool' as const,
             content: JSON.stringify(result?.data || { error: result?.error })
           };
         }));
 
-        const nextMessages = [
+        const nextMessages: ChatMessage[] = [
           ...currentMessages,
-          { role: 'assistant', content: fullContent || null, tool_calls: toolCalls },
+          { role: 'assistant' as const, content: fullContent || '', tool_calls: toolCalls },
           ...toolResults
         ];
 
@@ -130,8 +195,9 @@ export async function processArchitectTurn(command: string, controller: Readable
 
     await runArchitectLoop(messages);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Architect] Loop Error:', error);
-    controller.enqueue(encoder.encode(`\n\n**Sovereignty Error:** ${error.message}`));
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    controller.enqueue(encoder.encode(`\n\n**Sovereignty Error:** ${message}`));
   }
 }

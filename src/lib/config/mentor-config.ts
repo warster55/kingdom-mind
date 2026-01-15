@@ -67,7 +67,7 @@ export async function getAllMentorConfig(): Promise<{
     for (const row of results) {
       const key = row.key.replace('mentor_', '') as MentorConfigKey;
       if (key in MENTOR_CONFIG && row.value !== undefined) {
-        (defaults as any)[key] = row.value;
+        (defaults as Record<string, unknown>)[key] = row.value;
       }
     }
   } catch (e) {
@@ -88,10 +88,10 @@ export async function setConfig<K extends MentorConfigKey>(
   const description = MENTOR_CONFIG[key].description;
 
   await db.insert(appConfig)
-    .values({ key: dbKey, value: value as any, description, updatedAt: new Date() })
+    .values({ key: dbKey, value: value as string | number | boolean, description, updatedAt: new Date() })
     .onConflictDoUpdate({
       target: appConfig.key,
-      set: { value: value as any, updatedAt: new Date() }
+      set: { value: value as string | number | boolean, updatedAt: new Date() }
     });
 }
 
@@ -100,8 +100,8 @@ export async function setConfig<K extends MentorConfigKey>(
  */
 export async function getConfigManifest(): Promise<Array<{
   key: string;
-  value: any;
-  default: any;
+  value: string | number | boolean;
+  default: string | number | boolean;
   description: string;
 }>> {
   const current = await getAllMentorConfig();

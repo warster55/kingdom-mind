@@ -1,6 +1,6 @@
-import { getGeminiStream, getOpenAIStream, getXAIStream, getOllamaStream, AIStreamResponse } from './providers';
+import { getGeminiStream, getOpenAIStream, getXAIStream, getOllamaStream, AIStreamResponse, HistoryMessage } from './providers';
 
-export async function getAIStream(prompt: string, history: any[]): Promise<AIStreamResponse> {
+export async function getAIStream(prompt: string, history: HistoryMessage[]): Promise<AIStreamResponse> {
   // Logic to determine which provider to use. 
   // Prioritize X.AI (Grok) as requested.
   

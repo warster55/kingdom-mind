@@ -71,7 +71,8 @@ export function useStreamingChat({ sessionId, initialMessages = [], onClientActi
         for await (const actions of readStreamableValue(clientActions)) {
           if (actions && Array.isArray(actions)) {
             for (const action of actions) {
-              onClientAction(action);
+              // Cast from streamable value type to our ClientAction interface
+              onClientAction(action as ClientAction);
             }
           }
         }
@@ -81,9 +82,10 @@ export function useStreamingChat({ sessionId, initialMessages = [], onClientActi
         setMessages(prev => prev.filter(msg => msg.id !== assistantId));
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Action Error]:', err);
-      setError(err.message || 'The Sanctuary connection was interrupted.');
+      const message = err instanceof Error ? err.message : 'The Sanctuary connection was interrupted.';
+      setError(message);
     } finally {
       setIsStreaming(false);
     }

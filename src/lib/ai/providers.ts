@@ -5,13 +5,25 @@ export interface AIStreamResponse {
   stream: AsyncIterable<string>;
 }
 
-export async function getGeminiStream(prompt: string, history: any[]): Promise<AIStreamResponse> {
+export interface HistoryMessage {
+  role: string;
+  content?: string;
+  parts?: Array<{ text: string }>;
+}
+
+export async function getGeminiStream(prompt: string, history: HistoryMessage[]): Promise<AIStreamResponse> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+  // Convert history to Gemini's expected format (parts is required)
+  const geminiHistory = history.map(msg => ({
+    role: msg.role,
+    parts: msg.parts || [{ text: msg.content || '' }]
+  }));
+
   const result = await model.generateContentStream({
     contents: [
-      ...history,
+      ...geminiHistory,
       { role: 'user', parts: [{ text: prompt }] }
     ]
   });
@@ -26,12 +38,18 @@ export async function getGeminiStream(prompt: string, history: any[]): Promise<A
   return { stream };
 }
 
-export async function getOpenAIStream(prompt: string, history: any[]): Promise<AIStreamResponse> {
+export async function getOpenAIStream(prompt: string, history: HistoryMessage[]): Promise<AIStreamResponse> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  
+
+  // Convert history to OpenAI's expected format
+  const openaiHistory = history.map(msg => ({
+    role: msg.role as 'user' | 'assistant' | 'system',
+    content: msg.content || ''
+  }));
+
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
-    messages: [...history, { role: "user", content: prompt }],
+    messages: [...openaiHistory, { role: "user" as const, content: prompt }],
     stream: true,
   });
 
@@ -44,15 +62,21 @@ export async function getOpenAIStream(prompt: string, history: any[]): Promise<A
   return { stream };
 }
 
-export async function getXAIStream(prompt: string, history: any[]): Promise<AIStreamResponse> {
+export async function getXAIStream(prompt: string, history: HistoryMessage[]): Promise<AIStreamResponse> {
   const xai = new OpenAI({
     apiKey: process.env.XAI_API_KEY,
     baseURL: "https://api.x.ai/v1",
   });
-  
+
+  // Convert history to xAI's expected format (OpenAI-compatible)
+  const xaiHistory = history.map(msg => ({
+    role: msg.role as 'user' | 'assistant' | 'system',
+    content: msg.content || ''
+  }));
+
   const response = await xai.chat.completions.create({
     model: process.env.XAI_MODEL || "grok-beta",
-    messages: [...history, { role: "user", content: prompt }],
+    messages: [...xaiHistory, { role: "user" as const, content: prompt }],
     stream: true,
   });
 
@@ -65,7 +89,7 @@ export async function getXAIStream(prompt: string, history: any[]): Promise<AISt
   return { stream };
 }
 
-export async function getOllamaStream(prompt: string, history: any[]): Promise<AIStreamResponse> {
+export async function getOllamaStream(prompt: string, history: HistoryMessage[]): Promise<AIStreamResponse> {
   const response = await fetch(`${process.env.OLLAMA_BASE_URL}/api/chat`, {
     method: 'POST',
     body: JSON.stringify({

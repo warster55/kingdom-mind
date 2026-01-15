@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { rateLimits } from '@/lib/db/schema';
-import { lt, eq, sql } from 'drizzle-orm';
+import { lt, eq } from 'drizzle-orm';
 
 const WINDOW_MS = 60 * 1000; // 1 Minute
 const LIMIT = 10; // 10 Messages per minute
@@ -35,7 +35,7 @@ export async function rateLimit(key: string): Promise<{ success: boolean; remain
 
   } catch (error) {
     console.error('Rate Limit Error:', error);
-    // Fail Open
-    return { success: true, remaining: 1 };
+    // FAIL CLOSED - deny on error for security
+    return { success: false, remaining: 0 };
   }
 }

@@ -1,0 +1,68 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner:
+      - heading "KINGDO m IND" [level=1]:
+        - generic: KINGDO
+        - generic: m
+        - generic: IND
+    - generic [ref=e3]:
+      - generic [ref=e5] [cursor=pointer]:
+        - generic:
+          - generic: Identity
+          - generic: Purpose
+          - generic: Mindset
+          - generic: Relationships
+          - generic: Vision
+          - generic: Action
+          - generic: Legacy
+        - generic:
+          - generic:
+            - generic:
+              - generic: Hey
+              - generic: there,
+              - generic: I'm
+              - generic: glad
+              - generic: you're
+              - generic: here
+              - generic: to
+              - generic: explore
+              - generic: and
+              - generic: test
+              - generic: things
+              - generic: out
+              - generic: as
+              - generic: you
+              - generic: begin
+              - generic: this
+              - generic: journey
+              - generic: at
+              - generic: Kingdom
+              - generic: Mind.
+              - generic: I’m
+              - generic: curious
+              - generic: about
+              - generic: what’s
+              - generic: "on"
+              - generic: your
+              - generic: mind
+              - generic: as
+              - generic: you
+              - generic: dive
+              - generic: into
+              - generic: "\"testing"
+              - generic: database
+              - generic: structure."
+              - generic: Are
+              - generic: you
+              - generic: working
+              - generic: "on"
+              - generic: something
+              - generic: technical,
+      - textbox "Speak your heart..." [active] [ref=e9]
+  - button "Open Next.js Dev Tools" [ref=e15] [cursor=pointer]:
+    - img [ref=e16]
+  - alert [ref=e19]
+```

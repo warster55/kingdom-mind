@@ -1,0 +1,612 @@
+{
+  "generatedAt": "2026-01-15T18:41:06.953Z",
+  "environment": "http://localhost:3002",
+  "testResults": [
+    {
+      "suite": "API Tests",
+      "name": "GET Creates New Sanctuary",
+      "status": "passed",
+      "duration": 45,
+      "screenshots": [],
+      "notes": [
+        "Response status: 200",
+        "Has blob: true",
+        "Has display: true",
+        "Has isNewUser: true (value: true)",
+        "Blob format valid: false",
+        "Blob errors: IV should be 12 bytes, got 16",
+        "Display totalBreakthroughs: 0",
+        "Display totalStars: undefined"
+      ]
+    },
+    {
+      "suite": "API Tests",
+      "name": "POST Empty Message",
+      "status": "passed",
+      "duration": 33,
+      "screenshots": [],
+      "notes": [
+        "Got initial blob: 402 chars",
+        "POST status: 200",
+        "Response is null: true",
+        "Has required fields (blob, display)"
+      ]
+    },
+    {
+      "suite": "API Tests",
+      "name": "POST Processes Message",
+      "status": "passed",
+      "duration": 6030,
+      "screenshots": [],
+      "notes": [
+        "Initial blob: 402 chars",
+        "POST status: 200",
+        "Has AI response: true",
+        "Response length: 1051 chars",
+        "Has updated blob: true",
+        "Blob changed: true",
+        "Updated blob format valid: false"
+      ]
+    },
+    {
+      "suite": "API Tests",
+      "name": "Invalid Blob Recovery",
+      "status": "passed",
+      "duration": 3599,
+      "screenshots": [],
+      "notes": [
+        "POST status: 200",
+        "Response handled: true",
+        "Server recovered from invalid blob",
+        "New blob format valid: false"
+      ]
+    },
+    {
+      "suite": "API Tests",
+      "name": "Null Blob Handling",
+      "status": "passed",
+      "duration": 5305,
+      "screenshots": [],
+      "notes": [
+        "POST status: 200",
+        "Created new blob: true",
+        "New blob length: 402 chars",
+        "New blob format valid: false",
+        "Has AI response: true"
+      ]
+    },
+    {
+      "suite": "API Tests",
+      "name": "API Response Time",
+      "status": "passed",
+      "duration": 4529,
+      "screenshots": [],
+      "notes": [
+        "GET response time: 21ms",
+        "POST response time: 4505ms",
+        "GET under 5s: true",
+        "POST under 60s: true"
+      ]
+    },
+    {
+      "suite": "Biometric Tests",
+      "name": "Biometric Table Exists",
+      "status": "failed",
+      "duration": 3531,
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected value: \u001b[32m\"biometric\"\u001b[39m\nReceived array: \u001b[31m[]\u001b[39m",
+      "screenshots": [
+        "e2e/reports/screenshots/biometric-table-exists-check-1768502244027.png"
+      ]
+    },
+    {
+      "suite": "Biometric Tests",
+      "name": "Lock Screen Shows When Enabled",
+      "status": "passed",
+      "duration": 2980,
+      "screenshots": [
+        "e2e/reports/screenshots/biometric-lock-enabled-before-reload-1768502246245.png",
+        "e2e/reports/screenshots/biometric-lock-enabled-lock-screen-1768502248756.png"
+      ],
+      "notes": [
+        "Lock screen indicator found: false",
+        "Lock screen UI displayed when biometric is enabled"
+      ]
+    },
+    {
+      "suite": "Biometric Tests",
+      "name": "No Lock Screen When Disabled",
+      "status": "passed",
+      "duration": 832,
+      "screenshots": [
+        "e2e/reports/screenshots/biometric-no-lock-loaded-1768502250556.png"
+      ],
+      "notes": [
+        "Chat input visible: true",
+        "Lock screen bypassed when biometric disabled"
+      ]
+    },
+    {
+      "suite": "Biometric Tests",
+      "name": "Biometric State Persists",
+      "status": "failed",
+      "duration": 2782,
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m",
+      "screenshots": [
+        "e2e/reports/screenshots/biometric-persistence-after-reload-1768502254249.png"
+      ]
+    },
+    {
+      "suite": "Biometric Tests",
+      "name": "Disable Button Available After Failed Attempts",
+      "status": "passed",
+      "duration": 3677,
+      "screenshots": [
+        "e2e/reports/screenshots/biometric-disable-button-lock-screen-1768502259585.png"
+      ],
+      "notes": [
+        "Unlock button present: false",
+        "Note: Disable button appears after 2 failed WebAuthn attempts",
+        "This provides a safety escape hatch if biometric stops working",
+        "Expected lock UI elements: true"
+      ]
+    },
+    {
+      "suite": "Biometric Tests",
+      "name": "Biometric Record Structure",
+      "status": "passed",
+      "duration": 477,
+      "screenshots": [
+        "e2e/reports/screenshots/biometric-record-structure-data-1768502258261.png"
+      ],
+      "notes": [
+        "Biometric record exists"
+      ]
+    },
+    {
+      "suite": "Chat Flow Tests",
+      "name": "New User Complete Flow",
+      "status": "failed",
+      "duration": 743,
+      "error": "locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:\n    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })\n    2) <span class=\"transition-opacity duration-500 opacity-0\">Kingdom </span> aka getByText('Kingdom', { exact: true })\n\nCall log:\n\u001b[2m    - checking visibility of locator('text=KINGDO')\u001b[22m\n",
+      "screenshots": [
+        "e2e/reports/screenshots/chat-flow-new-user-initial-1768502259735.png",
+        "e2e/reports/screenshots/chat-flow-new-user-loaded-1768502260006.png"
+      ]
+    },
+    {
+      "suite": "Chat Flow Tests",
+      "name": "Welcome Message Display",
+      "status": "passed",
+      "duration": 2526,
+      "screenshots": [
+        "e2e/reports/screenshots/chat-flow-welcome-message-display-1768502264490.png"
+      ],
+      "notes": [
+        "New user greeting displayed with sanctuary keywords"
+      ]
+    },
+    {
+      "suite": "Chat Flow Tests",
+      "name": "Message Input Functionality",
+      "status": "passed",
+      "duration": 580,
+      "screenshots": [
+        "e2e/reports/screenshots/chat-flow-message-input-typed-1768502265975.png"
+      ],
+      "notes": [
+        "User can type messages in the chat input"
+      ]
+    },
+    {
+      "suite": "Chat Flow Tests",
+      "name": "Message Round-Trip",
+      "status": "passed",
+      "duration": 11845,
+      "screenshots": [
+        "e2e/reports/screenshots/chat-flow-round-trip-before-send-1768502267413.png",
+        "e2e/reports/screenshots/chat-flow-round-trip-sending-1768502268560.png",
+        "e2e/reports/screenshots/chat-flow-round-trip-response-1768502278713.png"
+      ],
+      "notes": [
+        "Message sent successfully",
+        "Response received from AI"
+      ]
+    },
+    {
+      "suite": "Chat Flow Tests",
+      "name": "UI Elements Present",
+      "status": "passed",
+      "duration": 701,
+      "screenshots": [
+        "e2e/reports/screenshots/chat-flow-ui-elements-overview-1768502280390.png"
+      ],
+      "notes": [
+        "Header visible: true",
+        "Chat area visible: true",
+        "Input area visible: true"
+      ]
+    },
+    {
+      "suite": "Encryption Tests",
+      "name": "Blob Format Valid",
+      "status": "passed",
+      "duration": 7753,
+      "screenshots": [],
+      "notes": [
+        "No blob found after message - skipping format validation"
+      ]
+    },
+    {
+      "suite": "Encryption Tests",
+      "name": "Not Readable as Plaintext",
+      "status": "passed",
+      "duration": 10527,
+      "screenshots": [],
+      "notes": [
+        "No blob found - skipping plaintext check"
+      ]
+    },
+    {
+      "suite": "Encryption Tests",
+      "name": "Unique IV Per Encryption",
+      "status": "passed",
+      "duration": 18076,
+      "screenshots": [
+        "e2e/reports/screenshots/encryption-unique-iv-comparison-1768502319571.png"
+      ],
+      "notes": [
+        "First IV: undefined...",
+        "Second IV: undefined...",
+        "Could not compare IVs - one or both blobs missing"
+      ]
+    },
+    {
+      "suite": "Encryption Tests",
+      "name": "Base64 Components Valid",
+      "status": "passed",
+      "duration": 10573,
+      "screenshots": [],
+      "notes": [
+        "No blob found - skipping base64 validation"
+      ]
+    },
+    {
+      "suite": "Encryption Tests",
+      "name": "Encryption Strength Analysis",
+      "status": "passed",
+      "duration": 10575,
+      "screenshots": [],
+      "notes": [
+        "No blob found"
+      ]
+    },
+    {
+      "suite": "IndexedDB Tests",
+      "name": "Blob Stored on First Visit",
+      "status": "failed",
+      "duration": 3598,
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+      "screenshots": [
+        "e2e/reports/screenshots/indexeddb-first-visit-snapshot-1768502347432.png"
+      ]
+    },
+    {
+      "suite": "IndexedDB Tests",
+      "name": "Blob Updated After Message",
+      "status": "passed",
+      "duration": 12811,
+      "screenshots": [
+        "e2e/reports/screenshots/indexeddb-blob-updated-after-message-1768502359630.png"
+      ],
+      "notes": [
+        "Initial blob length: 0",
+        "Updated blob length: 0"
+      ]
+    },
+    {
+      "suite": "IndexedDB Tests",
+      "name": "Database Structure",
+      "status": "failed",
+      "duration": 10702,
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+      "screenshots": [
+        "e2e/reports/screenshots/indexeddb-db-structure-tables-1768502371364.png"
+      ]
+    },
+    {
+      "suite": "IndexedDB Tests",
+      "name": "Blob Contains Required Fields",
+      "status": "passed",
+      "duration": 7880,
+      "screenshots": [
+        "e2e/reports/screenshots/indexeddb-required-fields-record-1768502381094.png"
+      ],
+      "notes": [
+        "No sanctuary record found after message"
+      ]
+    },
+    {
+      "suite": "IndexedDB Tests",
+      "name": "IndexedDB Console Inspection",
+      "status": "passed",
+      "duration": 10615,
+      "screenshots": [
+        "e2e/reports/screenshots/indexeddb-console-inspection-full-1768502392642.png"
+      ],
+      "notes": [
+        "Full IndexedDB inspection logged to console",
+        "Database: MISSING",
+        "Tables: "
+      ]
+    },
+    {
+      "suite": "Persistence Tests",
+      "name": "Blob Survives Reload",
+      "status": "passed",
+      "duration": 11191,
+      "screenshots": [
+        "e2e/reports/screenshots/persistence-blob-survives-before-reload-1768502404262.png",
+        "e2e/reports/screenshots/persistence-blob-survives-after-reload-1768502404760.png"
+      ],
+      "notes": [
+        "Blob before reload: none",
+        "Blob after reload: none",
+        "No blob was created before reload"
+      ]
+    },
+    {
+      "suite": "Persistence Tests",
+      "name": "Database Survives Navigation",
+      "status": "failed",
+      "duration": 9557,
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+      "screenshots": [
+        "e2e/reports/screenshots/persistence-navigation-after-1768502415168.png"
+      ]
+    },
+    {
+      "suite": "Persistence Tests",
+      "name": "UpdatedAt Timestamp Changes",
+      "status": "passed",
+      "duration": 19971,
+      "screenshots": [
+        "e2e/reports/screenshots/persistence-timestamp-updated-1768502437009.png"
+      ],
+      "notes": [
+        "First timestamp: none",
+        "Second timestamp: none"
+      ]
+    },
+    {
+      "suite": "Persistence Tests",
+      "name": "Multiple Sessions",
+      "status": "failed",
+      "duration": 14233,
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+      "screenshots": [
+        "e2e/reports/screenshots/persistence-multi-session-session1-1768502448669.png",
+        "e2e/reports/screenshots/persistence-multi-session-session2-1768502452230.png"
+      ]
+    },
+    {
+      "suite": "Persistence Tests",
+      "name": "Returning User Detection",
+      "status": "passed",
+      "duration": 12587,
+      "screenshots": [
+        "e2e/reports/screenshots/persistence-returning-user-first-visit-1768502466808.png",
+        "e2e/reports/screenshots/persistence-returning-user-second-visit-1768502466706.png"
+      ],
+      "notes": [
+        "First visit - new user greeting: true",
+        "Second visit - returning greeting: true",
+        "Sanctuary loaded successfully on return visit"
+      ]
+    },
+    {
+      "suite": "Privacy Tests",
+      "name": "No PII in IndexedDB",
+      "status": "passed",
+      "duration": 10667,
+      "screenshots": [
+        "e2e/reports/screenshots/privacy-no-pii-indexeddb-check-1768502478263.png"
+      ],
+      "notes": [
+        "\"john smith\" in blob: NO (GOOD)",
+        "\"john.smith@example.com\" in blob: NO (GOOD)",
+        "\"555-123-4567\" in blob: NO (GOOD)",
+        "\"5551234567\" in blob: NO (GOOD)",
+        "Contains plaintext patterns: false"
+      ]
+    },
+    {
+      "suite": "Privacy Tests",
+      "name": "No PII in Network URLs",
+      "status": "passed",
+      "duration": 10575,
+      "screenshots": [
+        "e2e/reports/screenshots/privacy-no-pii-urls-network-1768502489894.png"
+      ],
+      "notes": [
+        "Total requests captured: 1",
+        "PII found in URLs: NO (GOOD)",
+        "Sanctuary API calls: 1"
+      ]
+    },
+    {
+      "suite": "Privacy Tests",
+      "name": "No Decrypted Data in HTML",
+      "status": "passed",
+      "duration": 7963,
+      "screenshots": [
+        "e2e/reports/screenshots/privacy-no-html-leak-source-1768502498751.png"
+      ],
+      "notes": [
+        "\"breakthroughs array\" in HTML: NO (GOOD)",
+        "\"insights array\" in HTML: NO (GOOD)",
+        "\"resonance object\" in HTML: NO (GOOD)",
+        "\"sanctuary data\" in HTML: NO (GOOD)",
+        "\"raw encrypted blob\" in HTML: NO (GOOD)",
+        "Expected UI content present: false",
+        "Potential data leaks found: NO"
+      ]
+    },
+    {
+      "suite": "Privacy Tests",
+      "name": "LocalStorage Privacy",
+      "status": "passed",
+      "duration": 10599,
+      "screenshots": [
+        "e2e/reports/screenshots/privacy-localstorage-check-1768502510296.png"
+      ],
+      "notes": [
+        "LocalStorage keys: 1",
+        "WARNING: Sensitive patterns in key \"nextauth.message\"",
+        "Sensitive data in localStorage: YES (INVESTIGATE)"
+      ]
+    },
+    {
+      "suite": "Privacy Tests",
+      "name": "Session Storage Privacy",
+      "status": "passed",
+      "duration": 10585,
+      "screenshots": [
+        "e2e/reports/screenshots/privacy-sessionstorage-check-1768502521824.png"
+      ],
+      "notes": [
+        "SessionStorage keys: 0",
+        "Sensitive data in sessionStorage: NO (GOOD)"
+      ]
+    }
+  ],
+  "indexedDBInspections": [
+    {
+      "timestamp": 1768502347510,
+      "databaseExists": false,
+      "tables": [],
+      "sanctuaryRecord": {
+        "exists": false,
+        "blobFormat": "Unknown"
+      },
+      "biometricRecord": {
+        "exists": false,
+        "hasCredentialId": false
+      }
+    },
+    {
+      "timestamp": 1768502359729,
+      "databaseExists": false,
+      "tables": [],
+      "sanctuaryRecord": {
+        "exists": false,
+        "blobFormat": "Unknown"
+      },
+      "biometricRecord": {
+        "exists": false,
+        "hasCredentialId": false
+      }
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "e2e/reports/screenshots/biometric-lock-enabled-lock-screen-1768502248756.png",
+      "description": "Biometric - Lock Screen"
+    },
+    {
+      "path": "e2e/reports/screenshots/biometric-no-lock-loaded-1768502250556.png",
+      "description": "Biometric - No Lock Screen"
+    },
+    {
+      "path": "e2e/reports/screenshots/chat-flow-new-user-initial-1768502259735.png",
+      "description": "New User - Initial Load"
+    },
+    {
+      "path": "e2e/reports/screenshots/chat-flow-new-user-loaded-1768502260006.png",
+      "description": "New User - Sanctuary Loaded"
+    },
+    {
+      "path": "e2e/reports/screenshots/chat-flow-welcome-message-display-1768502264490.png",
+      "description": "Welcome Message Display"
+    },
+    {
+      "path": "e2e/reports/screenshots/chat-flow-message-input-typed-1768502265975.png",
+      "description": "Message Input - After Typing"
+    },
+    {
+      "path": "e2e/reports/screenshots/chat-flow-round-trip-sending-1768502268560.png",
+      "description": "Message Round-Trip - Sending"
+    },
+    {
+      "path": "e2e/reports/screenshots/chat-flow-round-trip-response-1768502278713.png",
+      "description": "Message Round-Trip - Response Received"
+    },
+    {
+      "path": "e2e/reports/screenshots/chat-flow-ui-elements-overview-1768502280390.png",
+      "description": "UI Elements Overview"
+    },
+    {
+      "path": "e2e/reports/screenshots/indexeddb-first-visit-snapshot-1768502347432.png",
+      "description": "IndexedDB - First Visit State"
+    },
+    {
+      "path": "e2e/reports/screenshots/indexeddb-blob-updated-after-message-1768502359630.png",
+      "description": "IndexedDB - After Message"
+    },
+    {
+      "path": "e2e/reports/screenshots/indexeddb-console-inspection-full-1768502392642.png",
+      "description": "IndexedDB - Console Inspection"
+    },
+    {
+      "path": "e2e/reports/screenshots/persistence-blob-survives-after-reload-1768502404760.png",
+      "description": "Persistence - After Reload"
+    },
+    {
+      "path": "e2e/reports/screenshots/persistence-multi-session-session2-1768502452230.png",
+      "description": "Persistence - Second Session"
+    },
+    {
+      "path": "e2e/reports/screenshots/persistence-returning-user-second-visit-1768502466706.png",
+      "description": "Persistence - Returning User"
+    },
+    {
+      "path": "e2e/reports/screenshots/privacy-no-pii-indexeddb-check-1768502478263.png",
+      "description": "Privacy - IndexedDB PII Check"
+    }
+  ],
+  "errors": [
+    {
+      "test": "Biometric Tests > Biometric Table Exists",
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected value: \u001b[32m\"biometric\"\u001b[39m\nReceived array: \u001b[31m[]\u001b[39m"
+    },
+    {
+      "test": "Biometric Tests > Biometric State Persists",
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m"
+    },
+    {
+      "test": "Chat Flow Tests > New User Complete Flow",
+      "error": "locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:\n    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })\n    2) <span class=\"transition-opacity duration-500 opacity-0\">Kingdom </span> aka getByText('Kingdom', { exact: true })\n\nCall log:\n\u001b[2m    - checking visibility of locator('text=KINGDO')\u001b[22m\n"
+    },
+    {
+      "test": "IndexedDB Tests > Blob Stored on First Visit",
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m"
+    },
+    {
+      "test": "IndexedDB Tests > Database Structure",
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m"
+    },
+    {
+      "test": "Persistence Tests > Database Survives Navigation",
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m"
+    },
+    {
+      "test": "Persistence Tests > Multiple Sessions",
+      "error": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m"
+    }
+  ],
+  "networkAnalysis": {
+    "totalRequests": 1,
+    "sanctuaryApiCalls": 1,
+    "piiInUrls": false,
+    "sensitiveDataExposed": []
+  }
+}

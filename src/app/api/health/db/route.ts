@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db, users, mentoringSessions } from '@/lib/db';
+import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role;
+    const userRole = (session?.user as { role?: string })?.role;
 
     // Only Architects can see the system pulse
     if (userRole !== 'architect' && userRole !== 'admin') {
@@ -39,8 +39,9 @@ export async function GET() {
       totalAiCost,
       status: 'Healthy'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Health API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

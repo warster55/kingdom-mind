@@ -20,13 +20,27 @@ export const appConfig = pgTable('app_config', {
 // --- Users ---
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  username: text('username').unique(), // Hashed random username (new primary identifier)
+  email: text('email').unique(), // Legacy - nullable for new users, kept for migration
   name: text('name'),
   role: text('role').notNull().default('user'),
   isApproved: boolean('is_approved').default(false).notNull(),
   currentDomain: text('current_domain').default('Identity').notNull(),
   timezone: text('timezone').default('UTC').notNull(),
-  
+
+  // --- SOVEREIGN AUTHENTICATION ---
+  authMethod: varchar('auth_method', { length: 20 }).default('totp').notNull(), // totp | seed_phrase (no more email_otp)
+  totpSecret: text('totp_secret'), // Encrypted TOTP secret for authenticator apps
+  totpEnabledAt: timestamp('totp_enabled_at'),
+  seedPhraseHash: text('seed_phrase_hash'), // Hash of seed phrase for recovery verification
+  encryptedUserKey: text('encrypted_user_key'), // Per-user encryption key (encrypted with seed-derived key)
+  seedPhraseCreatedAt: timestamp('seed_phrase_created_at'),
+
+  // --- SESSION SECURITY ---
+  pinHash: text('pin_hash'), // Hashed 6-digit PIN for quick unlock
+  pinSetAt: timestamp('pin_set_at'),
+  lastActivityAt: timestamp('last_activity_at'), // For idle timeout tracking
+
   // --- Sanctuary Resonance ---
   resonanceIdentity: integer('resonance_identity').default(0).notNull(),
   resonancePurpose: integer('resonance_purpose').default(0).notNull(),
@@ -39,7 +53,7 @@ export const users = pgTable('users', {
   // --- GENESIS STATE ---
   onboardingStage: integer('onboarding_stage').default(0).notNull(),
   hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
-  
+
   // --- DAILY BREAD (Scripture Delivery) ---
   lastBreadAt: timestamp('last_bread_at'),
   currentBreadId: integer('current_bread_id').references(() => curriculum.id),
@@ -47,7 +61,25 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
+  usernameIdx: index('users_username_idx').on(table.username),
   emailIdx: index('users_email_idx').on(table.email),
+}));
+
+// --- WebAuthn Credentials (Passkeys/Biometrics) ---
+export const webauthnCredentials = pgTable('webauthn_credentials', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  credentialId: text('credential_id').notNull().unique(), // Base64 encoded credential ID
+  publicKey: text('public_key').notNull(), // Base64 encoded public key
+  counter: integer('counter').notNull().default(0), // Signature counter for replay protection
+  deviceType: varchar('device_type', { length: 50 }), // 'singleDevice' | 'multiDevice'
+  backedUp: boolean('backed_up').default(false), // Whether credential is backed up (e.g., iCloud)
+  transports: jsonb('transports'), // Array of transports: ['internal', 'hybrid', etc.]
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastUsedAt: timestamp('last_used_at'),
+}, (table) => ({
+  userIdIdx: index('webauthn_user_id_idx').on(table.userId),
+  credentialIdIdx: index('webauthn_credential_id_idx').on(table.credentialId),
 }));
 
 // --- Curriculum (The Bones) ---

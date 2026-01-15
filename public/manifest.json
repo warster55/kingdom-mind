@@ -1,0 +1,19 @@
+{
+  "name": "Kingdom Mind",
+  "short_name": "Kingdom Mind",
+  "description": "A sanctuary for spiritual growth and reflection",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0a09",
+  "theme_color": "#0c0a09",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["lifestyle", "education"],
+  "lang": "en-US"
+}

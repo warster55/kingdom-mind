@@ -1,12 +1,12 @@
-import { db, users, userProgress, habits, insights, chatMessages, mentoringSessions, thoughts } from '@/lib/db';
-import { eq, desc, sql } from 'drizzle-orm';
+import { db, users, userProgress, habits, insights, mentoringSessions, thoughts } from '@/lib/db';
+import { eq, desc } from 'drizzle-orm';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
 
 interface ToolResult {
   tool_name: string;
-  parameters: any;
+  parameters: Record<string, unknown>;
   status: 'success' | 'error';
-  data?: any;
+  data?: Record<string, unknown>;
   error?: string;
   is_public: boolean; // Can the user see this?
 }
@@ -69,9 +69,10 @@ export const toolHandlers = {
         },
         is_public: false,
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error in getUserStatus:", e);
-      return { tool_name: 'getUserStatus', parameters: { userId }, status: 'error', error: e.message, is_public: false };
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      return { tool_name: 'getUserStatus', parameters: { userId }, status: 'error', error: message, is_public: false };
     }
   },
 
@@ -81,9 +82,10 @@ export const toolHandlers = {
       const encryptedSummary = encrypt(summary);
       await db.insert(insights).values({ userId, domain, content: encryptedSummary, importance: 1 });
       return { tool_name: 'scribeReflection', parameters: { userId, domain, summary }, status: 'success', data: { message: 'Reflection scribed.' }, is_public: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error in scribeReflection:", e);
-      return { tool_name: 'scribeReflection', parameters: { userId, domain, summary }, status: 'error', error: e.message, is_public: false };
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      return { tool_name: 'scribeReflection', parameters: { userId, domain, summary }, status: 'error', error: message, is_public: false };
     }
   },
 
@@ -92,9 +94,10 @@ export const toolHandlers = {
       const encryptedContent = encrypt(content);
       await db.insert(thoughts).values({ userId, content: encryptedContent });
       return { tool_name: 'saveThought', parameters: { userId, content }, status: 'success', data: { message: 'Thought saved.' }, is_public: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error in saveThought:", e);
-      return { tool_name: 'saveThought', parameters: { userId, content }, status: 'error', error: e.message, is_public: false };
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      return { tool_name: 'saveThought', parameters: { userId, content }, status: 'error', error: message, is_public: false };
     }
   },
 
@@ -102,9 +105,10 @@ export const toolHandlers = {
     try {
       await db.update(users).set({ onboardingStage: stage }).where(eq(users.id, userId));
       return { tool_name: 'advanceGenesis', parameters: { userId, stage }, status: 'success', data: { message: `Seeker advanced to stage ${stage}.` }, is_public: false };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error in advanceGenesis:", e);
-      return { tool_name: 'advanceGenesis', parameters: { userId, stage }, status: 'error', error: e.message, is_public: false };
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      return { tool_name: 'advanceGenesis', parameters: { userId, stage }, status: 'error', error: message, is_public: false };
     }
   },
 
@@ -112,9 +116,10 @@ export const toolHandlers = {
     try {
       await db.update(users).set(updates).where(eq(users.id, userId));
       return { tool_name: 'updateUser', parameters: { userId, updates }, status: 'success', data: { message: 'User updated.' }, is_public: false };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error in updateUser:", e);
-      return { tool_name: 'updateUser', parameters: { userId, updates }, status: 'error', error: e.message, is_public: false };
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      return { tool_name: 'updateUser', parameters: { userId, updates }, status: 'error', error: message, is_public: false };
     }
   },
 
@@ -149,9 +154,10 @@ export const toolHandlers = {
       await db.delete(mentoringSessions).where(eq(mentoringSessions.userId, userId));
       await db.delete(thoughts).where(eq(thoughts.userId, userId));
       return { tool_name: 'resetJourney', parameters: { userId }, status: 'success', data: { message: 'User journey reset.' }, is_public: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error in resetJourney:", e);
-      return { tool_name: 'resetJourney', parameters: { userId }, status: 'error', error: e.message, is_public: false };
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      return { tool_name: 'resetJourney', parameters: { userId }, status: 'error', error: message, is_public: false };
     }
   },
 
@@ -159,9 +165,10 @@ export const toolHandlers = {
     try {
       await db.delete(users).where(eq(users.id, userId));
       return { tool_name: 'deleteAccount', parameters: { userId }, status: 'success', data: { message: 'User account deleted.' }, is_public: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error in deleteAccount:", e);
-      return { tool_name: 'deleteAccount', parameters: { userId }, status: 'error', error: e.message, is_public: false };
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      return { tool_name: 'deleteAccount', parameters: { userId }, status: 'error', error: message, is_public: false };
     }
   },
 };

@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
 import { db, users, userProgress, curriculum } from '@/lib/db';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       expiresIn: needsNewBread ? breadCooldown : (breadCooldown - (now.getTime() - (user?.lastBreadAt?.getTime() || 0)))
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Daily Bread API Error:', error);
     return NextResponse.json({ error: 'System Malfunction' }, { status: 500 });
   }

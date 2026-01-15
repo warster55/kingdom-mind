@@ -4,7 +4,7 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 interface ConfigContextType {
-  config: Record<string, any>;
+  config: Record<string, string | number | boolean>;
   isLoading: boolean;
 }
 
@@ -33,11 +33,12 @@ export function useConfig() {
   if (context === undefined) {
     throw new Error('useConfig must be used within a ConfigProvider');
   }
-  
+
   // Helper to get with default fallback
-  const get = (key: string, defaultValue: any) => {
-    return context.config[key] ?? defaultValue;
+  const get = <T extends string | number | boolean>(key: string, defaultValue: T): T => {
+    const value = context.config[key];
+    return (value !== undefined ? value : defaultValue) as T;
   };
 
-  return { ...context, get };
+  return { config: context.config, isLoading: context.isLoading, get };
 }

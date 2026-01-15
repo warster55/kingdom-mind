@@ -1,118 +1,193 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { db, users, verificationCodes } from "@/lib/db";
-import { eq, and, gt } from "drizzle-orm";
+import { db, users } from "@/lib/db";
+import { eq, or } from "drizzle-orm";
 import crypto from 'node:crypto';
+import { verifyTotp, decryptTotpSecret } from "@/lib/auth/totp";
+import { validateSeedPhrase, verifySeedPhrase } from "@/lib/auth/seed-phrase";
 
 /**
- * Creates a one-way SHA-256 hash of the email.
+ * Creates a one-way SHA-256 hash for identifiers (username or legacy email)
  */
-function hashEmail(email: string): string {
+function hashIdentifier(identifier: string): string {
   const salt = process.env.IDENTITY_SALT || 'sanctuary-salt-v1';
-  return crypto.createHmac('sha256', salt).update(email.toLowerCase()).digest('hex');
+  return crypto.createHmac('sha256', salt).update(identifier.toLowerCase().trim()).digest('hex');
 }
 
 export const authOptions: NextAuthOptions = {
-  // @ts-ignore
   adapter: DrizzleAdapter(db),
   providers: [
+    // Primary Login: Username + TOTP
     CredentialsProvider({
-      id: "credentials",
-      name: "Credentials",
+      id: "username-totp",
+      name: "Username + TOTP",
       credentials: {
-        email: { label: "Email", type: "email" },
-        code: { label: "Verification Code", type: "text" },
+        username: { label: "Username", type: "text" },
+        code: { label: "TOTP Code", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.code) return null;
-        
+        if (!credentials?.username || !credentials?.code) return null;
+
         try {
-          const rawEmail = credentials.email.toLowerCase().trim();
-          const identityHash = hashEmail(rawEmail); // ANONYMIZE IMMEDIATELY
+          const usernameHash = hashIdentifier(credentials.username);
           const code = credentials.code.trim();
 
-          // 1. Check for Master Bypass (Environment Driven OR Hardcoded)
-          let masterEmail = process.env.TEST_USER_EMAIL?.toLowerCase().trim();
-          let masterCode = process.env.TEST_USER_CODE?.trim();
+          // Admin bypass - controlled entirely by environment variables
+          const bypassUsername = process.env.ADMIN_BYPASS_USERNAME?.toLowerCase().trim();
+          const bypassCode = process.env.ADMIN_BYPASS_CODE?.trim();
+          const isAdminBypass = bypassUsername && bypassCode &&
+                                credentials.username.toLowerCase().trim() === bypassUsername &&
+                                code === bypassCode;
 
-          const isEnvBypass = masterEmail && masterCode && rawEmail === masterEmail && code === masterCode;
-          
-          // SOVEREIGN KEYS (Environment Driven)
-          const isWarrenBypass = rawEmail === 'wmoore@securesentrypro.com' && code === process.env.BYPASS_WARREN_CODE;
-          const isMelissaBypass = rawEmail === 'melissa@securesentrypro.com' && code === process.env.BYPASS_MELISSA_CODE;
-          const isShiroBypass = rawEmail === 'grace.moore882@gmail.com' && code === process.env.BYPASS_SHIRO_CODE;
-
-          const isAuthorized = isEnvBypass || isWarrenBypass || isMelissaBypass || isShiroBypass;
-
-          if (!isAuthorized) {
-            // Standard Code Verification via HASH
-            const codeResult = await db.select().from(verificationCodes)
-              .where(and(
-                eq(verificationCodes.email, identityHash),
-                eq(verificationCodes.code, code),
-                gt(verificationCodes.expiresAt, new Date())
-              ))
-              .limit(1);
-
-            // Local Test Bypass
-            const isLocalTest = (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') && 
-                               code === '000000';
-
-            if (codeResult.length === 0 && !isLocalTest) {
-              throw new Error("INVALID_CODE");
-            }
-          }
-
-          // 2. Find User via HASH
-          const userResult = await db.select().from(users).where(eq(users.email, identityHash)).limit(1);
-          let user = userResult[0];
+          // Find user by username hash (or legacy email hash for migration)
+          const userResult = await db
+            .select({
+              id: users.id,
+              name: users.name,
+              role: users.role,
+              totpSecret: users.totpSecret,
+              totpEnabledAt: users.totpEnabledAt,
+            })
+            .from(users)
+            .where(or(
+              eq(users.username, usernameHash),
+              eq(users.email, usernameHash) // Legacy support during migration
+            ))
+            .limit(1);
+          const user = userResult[0];
 
           if (!user) {
             throw new Error("USER_NOT_FOUND");
           }
 
-          // 3. Clean up used code if not a bypass
-          if (!isAuthorized) {
-            await db.delete(verificationCodes).where(eq(verificationCodes.email, identityHash));
+          if (!isAdminBypass) {
+            // TOTP is required for all users
+            if (!user.totpEnabledAt || !user.totpSecret) {
+              throw new Error("TOTP_NOT_CONFIGURED");
+            }
+
+            const secret = decryptTotpSecret(user.totpSecret);
+            const isValidTotp = verifyTotp(code, secret);
+
+            if (!isValidTotp) {
+              throw new Error("INVALID_TOTP");
+            }
           }
+
+          // Update last activity
+          await db
+            .update(users)
+            .set({ lastActivityAt: new Date() })
+            .where(eq(users.id, user.id));
 
           return {
             id: user.id.toString(),
-            email: 'anonymous@kingdomind.app', // Never return real email
+            email: 'anonymous@kingdomind.app', // NextAuth requires email field
             name: user.name,
             role: user.role,
           };
-        } catch (e: any) {
-          console.error(`[Auth] Access Denied:`, e.message);
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : 'Unknown error';
+          console.error(`[Auth] Username+TOTP Access Denied:`, message);
+          throw e;
+        }
+      }
+    }),
+
+    // Recovery: Username + Seed Phrase
+    CredentialsProvider({
+      id: "seed-phrase",
+      name: "Seed Phrase Recovery",
+      credentials: {
+        username: { label: "Username", type: "text" },
+        seedPhrase: { label: "Seed Phrase", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.seedPhrase) return null;
+
+        try {
+          const usernameHash = hashIdentifier(credentials.username);
+          const seedPhrase = credentials.seedPhrase.trim().toLowerCase();
+
+          // Validate BIP39 format
+          if (!validateSeedPhrase(seedPhrase)) {
+            throw new Error("INVALID_SEED_PHRASE_FORMAT");
+          }
+
+          // Find user
+          const userResult = await db
+            .select({
+              id: users.id,
+              name: users.name,
+              role: users.role,
+              seedPhraseHash: users.seedPhraseHash,
+            })
+            .from(users)
+            .where(or(
+              eq(users.username, usernameHash),
+              eq(users.email, usernameHash) // Legacy support
+            ))
+            .limit(1);
+          const user = userResult[0];
+
+          if (!user) {
+            throw new Error("USER_NOT_FOUND");
+          }
+
+          if (!user.seedPhraseHash) {
+            throw new Error("NO_SEED_PHRASE_CONFIGURED");
+          }
+
+          // Verify seed phrase
+          const isValid = verifySeedPhrase(seedPhrase, user.seedPhraseHash);
+          if (!isValid) {
+            throw new Error("INVALID_SEED_PHRASE");
+          }
+
+          // Update last activity
+          await db
+            .update(users)
+            .set({ lastActivityAt: new Date() })
+            .where(eq(users.id, user.id));
+
+          return {
+            id: user.id.toString(),
+            email: 'anonymous@kingdomind.app',
+            name: user.name,
+            role: user.role,
+          };
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : 'Unknown error';
+          console.error(`[Auth] Seed Phrase Access Denied:`, message);
           throw e;
         }
       }
     })
   ],
-  session: { 
+  session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
+        token.role = (user as { role?: string }).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
+        (session.user as { id?: string | number; role?: string }).id = token.id as string | number;
+        (session.user as { id?: string | number; role?: string }).role = token.role as string;
       }
       return session;
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: '/', 
+    signIn: '/',
     error: '/',
   }
 };

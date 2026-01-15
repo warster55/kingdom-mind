@@ -4,8 +4,8 @@
  */
 import OpenAI from 'openai';
 import { db, users, userProgress, curriculum, insights } from '@/lib/db';
-import { eq, and, sql, desc } from 'drizzle-orm';
-import { encrypt, decrypt } from '@/lib/utils/encryption';
+import { eq, and, sql } from 'drizzle-orm';
+import { encrypt } from '@/lib/utils/encryption';
 
 // Tool definitions for the OpenAI-compatible API
 export const mentorTools: OpenAI.ChatCompletionTool[] = [
@@ -89,12 +89,26 @@ export const mentorTools: OpenAI.ChatCompletionTool[] = [
   }
 ];
 
+interface ClientAction {
+  type: string;
+  domains?: string[];
+  domain?: string;
+  insight?: string;
+}
+
+interface ToolExecutionResult {
+  success: boolean;
+  result?: string;
+  error?: string;
+  clientAction?: ClientAction;
+}
+
 // Tool execution handlers
 export async function executeTool(
   toolName: string,
-  args: Record<string, any>,
+  args: Record<string, unknown>,
   userId: number
-): Promise<{ success: boolean; result?: any; error?: string; clientAction?: any }> {
+): Promise<ToolExecutionResult> {
   console.log(`[Tool] Executing: ${toolName}`, args);
 
   try {
@@ -195,9 +209,10 @@ export async function executeTool(
       default:
         return { success: false, error: `Unknown tool: ${toolName}` };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Tool] Error executing ${toolName}:`, error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 }
 

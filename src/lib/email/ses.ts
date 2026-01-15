@@ -43,8 +43,9 @@ export async function sendOTP(email: string, code: string) {
     const command = new SendEmailCommand(params);
     const result = await sesClient.send(command);
     return { success: true, messageId: result.MessageId };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("SES Error:", error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 }

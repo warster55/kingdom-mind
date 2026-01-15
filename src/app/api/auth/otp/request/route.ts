@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Standard Logic: Check User via IDENTITY HASH
     const userResult = await db.select().from(users).where(eq(users.email, identityHash)).limit(1);
-    let user = userResult[0];
+    const user = userResult[0];
 
     // --- LOCKDOWN MODE: BLOCK NEW USERS ---
     if (!user) {
@@ -79,8 +79,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('OTP Request Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

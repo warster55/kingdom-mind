@@ -2,8 +2,8 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { db, chatMessages, users, insights, systemPrompts, userProgress, curriculum, thoughts, mentoringSessions } from '@/lib/db';
-import { eq, desc, and, sql, gte } from 'drizzle-orm';
+import { db, chatMessages, users, insights, userProgress, curriculum, mentoringSessions } from '@/lib/db';
+import { eq, desc, and } from 'drizzle-orm';
 import { buildSanctuaryPrompt } from '@/lib/ai/system-prompt';
 import { encrypt, decrypt } from '@/lib/utils/encryption';
 import { rateLimit } from '@/lib/rate-limit';
@@ -30,7 +30,7 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
   }
 
   const userId = session?.user?.id;
-  const userRole = (session?.user as any)?.role;
+  const userRole = (session?.user as { role?: string })?.role;
 
   // 1. RATE LIMITING
   if (userId && userRole !== 'architect' && userRole !== 'admin') {
@@ -97,7 +97,23 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
 
   // 3. BUILD PROMPT & CONTEXT (Database-Driven Configuration)
   let finalSystemPrompt = "You are a helpful mentor.";
-  let currentUser: any = null;
+  interface UserRecord {
+    id: number;
+    name: string | null;
+    timezone: string | null;
+    currentDomain: string;
+    resonanceIdentity: number;
+    resonancePurpose: number;
+    resonanceMindset: number;
+    resonanceRelationships: number;
+    resonanceVision: number;
+    resonanceAction: number;
+    resonanceLegacy: number;
+    hasCompletedOnboarding: boolean;
+    onboardingStage: number;
+    createdAt: Date;
+  }
+  let currentUser: UserRecord | null = null;
 
   // Fetch all mentor config values at once
   const config = await getAllMentorConfig();
@@ -144,7 +160,7 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
       } : undefined;
 
       // PRIVACY: Get completed curriculum COUNT by domain only - no truth content
-      let completedCurriculumStats: Record<string, number> = {};
+      const completedCurriculumStats: Record<string, number> = {};
       if (config.include_completed_curriculum) {
         const completed = await db.select({
           domain: curriculum.domain
@@ -213,7 +229,13 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
 
   // 6. STREAMING SETUP WITH TOOL CALLING
   const stream = createStreamableValue('');
-  const clientActionsStream = createStreamableValue<any[]>([]);
+  interface ClientAction {
+    type: string;
+    domains?: string[];
+    domain?: string;
+    insight?: string;
+  }
+  const clientActionsStream = createStreamableValue<ClientAction[]>([]);
 
   (async () => {
     try {
@@ -239,7 +261,7 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
       let fullContent = '';
       let usageData = { prompt_tokens: 0, completion_tokens: 0 };
       const toolCalls: Array<{ id: string; name: string; arguments: string }> = [];
-      const clientActions: any[] = [];
+      const clientActions: ClientAction[] = [];
       const resonanceLog: string[] = [];
 
       // Process the stream

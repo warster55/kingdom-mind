@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-options';
-import { db, users } from '@/lib/db';
+import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export async function GET() {
   try {
     // 1. SECURITY: Verify Architect Role
     const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role;
+    const userRole = (session?.user as { role?: string })?.role;
 
     if (userRole !== 'architect' && userRole !== 'admin') {
       return NextResponse.json({ error: 'The Sanctuary is sealed.' }, { status: 401 });
@@ -42,7 +42,7 @@ export async function GET() {
       galaxy: galaxyData // The array of stars (postgres-js returns rows directly)
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Architect Galaxy Error:', error);
     return NextResponse.json({ error: 'System Malfunction' }, { status: 500 });
   }

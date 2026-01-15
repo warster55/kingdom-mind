@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 export type Theme = 'dark';
 export type ResolvedTheme = 'dark';
@@ -13,10 +13,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
-    setMounted(true);
+    // Set dark mode on mount
     const root = document.documentElement;
     root.classList.remove('light');
     root.classList.add('dark');

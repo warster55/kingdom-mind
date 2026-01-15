@@ -4,18 +4,139 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Users, LogOut, ChevronRight, Activity, DollarSign, Send
+  Users, LogOut, ChevronRight, Activity, DollarSign, Send, CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Message } from '@/components/chat/ChatMessage';
 import { MobileTabBar, MobileTab } from '@/components/chat/MobileTabBar';
 import { useIsMobile } from '@/lib/hooks/useMediaQuery';
 
+interface PlanProposal {
+  title: string;
+  summary: string;
+  steps: string[];
+  filesAffected: string[];
+}
+
 interface ArchitectDashboardProps {
   onExit: () => void;
   messages: Message[];
   isStreaming: boolean;
   onSend: (message: string) => void;
+}
+
+// Parse message content to check for plan proposals
+function parsePlanProposal(content: string): PlanProposal | null {
+  try {
+    // Method 1: Check for PLAN_PROPOSAL type marker
+    if (content.includes('PLAN_PROPOSAL') || content.includes('needsApproval')) {
+      // Try to find the full plan object (using [\s\S] for cross-line matching instead of 's' flag)
+      const planMatch = content.match(/"plan"\s*:\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/);
+      if (planMatch) {
+        const planJson = `{${planMatch[1]}}`;
+        const plan = JSON.parse(planJson);
+        if (plan.title && plan.summary) {
+          return {
+            title: plan.title,
+            summary: plan.summary,
+            steps: plan.steps || [],
+            filesAffected: plan.filesAffected || []
+          };
+        }
+      }
+    }
+
+    // Method 2: Look for structured plan markers in natural language
+    // The Architect might present plans in a more readable format
+    const titleMatch = content.match(/(?:Plan|Proposal):\s*["']?([^"'\n]+)["']?/i);
+    const stepsMatch = content.match(/Steps?:?\s*\n((?:\s*[-*\d]+\.?\s+[^\n]+\n?)+)/i);
+    const filesMatch = content.match(/Files?\s*(?:Affected|to\s+modify)?:?\s*\n?((?:\s*[-*]\s*[^\n]+\n?)+)/i);
+
+    if (titleMatch && content.includes('approval')) {
+      return {
+        title: titleMatch[1].trim(),
+        summary: content.slice(0, 200).replace(/\n/g, ' ').trim() + '...',
+        steps: stepsMatch
+          ? stepsMatch[1].split('\n').map(s => s.replace(/^[\s\-*\d.]+/, '').trim()).filter(Boolean)
+          : [],
+        filesAffected: filesMatch
+          ? filesMatch[1].split('\n').map(s => s.replace(/^[\s\-*]+/, '').trim()).filter(Boolean)
+          : []
+      };
+    }
+  } catch (e) {
+    // Not a plan proposal or parsing failed
+    console.log('[PlanParser] Parse failed:', e);
+  }
+  return null;
+}
+
+// Plan Approval Card Component
+function PlanApprovalCard({
+  plan,
+  onApprove,
+  onDeny,
+  disabled
+}: {
+  plan: PlanProposal;
+  onApprove: () => void;
+  onDeny: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="bg-amber-950/30 border-2 border-amber-500/50 rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2 text-amber-400">
+        <AlertTriangle className="w-5 h-5" />
+        <span className="font-bold uppercase text-xs tracking-wider">Plan Requires Approval</span>
+      </div>
+
+      <h3 className="text-white font-bold text-lg">{plan.title}</h3>
+      <p className="text-stone-300 text-sm">{plan.summary}</p>
+
+      {plan.steps && plan.steps.length > 0 && (
+        <div className="space-y-1">
+          <span className="text-xs text-stone-500 uppercase">Steps:</span>
+          <ul className="list-disc list-inside text-sm text-stone-400 space-y-1">
+            {plan.steps.map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {plan.filesAffected && plan.filesAffected.length > 0 && (
+        <div className="space-y-1">
+          <span className="text-xs text-stone-500 uppercase">Files Affected:</span>
+          <div className="flex flex-wrap gap-1">
+            {plan.filesAffected.map((file, i) => (
+              <span key={i} className="text-xs bg-stone-800 px-2 py-1 rounded text-stone-300 font-mono">
+                {file}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onApprove}
+          disabled={disabled}
+          className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+        >
+          <CheckCircle className="w-5 h-5" />
+          Approve
+        </button>
+        <button
+          onClick={onDeny}
+          disabled={disabled}
+          className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+        >
+          <XCircle className="w-5 h-5" />
+          Deny
+        </button>
+      </div>
+    </div>
+  );
 }
 
 const DOMAIN_COLORS: Record<string, string> = {
@@ -37,7 +158,39 @@ export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: Ar
   const [mobileTab, setMobileTab] = useState<MobileTab>('GALAXY');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [viewportHeight, setViewportHeight] = useState('100vh');
+  const [pendingPlan, setPendingPlan] = useState<PlanProposal | null>(null);
+  const [planApproved, setPlanApproved] = useState<Set<string>>(new Set());
   const isMobile = useIsMobile();
+
+  // Detect plan proposals in latest assistant message
+  useEffect(() => {
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistantMsg) {
+      const plan = parsePlanProposal(lastAssistantMsg.content);
+      if (plan && !planApproved.has(plan.title)) {
+        setPendingPlan(plan);
+      } else {
+        setPendingPlan(null);
+      }
+    }
+  }, [messages, planApproved]);
+
+  // Handle plan approval
+  const handleApprovePlan = useCallback(() => {
+    if (pendingPlan) {
+      setPlanApproved(prev => new Set(prev).add(pendingPlan.title));
+      setPendingPlan(null);
+      onSend(`APPROVED: Proceed with "${pendingPlan.title}"`);
+    }
+  }, [pendingPlan, onSend]);
+
+  // Handle plan denial
+  const handleDenyPlan = useCallback(() => {
+    if (pendingPlan) {
+      setPendingPlan(null);
+      onSend(`DENIED: Do not proceed with "${pendingPlan.title}". Please suggest an alternative approach.`);
+    }
+  }, [pendingPlan, onSend]);
 
   // Track visual viewport for keyboard handling
   useEffect(() => {
@@ -106,7 +259,11 @@ export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: Ar
     if (!ctx) return;
 
     let animationFrame: number;
-    const stars = galaxyData.galaxy.map((user: any, i: number) => ({
+    interface GalaxyUser {
+      domain: string;
+      brightness?: number;
+    }
+    const stars = galaxyData.galaxy.map((user: GalaxyUser, _i: number) => ({
       ...user,
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
@@ -128,7 +285,14 @@ export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: Ar
       ctx.stroke();
 
       // Draw Stars
-      stars.forEach((star: any) => {
+      interface Star extends GalaxyUser {
+        x: number;
+        y: number;
+        size: number;
+        phase: number;
+        speed: number;
+      }
+      stars.forEach((star: Star) => {
         star.y -= star.speed;
         if (star.y < 0) star.y = canvas.height;
 
@@ -230,17 +394,37 @@ export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: Ar
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 font-sans">
-          {messages.map((msg, i) => (
-            <div key={i} className={cn(
-              "text-sm p-3 md:p-4 rounded-xl md:rounded-2xl border leading-relaxed",
-              msg.role === 'user'
-                ? "bg-stone-900 border-stone-800 text-stone-200"
-                : "bg-blue-950/10 border-blue-900/20 text-blue-100 italic shadow-inner"
-            )}>
-              <div className="font-black text-[10px] uppercase mb-2 tracking-tighter opacity-40">{msg.role}</div>
-              {msg.content}
-            </div>
-          ))}
+          {messages.map((msg, i) => {
+            // Check if this message contains a plan proposal
+            const planInMessage = msg.role === 'assistant' ? parsePlanProposal(msg.content) : null;
+            const showPlanCard = planInMessage && pendingPlan && planInMessage.title === pendingPlan.title;
+
+            return (
+              <div key={i}>
+                <div className={cn(
+                  "text-sm p-3 md:p-4 rounded-xl md:rounded-2xl border leading-relaxed",
+                  msg.role === 'user'
+                    ? "bg-stone-900 border-stone-800 text-stone-200"
+                    : "bg-blue-950/10 border-blue-900/20 text-blue-100 italic shadow-inner"
+                )}>
+                  <div className="font-black text-[10px] uppercase mb-2 tracking-tighter opacity-40">{msg.role}</div>
+                  {msg.content}
+                </div>
+
+                {/* Show Plan Approval Card if this message has a pending plan */}
+                {showPlanCard && (
+                  <div className="mt-4">
+                    <PlanApprovalCard
+                      plan={pendingPlan}
+                      onApprove={handleApprovePlan}
+                      onDeny={handleDenyPlan}
+                      disabled={isStreaming}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {isStreaming && <div className="text-blue-400 text-sm animate-pulse font-bold tracking-widest">THINKING...</div>}
           <div ref={messagesEndRef} />
         </div>
@@ -345,7 +529,7 @@ export function ArchitectDashboard({ onExit, messages, isStreaming, onSend }: Ar
         </div>
 
         <div className="flex bg-stone-900/50 p-1 rounded-lg gap-1 border border-stone-800">
-          {['GALAXY', 'PULSE', 'ARCHIVES'].map((p: any) => (
+          {(['GALAXY', 'PULSE', 'ARCHIVES'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setActivePane(p)}

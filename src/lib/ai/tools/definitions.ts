@@ -1,7 +1,4 @@
-import { tool } from 'ai';
-import { z } from 'zod';
-
-// Legacy tools removed. 
+// Legacy tools removed.
 // Mentor now uses text-based [RESONANCE: Domain] tags.
 
 export const mentorTools = {}; // Empty for now, or remove file usage entirely.

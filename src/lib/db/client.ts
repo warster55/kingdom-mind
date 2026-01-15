@@ -13,11 +13,16 @@ const globalForDb = globalThis as unknown as {
   conn: postgres.Sql | undefined;
 };
 
-const client = globalForDb.conn ?? postgres(connectionString, { 
+// SSL configuration - enable in production, disable for Docker-to-Docker local dev
+const sslConfig = process.env.DATABASE_SSL === 'true'
+  ? { rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false' }
+  : false;
+
+const client = globalForDb.conn ?? postgres(connectionString, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
-  ssl: false, // Keep SSL false for Docker-to-Docker
+  ssl: sslConfig,
 });
 
 if (process.env.NODE_ENV !== 'production') {

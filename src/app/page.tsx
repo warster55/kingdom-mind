@@ -1,7 +1,7 @@
 'use client';
 
-import { RootChat } from '@/components/chat/RootChat';
+import { SanctuaryChat } from '@/components/chat/SanctuaryChat';
 
 export default function Home() {
-  return <RootChat />;
+  return <SanctuaryChat />;
 }

@@ -6,7 +6,7 @@ export interface User {
   currentDomain: string;
   onboardingStage: number;
   hasCompletedOnboarding: boolean;
-  preferences: Record<string, any> | null;
+  preferences: Record<string, string | number | boolean> | null;
   timezone: string;
   resonanceIdentity: number;
   resonancePurpose: number;
