@@ -1,16 +1,16 @@
 # Kingdom Mind Sanctuary Test Report
 
-**Generated:** 2026-01-15T18:42:02.858Z
+**Generated:** 2026-01-15T23:19:40.330Z
 **Environment:** http://localhost:3002
 
 ## Summary
 
 | Status | Count |
 |--------|-------|
-| Passed | 30 |
-| Failed | 7 |
+| Passed | 62 |
+| Failed | 18 |
 | Skipped | 0 |
-| **Total** | **37** |
+| **Total** | **80** |
 
 ### Overall Status: FAILED
 
@@ -56,6 +56,44 @@
   - Note: POST response time: 4505ms
   - Note: GET under 5s: true
   - Note: POST under 60s: true
+- [PASS] GET Creates New Sanctuary (40ms)
+  - Note: Response status: 200
+  - Note: Has blob: true
+  - Note: Has display: true
+  - Note: Has isNewUser: true (value: true)
+  - Note: Blob format valid: false
+  - Note: Blob errors: IV should be 12 bytes, got 16
+  - Note: Display totalBreakthroughs: 0
+  - Note: Display totalStars: undefined
+- [PASS] POST Empty Message (29ms)
+  - Note: Got initial blob: 402 chars
+  - Note: POST status: 200
+  - Note: Response is null: true
+  - Note: Has required fields (blob, display)
+- [PASS] POST Processes Message (4.53s)
+  - Note: Initial blob: 402 chars
+  - Note: POST status: 200
+  - Note: Has AI response: true
+  - Note: Response length: 1024 chars
+  - Note: Has updated blob: true
+  - Note: Blob changed: true
+  - Note: Updated blob format valid: false
+- [PASS] Invalid Blob Recovery (3.46s)
+  - Note: POST status: 200
+  - Note: Response handled: true
+  - Note: Server recovered from invalid blob
+  - Note: New blob format valid: false
+- [PASS] Null Blob Handling (8.73s)
+  - Note: POST status: 200
+  - Note: Created new blob: true
+  - Note: New blob length: 402 chars
+  - Note: New blob format valid: false
+  - Note: Has AI response: true
+- [PASS] API Response Time (4.21s)
+  - Note: GET response time: 14ms
+  - Note: POST response time: 4191ms
+  - Note: GET under 5s: true
+  - Note: POST under 60s: true
 
 ### Biometric Tests
 
@@ -89,6 +127,101 @@ Received: [31mundefined[39m`
 - [PASS] Biometric Record Structure (477ms)
   - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768502258261.png)
   - Note: Biometric record exists
+- [FAIL] Biometric Table Exists (3.53s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+Expected value: [32m"biometric"[39m
+Received array: [31m[][39m`
+  - Screenshot: [View](./reports/screenshots/biometric-table-exists-check-1768514968231.png)
+- [PASS] Lock Screen Shows When Enabled (2.94s)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768514970383.png)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768514972883.png)
+  - Note: Lock screen indicator found: false
+  - Note: Lock screen UI displayed when biometric is enabled
+- [PASS] No Lock Screen When Disabled (900ms)
+  - Screenshot: [View](./reports/screenshots/biometric-no-lock-loaded-1768514974700.png)
+  - Note: Chat input visible: true
+  - Note: Lock screen bypassed when biometric disabled
+- [FAIL] Biometric State Persists (2.74s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32mtrue[39m
+Received: [31mundefined[39m`
+  - Screenshot: [View](./reports/screenshots/biometric-persistence-after-reload-1768514975393.png)
+- [PASS] Disable Button Available After Failed Attempts (3.80s)
+  - Screenshot: [View](./reports/screenshots/biometric-disable-button-lock-screen-1768514980865.png)
+  - Note: Unlock button present: false
+  - Note: Note: Disable button appears after 2 failed WebAuthn attempts
+  - Note: This provides a safety escape hatch if biometric stops working
+  - Note: Expected lock UI elements: true
+- [PASS] Biometric Record Structure (424ms)
+  - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768514982169.png)
+  - Note: Biometric record exists
+- [PASS] Lock Screen Shows When Enabled (3.19s)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768515015498.png)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515018179.png)
+  - Note: Lock screen indicator found: false
+  - Note: Lock screen UI displayed when biometric is enabled
+- [FAIL] Biometric Table Exists (3.50s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+Expected value: [32m"biometric"[39m
+Received array: [31m[][39m`
+  - Screenshot: [View](./reports/screenshots/biometric-table-exists-check-1768515061739.png)
+- [PASS] Lock Screen Shows When Enabled (2.96s)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768515060955.png)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515063482.png)
+  - Note: Lock screen indicator found: false
+  - Note: Lock screen UI displayed when biometric is enabled
+- [PASS] No Lock Screen When Disabled (865ms)
+  - Screenshot: [View](./reports/screenshots/biometric-no-lock-loaded-1768515065273.png)
+  - Note: Chat input visible: true
+  - Note: Lock screen bypassed when biometric disabled
+- [FAIL] Biometric State Persists (2.68s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32mtrue[39m
+Received: [31mundefined[39m`
+  - Screenshot: [View](./reports/screenshots/biometric-persistence-after-reload-1768515068759.png)
+- [PASS] Disable Button Available After Failed Attempts (3.65s)
+  - Screenshot: [View](./reports/screenshots/biometric-disable-button-lock-screen-1768515074091.png)
+  - Note: Unlock button present: false
+  - Note: Note: Disable button appears after 2 failed WebAuthn attempts
+  - Note: This provides a safety escape hatch if biometric stops working
+  - Note: Expected lock UI elements: true
+- [PASS] Biometric Record Structure (451ms)
+  - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768515075401.png)
+  - Note: Biometric record exists
+- [FAIL] Biometric Table Exists (3.51s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+Expected value: [32m"biometric"[39m
+Received array: [31m[][39m`
+  - Screenshot: [View](./reports/screenshots/biometric-table-exists-check-1768519126134.png)
+- [PASS] Lock Screen Shows When Enabled (2.93s)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768519128319.png)
+  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768519130845.png)
+  - Note: Lock screen indicator found: false
+  - Note: Lock screen UI displayed when biometric is enabled
+- [PASS] No Lock Screen When Disabled (848ms)
+  - Screenshot: [View](./reports/screenshots/biometric-no-lock-loaded-1768519132627.png)
+  - Note: Chat input visible: true
+  - Note: Lock screen bypassed when biometric disabled
+- [FAIL] Biometric State Persists (2.70s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32mtrue[39m
+Received: [31mundefined[39m`
+  - Screenshot: [View](./reports/screenshots/biometric-persistence-after-reload-1768519136235.png)
+- [PASS] Disable Button Available After Failed Attempts (3.77s)
+  - Screenshot: [View](./reports/screenshots/biometric-disable-button-lock-screen-1768519141609.png)
+  - Note: Unlock button present: false
+  - Note: Note: Disable button appears after 2 failed WebAuthn attempts
+  - Note: This provides a safety escape hatch if biometric stops working
+  - Note: Expected lock UI elements: true
+- [PASS] Biometric Record Structure (500ms)
+  - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768519142955.png)
+  - Note: Biometric record exists
 
 ### Chat Flow Tests
 
@@ -119,6 +252,33 @@ Call log:
   - Note: Header visible: true
   - Note: Chat area visible: true
   - Note: Input area visible: true
+- [FAIL] New User Complete Flow (701ms) **FAILED**
+  - Error: `locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:
+    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })
+    2) <span class="transition-opacity duration-500 opacity-0">Kingdom </span> aka getByText('Kingdom', { exact: true })
+
+Call log:
+[2m    - checking visibility of locator('text=KINGDO')[22m
+`
+  - Screenshot: [View](./reports/screenshots/chat-flow-new-user-initial-1768515076801.png)
+  - Screenshot: [View](./reports/screenshots/chat-flow-new-user-loaded-1768515077077.png)
+- [PASS] Welcome Message Display (2.56s)
+  - Screenshot: [View](./reports/screenshots/chat-flow-welcome-message-display-1768515081423.png)
+  - Note: New user greeting displayed with sanctuary keywords
+- [PASS] Message Input Functionality (587ms)
+  - Screenshot: [View](./reports/screenshots/chat-flow-message-input-typed-1768515082835.png)
+  - Note: User can type messages in the chat input
+- [PASS] Message Round-Trip (9.02s)
+  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-before-send-1768515084266.png)
+  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-sending-1768515085462.png)
+  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-response-1768515092697.png)
+  - Note: Message sent successfully
+  - Note: Response received from AI
+- [PASS] UI Elements Present (554ms)
+  - Screenshot: [View](./reports/screenshots/chat-flow-ui-elements-overview-1768515094079.png)
+  - Note: Header visible: true
+  - Note: Chat area visible: true
+  - Note: Input area visible: true
 
 ### Encryption Tests
 
@@ -134,6 +294,19 @@ Call log:
 - [PASS] Base64 Components Valid (10.57s)
   - Note: No blob found - skipping base64 validation
 - [PASS] Encryption Strength Analysis (10.57s)
+  - Note: No blob found
+- [PASS] Blob Format Valid (10.54s)
+  - Note: No blob found after message - skipping format validation
+- [PASS] Not Readable as Plaintext (10.58s)
+  - Note: No blob found - skipping plaintext check
+- [PASS] Unique IV Per Encryption (17.74s)
+  - Screenshot: [View](./reports/screenshots/encryption-unique-iv-comparison-1768515135692.png)
+  - Note: First IV: undefined...
+  - Note: Second IV: undefined...
+  - Note: Could not compare IVs - one or both blobs missing
+- [PASS] Base64 Components Valid (10.51s)
+  - Note: No blob found - skipping base64 validation
+- [PASS] Encryption Strength Analysis (7.63s)
   - Note: No blob found
 
 ### IndexedDB Tests
@@ -157,6 +330,28 @@ Received: [31mfalse[39m`
   - Note: No sanctuary record found after message
 - [PASS] IndexedDB Console Inspection (10.62s)
   - Screenshot: [View](./reports/screenshots/indexeddb-console-inspection-full-1768502392642.png)
+  - Note: Full IndexedDB inspection logged to console
+  - Note: Database: MISSING
+  - Note: Tables: 
+- [FAIL] Blob Stored on First Visit (3.53s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+Received: [31mfalse[39m`
+  - Screenshot: [View](./reports/screenshots/indexeddb-first-visit-snapshot-1768515159910.png)
+- [PASS] Blob Updated After Message (12.65s)
+  - Screenshot: [View](./reports/screenshots/indexeddb-blob-updated-after-message-1768515174305.png)
+  - Note: Initial blob length: 0
+  - Note: Updated blob length: 0
+- [FAIL] Database Structure (7.86s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+Received: [31mfalse[39m`
+  - Screenshot: [View](./reports/screenshots/indexeddb-db-structure-tables-1768515183037.png)
+- [PASS] Blob Contains Required Fields (10.62s)
+  - Screenshot: [View](./reports/screenshots/indexeddb-required-fields-record-1768515195471.png)
+  - Note: No sanctuary record found after message
+- [PASS] IndexedDB Console Inspection (10.67s)
+  - Screenshot: [View](./reports/screenshots/indexeddb-console-inspection-full-1768515207009.png)
   - Note: Full IndexedDB inspection logged to console
   - Note: Database: MISSING
   - Note: Tables: 
@@ -190,6 +385,19 @@ Received: [31mfalse[39m`
   - Note: First visit - new user greeting: true
   - Note: Second visit - returning greeting: true
   - Note: Sanctuary loaded successfully on return visit
+- [PASS] Blob Survives Reload (8.41s)
+  - Screenshot: [View](./reports/screenshots/persistence-blob-survives-before-reload-1768515215741.png)
+  - Screenshot: [View](./reports/screenshots/persistence-blob-survives-after-reload-1768515216380.png)
+  - Note: Blob before reload: none
+  - Note: Blob after reload: none
+  - Note: No blob was created before reload
+- [FAIL] Database Survives Navigation (12.06s) **FAILED**
+  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+Received: [31mfalse[39m`
+  - Screenshot: [View](./reports/screenshots/persistence-navigation-after-1768515229356.png)
+- [FAIL] UpdatedAt Timestamp Changes (4.01s) **FAILED**
+  - Error: `page.waitForTimeout: Target page, context or browser has been closed`
 
 ### Privacy Tests
 
@@ -245,6 +453,40 @@ Received: [31mfalse[39m`
 
 ### Inspection #2
 **Timestamp:** 2026-01-15T18:39:19.729Z
+
+#### Database Status
+- Database Exists: NO
+- Tables: None
+
+#### Sanctuary Table
+| Field | Value |
+|-------|-------|
+| Record Exists | NO |
+
+#### Biometric Table
+| Field | Value |
+|-------|-------|
+| Record Exists | NO |
+
+### Inspection #3
+**Timestamp:** 2026-01-15T22:12:39.998Z
+
+#### Database Status
+- Database Exists: NO
+- Tables: None
+
+#### Sanctuary Table
+| Field | Value |
+|-------|-------|
+| Record Exists | NO |
+
+#### Biometric Table
+| Field | Value |
+|-------|-------|
+| Record Exists | NO |
+
+### Inspection #4
+**Timestamp:** 2026-01-15T22:12:54.408Z
 
 #### Database Status
 - Database Exists: NO
@@ -318,6 +560,60 @@ Received: [31mfalse[39m`
 ### Privacy - IndexedDB PII Check
 ![Privacy - IndexedDB PII Check](./reports/screenshots/privacy-no-pii-indexeddb-check-1768502478263.png)
 
+### Biometric - Lock Screen
+![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768514972883.png)
+
+### Biometric - No Lock Screen
+![Biometric - No Lock Screen](./reports/screenshots/biometric-no-lock-loaded-1768514974700.png)
+
+### Biometric - Lock Screen
+![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515018179.png)
+
+### Biometric - Lock Screen
+![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515063482.png)
+
+### Biometric - No Lock Screen
+![Biometric - No Lock Screen](./reports/screenshots/biometric-no-lock-loaded-1768515065273.png)
+
+### New User - Initial Load
+![New User - Initial Load](./reports/screenshots/chat-flow-new-user-initial-1768515076801.png)
+
+### New User - Sanctuary Loaded
+![New User - Sanctuary Loaded](./reports/screenshots/chat-flow-new-user-loaded-1768515077077.png)
+
+### Welcome Message Display
+![Welcome Message Display](./reports/screenshots/chat-flow-welcome-message-display-1768515081423.png)
+
+### Message Input - After Typing
+![Message Input - After Typing](./reports/screenshots/chat-flow-message-input-typed-1768515082835.png)
+
+### Message Round-Trip - Sending
+![Message Round-Trip - Sending](./reports/screenshots/chat-flow-round-trip-sending-1768515085462.png)
+
+### Message Round-Trip - Response Received
+![Message Round-Trip - Response Received](./reports/screenshots/chat-flow-round-trip-response-1768515092697.png)
+
+### UI Elements Overview
+![UI Elements Overview](./reports/screenshots/chat-flow-ui-elements-overview-1768515094079.png)
+
+### IndexedDB - First Visit State
+![IndexedDB - First Visit State](./reports/screenshots/indexeddb-first-visit-snapshot-1768515159910.png)
+
+### IndexedDB - After Message
+![IndexedDB - After Message](./reports/screenshots/indexeddb-blob-updated-after-message-1768515174305.png)
+
+### IndexedDB - Console Inspection
+![IndexedDB - Console Inspection](./reports/screenshots/indexeddb-console-inspection-full-1768515207009.png)
+
+### Persistence - After Reload
+![Persistence - After Reload](./reports/screenshots/persistence-blob-survives-after-reload-1768515216380.png)
+
+### Biometric - Lock Screen
+![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768519130845.png)
+
+### Biometric - No Lock Screen
+![Biometric - No Lock Screen](./reports/screenshots/biometric-no-lock-loaded-1768519132627.png)
+
 ## Errors Encountered
 
 ### Biometric Tests > Biometric Table Exists
@@ -373,6 +669,91 @@ Received: [31mfalse[39m
 [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
 
 Received: [31mfalse[39m
+```
+
+### Biometric Tests > Biometric Table Exists
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+Expected value: [32m"biometric"[39m
+Received array: [31m[][39m
+```
+
+### Biometric Tests > Biometric State Persists
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32mtrue[39m
+Received: [31mundefined[39m
+```
+
+### Biometric Tests > Biometric Table Exists
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+Expected value: [32m"biometric"[39m
+Received array: [31m[][39m
+```
+
+### Biometric Tests > Biometric State Persists
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32mtrue[39m
+Received: [31mundefined[39m
+```
+
+### Chat Flow Tests > New User Complete Flow
+```
+locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:
+    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })
+    2) <span class="transition-opacity duration-500 opacity-0">Kingdom </span> aka getByText('Kingdom', { exact: true })
+
+Call log:
+[2m    - checking visibility of locator('text=KINGDO')[22m
+
+```
+
+### IndexedDB Tests > Blob Stored on First Visit
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+Received: [31mfalse[39m
+```
+
+### IndexedDB Tests > Database Structure
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+Received: [31mfalse[39m
+```
+
+### Persistence Tests > Database Survives Navigation
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+Received: [31mfalse[39m
+```
+
+### Persistence Tests > UpdatedAt Timestamp Changes
+```
+page.waitForTimeout: Target page, context or browser has been closed
+```
+
+### Biometric Tests > Biometric Table Exists
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+Expected value: [32m"biometric"[39m
+Received array: [31m[][39m
+```
+
+### Biometric Tests > Biometric State Persists
+```
+[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32mtrue[39m
+Received: [31mundefined[39m
 ```
 
 ---
