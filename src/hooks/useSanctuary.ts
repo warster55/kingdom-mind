@@ -2,9 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getEncryptedBlob, setEncryptedBlob } from '@/lib/storage/sanctuary-db';
-import { initializeSanctuary, sendMentorMessage, type ChatMessage, type DisplayData } from '@/lib/actions/chat';
+import { saveEncryptedMessage, loadEncryptedMessages, clearChatHistory } from '@/lib/storage/sanctuary-db';
+import {
+  initializeSanctuary,
+  sendMentorMessage,
+  encryptChatMessage,
+  decryptChatMessages,
+  type ChatMessage,
+  type DisplayData
+} from '@/lib/actions/chat';
 import { INPUT_LIMITS } from '@/lib/security/sanitize';
-import { saveChatMessage, loadChatHistory, clearChatHistory } from '@/lib/storage/chat-history';
 
 export type { ChatMessage, DisplayData };
 export { INPUT_LIMITS };
@@ -33,10 +40,14 @@ export function useSanctuary() {
   useEffect(() => {
     async function init() {
       try {
-        // Load persisted chat history from IndexedDB
-        const persistedHistory = await loadChatHistory();
-        if (persistedHistory.length > 0) {
-          setChatHistory(persistedHistory);
+        // Load encrypted chat messages from IndexedDB and decrypt via server
+        const encryptedRecords = await loadEncryptedMessages();
+        if (encryptedRecords.length > 0) {
+          const encryptedBlobs = encryptedRecords.map(r => r.encryptedBlob);
+          const decryptedMessages = await decryptChatMessages(encryptedBlobs);
+          if (decryptedMessages.length > 0) {
+            setChatHistory(decryptedMessages);
+          }
         }
 
         const existingBlob = await getEncryptedBlob();
@@ -93,10 +104,15 @@ export function useSanctuary() {
 
     // Add user message to history
     const userMessage: ChatMessage = { role: 'user', content: message };
+    const userTimestamp = Date.now();
     setChatHistory(prev => [...prev, userMessage]);
 
-    // Persist user message to IndexedDB
-    await saveChatMessage({ ...userMessage, timestamp: Date.now() });
+    // Encrypt and persist user message to IndexedDB
+    const encryptedUserMsg = await encryptChatMessage({
+      ...userMessage,
+      timestamp: userTimestamp,
+    });
+    await saveEncryptedMessage(encryptedUserMsg, userTimestamp);
 
     try {
       // Use server action instead of fetch
@@ -113,10 +129,15 @@ export function useSanctuary() {
       // Add assistant response to history
       if (data.response) {
         const assistantMessage: ChatMessage = { role: 'assistant', content: data.response };
+        const assistantTimestamp = Date.now();
         setChatHistory(prev => [...prev, assistantMessage]);
 
-        // Persist assistant message to IndexedDB after streaming completes
-        await saveChatMessage({ ...assistantMessage, timestamp: Date.now() });
+        // Encrypt and persist assistant message to IndexedDB
+        const encryptedAssistantMsg = await encryptChatMessage({
+          ...assistantMessage,
+          timestamp: assistantTimestamp,
+        });
+        await saveEncryptedMessage(encryptedAssistantMsg, assistantTimestamp);
       }
 
       // Update state with new blob and display

@@ -16,7 +16,7 @@ interface SanctuaryStore {
   updatedAt: number; // Timestamp
 }
 
-// Chat history message stored locally
+// Chat history message (decrypted form, used in UI)
 export interface ChatHistoryMessage {
   id: string; // UUID
   role: 'user' | 'assistant';
@@ -25,9 +25,16 @@ export interface ChatHistoryMessage {
   hasBreakthrough?: boolean;
 }
 
+// Encrypted chat record stored in IndexedDB
+interface EncryptedChatRecord {
+  id: string;
+  encryptedBlob: string; // Server-encrypted message
+  timestamp: number; // For ordering (not encrypted)
+}
+
 class SanctuaryDatabase extends Dexie {
   [TABLE_STORE]!: Table<SanctuaryStore>;
-  [TABLE_CHAT]!: Table<ChatHistoryMessage>;
+  [TABLE_CHAT]!: Table<EncryptedChatRecord>;
 
   constructor() {
     super(DB_NAME);
@@ -164,45 +171,49 @@ export async function clearSanctuary(): Promise<void> {
 }
 
 // ============================================
-// Chat History Functions
+// Chat History Functions (Encrypted Storage)
 // ============================================
+// Messages are encrypted by server before storage
+// Client stores encrypted blobs, cannot read contents
 
 // Generate a UUID for chat messages
 function generateUUID(): string {
   return crypto.randomUUID();
 }
 
-// Save a single chat message
-export async function saveChatMessage(
-  message: Omit<ChatHistoryMessage, 'id'>
+// Save an encrypted chat message blob
+export async function saveEncryptedMessage(
+  encryptedBlob: string,
+  timestamp: number
 ): Promise<string> {
   try {
     await migrateFromLegacy();
     const id = generateUUID();
     await getDb()[TABLE_CHAT].put({
       id,
-      ...message,
+      encryptedBlob,
+      timestamp,
     });
     return id;
   } catch (error) {
-    console.error('[DB] Error saving message:', error);
+    console.error('[DB] Error saving encrypted message:', error);
     throw error;
   }
 }
 
-// Load chat history (limit 50, sorted by timestamp ascending)
-export async function loadChatHistory(): Promise<ChatHistoryMessage[]> {
+// Load encrypted chat blobs (for server decryption)
+export async function loadEncryptedMessages(): Promise<Array<{ id: string; encryptedBlob: string; timestamp: number }>> {
   try {
     await migrateFromLegacy();
-    const messages = await getDb()
+    const records = await getDb()
       [TABLE_CHAT].orderBy('timestamp')
       .reverse()
       .limit(50)
       .toArray();
     // Return in chronological order (oldest first)
-    return messages.reverse();
+    return records.reverse();
   } catch (error) {
-    console.error('[DB] Error loading history:', error);
+    console.error('[DB] Error loading encrypted messages:', error);
     return [];
   }
 }
@@ -235,4 +246,41 @@ export async function cleanupOldMessages(): Promise<number> {
     console.error('[DB] Error cleaning up old messages:', error);
     return 0;
   }
+}
+
+// Legacy wrapper for backward compatibility (deprecated)
+// Use saveEncryptedMessage and loadEncryptedMessages instead
+export async function saveChatMessage(
+  message: Omit<ChatHistoryMessage, 'id'>
+): Promise<string> {
+  console.warn('[DB] saveChatMessage is deprecated - messages should be encrypted');
+  // Store as unencrypted for backward compatibility during migration
+  const id = generateUUID();
+  await getDb()[TABLE_CHAT].put({
+    id,
+    encryptedBlob: JSON.stringify(message), // Not actually encrypted - legacy
+    timestamp: message.timestamp,
+  });
+  return id;
+}
+
+export async function loadChatHistory(): Promise<ChatHistoryMessage[]> {
+  console.warn('[DB] loadChatHistory is deprecated - use loadEncryptedMessages');
+  // Try to parse as legacy format
+  const records = await loadEncryptedMessages();
+  return records.map(r => {
+    try {
+      // Try to parse as JSON (legacy unencrypted)
+      const parsed = JSON.parse(r.encryptedBlob);
+      return { id: r.id, ...parsed };
+    } catch {
+      // If it fails, it's encrypted - return placeholder
+      return {
+        id: r.id,
+        role: 'assistant' as const,
+        content: '[Encrypted message - requires server decryption]',
+        timestamp: r.timestamp,
+      };
+    }
+  });
 }

@@ -423,3 +423,100 @@ export async function sendMentorMessage(
     };
   }
 }
+
+// ============================================
+// Chat Message Encryption (Server Round-Trip)
+// ============================================
+// All chat messages are encrypted server-side before client storage
+// User cannot decrypt - only server has the key
+
+import crypto from 'crypto';
+
+const CHAT_ALGORITHM = 'aes-256-gcm';
+
+function getChatKey(): Buffer {
+  const keyBase64 = process.env.SANCTUARY_ENCRYPTION_KEY;
+  if (!keyBase64) {
+    throw new Error('SANCTUARY_ENCRYPTION_KEY not set');
+  }
+  return Buffer.from(keyBase64, 'base64');
+}
+
+/**
+ * Encrypt a chat message for client-side storage
+ * Returns encrypted blob in format: IV:AuthTag:EncryptedData
+ */
+export async function encryptChatMessage(message: {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  hasBreakthrough?: boolean;
+}): Promise<string> {
+  try {
+    const key = getChatKey();
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(CHAT_ALGORITHM, key, iv);
+
+    const jsonStr = JSON.stringify(message);
+    let encrypted = cipher.update(jsonStr, 'utf8', 'base64');
+    encrypted += cipher.final('base64');
+
+    const authTag = cipher.getAuthTag();
+
+    // Format: IV:AuthTag:Encrypted
+    return `${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted}`;
+  } catch (error) {
+    console.error('[Chat Encrypt] Error:', error);
+    throw new Error('Failed to encrypt message');
+  }
+}
+
+/**
+ * Decrypt a chat message from client storage
+ */
+export async function decryptChatMessage(encryptedBlob: string): Promise<{
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  hasBreakthrough?: boolean;
+} | null> {
+  try {
+    const key = getChatKey();
+    const parts = encryptedBlob.split(':');
+
+    if (parts.length !== 3) {
+      console.error('[Chat Decrypt] Invalid blob format');
+      return null;
+    }
+
+    const [ivBase64, authTagBase64, encrypted] = parts;
+    const iv = Buffer.from(ivBase64, 'base64');
+    const authTag = Buffer.from(authTagBase64, 'base64');
+
+    const decipher = crypto.createDecipheriv(CHAT_ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
+
+    let decrypted = decipher.update(encrypted, 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return JSON.parse(decrypted);
+  } catch (error) {
+    console.error('[Chat Decrypt] Error:', error);
+    return null;
+  }
+}
+
+/**
+ * Batch decrypt multiple chat messages
+ */
+export async function decryptChatMessages(encryptedBlobs: string[]): Promise<Array<{
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  hasBreakthrough?: boolean;
+}>> {
+  const results = await Promise.all(
+    encryptedBlobs.map(blob => decryptChatMessage(blob))
+  );
+  return results.filter((msg): msg is NonNullable<typeof msg> => msg !== null);
+}
