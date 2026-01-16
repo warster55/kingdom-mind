@@ -12,8 +12,11 @@ import { BiometricLock } from '@/components/biometric/BiometricLock';
 import { BiometricSetup } from '@/components/biometric/BiometricSetup';
 import { getBiometricEnabled, clearSanctuary, setBiometricEnabled } from '@/lib/storage/sanctuary-db';
 import { isPlatformAuthenticatorAvailable } from '@/lib/biometric/client';
+import { getSanctuarySize } from '@/lib/storage/sanctuary-backup';
+import { QRExport } from '@/components/backup/QRExport';
+import { QRScanner } from '@/components/backup/QRScanner';
 import { cn } from '@/lib/utils';
-import { Settings, Shield } from 'lucide-react';
+import { Settings, Shield, Download, Upload } from 'lucide-react';
 
 export function SanctuaryChat() {
   const {
@@ -41,6 +44,11 @@ export function SanctuaryChat() {
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const logoTapCount = useRef(0);
   const logoTapTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Backup/restore states
+  const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [journeySize, setJourneySize] = useState('');
 
   // Handle visual viewport for mobile keyboards
   useEffect(() => {
@@ -74,7 +82,7 @@ export function SanctuaryChat() {
     }
   }, [isLoading, isNewUser, messages.length]);
 
-  // Check biometric availability on mount
+  // Check biometric availability and journey size on mount
   useEffect(() => {
     async function checkBiometric() {
       const available = await isPlatformAuthenticatorAvailable();
@@ -84,7 +92,14 @@ export function SanctuaryChat() {
       setBiometricAvailable(available);
       setBiometricEnabledState(enabled);
     }
+    async function checkJourneySize() {
+      const size = await getSanctuarySize();
+      if (size.exists) {
+        setJourneySize(size.sizeFormatted);
+      }
+    }
     checkBiometric();
+    checkJourneySize();
   }, []);
 
   // Check if we should show biometric setup (after first message for new users)
@@ -129,6 +144,24 @@ export function SanctuaryChat() {
   const handleManualBiometricSetup = useCallback(() => {
     setShowSettings(false);
     setShowBiometricSetup(true);
+  }, []);
+
+  // Export journey trigger
+  const handleExport = useCallback(() => {
+    setShowSettings(false);
+    setShowExport(true);
+  }, []);
+
+  // Import journey trigger
+  const handleImport = useCallback(() => {
+    setShowSettings(false);
+    setShowImport(true);
+  }, []);
+
+  // Import success - reload to use new data
+  const handleImportSuccess = useCallback(() => {
+    setShowImport(false);
+    window.location.reload();
   }, []);
 
   // Debug reset - triple tap logo
@@ -309,8 +342,9 @@ export function SanctuaryChat() {
           >
             <h2 className="text-xl font-semibold text-stone-100 mb-6">Settings</h2>
 
-            {/* Biometric Security */}
+            {/* Settings sections */}
             <div className="space-y-4">
+              {/* Biometric Security */}
               <div className="flex items-center justify-between p-3 bg-stone-800/50 rounded-xl">
                 <div className="flex items-center gap-3">
                   <Shield className="w-5 h-5 text-amber-400" />
@@ -338,12 +372,39 @@ export function SanctuaryChat() {
                 )}
               </div>
 
-              {/* Debug info */}
-              <div className="p-3 bg-stone-800/30 rounded-xl text-xs text-stone-500 space-y-1">
-                <div>Biometric available: {biometricAvailable ? 'Yes' : 'No'}</div>
-                <div>Biometric enabled: {biometricEnabled ? 'Yes' : 'No'}</div>
-                <div>Is new user: {isNewUser ? 'Yes' : 'No'}</div>
-                <div className="mt-2 text-stone-600">Tap logo 5x to reset</div>
+              {/* Export Journey */}
+              <button
+                onClick={handleExport}
+                className="w-full flex items-center justify-between p-3 bg-stone-800/50 hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Download className="w-5 h-5 text-amber-400" />
+                  <div className="text-left">
+                    <div className="text-stone-200 text-sm font-medium">Backup Journey</div>
+                    <div className="text-stone-500 text-xs">
+                      {journeySize ? `Export your progress (${journeySize})` : 'Export your progress'}
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Import Journey */}
+              <button
+                onClick={handleImport}
+                className="w-full flex items-center justify-between p-3 bg-stone-800/50 hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Upload className="w-5 h-5 text-amber-400" />
+                  <div className="text-left">
+                    <div className="text-stone-200 text-sm font-medium">Restore Journey</div>
+                    <div className="text-stone-500 text-xs">Import from another device</div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Info */}
+              <div className="p-3 bg-stone-800/30 rounded-xl text-xs text-stone-500">
+                <p>Your progress is stored locally on this device only. Use backup to transfer to another device.</p>
               </div>
             </div>
 
@@ -356,6 +417,19 @@ export function SanctuaryChat() {
             </button>
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Export Modal */}
+      {showExport && (
+        <QRExport onClose={() => setShowExport(false)} />
+      )}
+
+      {/* Import Modal */}
+      {showImport && (
+        <QRScanner
+          onSuccess={handleImportSuccess}
+          onCancel={() => setShowImport(false)}
+        />
       )}
     </div>
   );

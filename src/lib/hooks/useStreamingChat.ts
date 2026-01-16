@@ -23,7 +23,7 @@ export function useStreamingChat({ sessionId, initialMessages = [], onClientActi
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendMessage = useCallback(async (content: string, mode: 'mentor' | 'architect' = 'mentor') => {
+  const sendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -40,8 +40,7 @@ export function useStreamingChat({ sessionId, initialMessages = [], onClientActi
       const { output, clientActions } = await sendSanctuaryMessage(
         sessionId,
         content,
-        Intl.DateTimeFormat().resolvedOptions().timeZone,
-        mode
+        Intl.DateTimeFormat().resolvedOptions().timeZone
       );
 
       const assistantId = (Date.now() + 1).toString();

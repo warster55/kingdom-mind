@@ -1680,6 +1680,266 @@ SECURITY_ALERT_WEBHOOK=...    # Optional: Discord/Slack webhook
 
 ---
 
+### Phase 13: AI Self-Review System (PII-Free)
+
+**Status:** COMPLETE (January 15, 2026)
+**Goal:** Enable the AI Mentor to evaluate its own performance after sessions, providing data for continuous improvement without storing any user PII.
+
+#### Core Philosophy
+
+The Mentor reviews ITSELF after conversations, identifying areas for improvement. The Architect aggregates these reviews and can suggest system prompt changes. **All changes require admin approval** - the AI cannot modify itself autonomously.
+
+#### Database Schema
+
+New `mentor_reviews` table with:
+- **Rating Categories (1-5):**
+  - `curriculum_adherence` - Stayed on curriculum topic?
+  - `empathy_appropriateness` - Tone matched user's emotional state?
+  - `breakthrough_detection` - Correctly identified breakthroughs?
+  - `domain_accuracy` - Assigned right domains?
+  - `response_structure` - Brief, one question, etc.?
+  - `theological_soundness` - Aligned with 7 Pillars?
+
+- **Aggregate Score:** `overall_score` (0-100 weighted average)
+- **PII-Free Observations:** Text describing patterns only (e.g., "user was defensive", "mentor was too directive")
+- **Metadata:** `tool_usage` (jsonb), `message_count`, `model_used`
+
+#### Implementation
+
+| Component | File | Status |
+|-----------|------|--------|
+| Schema | `src/lib/db/schema.ts` | ✅ Complete |
+| Review Logic | `src/lib/ai/self-review.ts` | ✅ Complete |
+| Review API | `src/app/api/mentor/review/route.ts` | ✅ Complete |
+| Chat Trigger | `src/lib/actions/chat.ts` | ✅ Complete (every 10 messages) |
+| Architect Tool | `src/lib/ai/tools/architect-*.ts` | ✅ Complete |
+
+#### Review Trigger
+
+- **Automatic:** After every 10 messages in a session
+- **Manual:** Via Architect `triggerReview` tool
+
+#### Architect Tools
+
+| Tool | Purpose |
+|------|---------|
+| `getMentorReviews` | Query review data: summary, recent, low_scores, by_domain |
+| `triggerReview` | Manually trigger review for a session |
+
+#### PII-Free Enforcement
+
+The review prompt explicitly instructs the reviewing AI:
+- NO names, locations, jobs, relationships, dates, or identifying details
+- ONLY describe behavioral patterns
+- Focus on MENTOR technique, not user details
+
+#### Example Queries
+
+```
+Admin: "How did the mentor perform this week?"
+Architect: [Uses getMentorReviews type='summary']
+"This week: 47 sessions reviewed. Average score: 78/100.
+3 sessions scored below 60. Common issue: mentor was too directive in Identity domain."
+
+Admin: "Show me the worst sessions"
+Architect: [Uses getMentorReviews type='low_scores' limit=10]
+```
+
+---
+
+### Phase 14: Local-Only Admin Panel (Control Room)
+
+**Status:** COMPLETE (January 15, 2026)
+**Goal:** Secure admin access restricted to home network with 6-digit PIN protection.
+
+#### Security Architecture
+
+```
+                    INTERNET                          LOCAL NETWORK
+                        │                                   │
+[Public Users] ─────────┤                                   │
+        │               │                                   │
+        ▼               │                                   │
+[Cloudflare Tunnel] ────┤                                   │
+        │               │                                   │
+        ▼               │                                   │
+[kingdomind.com]        │                                   │
+        │               │                                   │
+        ▼               │                                   │
+┌───────────────────────┴───────────────────────────────────┤
+│                    Ubuntu Server                          │
+│                                                           │
+│  ┌─────────────────┐     ┌─────────────────────────────┐ │
+│  │ Production App  │     │ Control Room (/control-room) │ │
+│  │ Port 4000       │     │ - Private network only       │ │
+│  │ - /sanctuary    │     │ - 6-digit PIN required       │ │
+│  │ - Public chat   │     │ - Full Architect access      │ │
+│  └─────────────────┘     └─────────────────────────────┘ │
+└───────────────────────────────────────────────────────────┘
+```
+
+#### Access Control (Two Layers)
+
+1. **Network Check:** Only private IPs allowed (192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost)
+2. **PIN Verification:** 6-digit PIN with timing-safe comparison
+
+#### Implementation
+
+| Component | File | Status |
+|-----------|------|--------|
+| PIN Login UI | `src/app/control-room/login/page.tsx` | ✅ Complete |
+| Control Room | `src/app/control-room/page.tsx` | ✅ Complete |
+| PIN Verify API | `src/app/api/admin/verify-pin/route.ts` | ✅ Complete |
+| Cookie Check API | `src/app/api/admin/check/route.ts` | ✅ Complete |
+| Architect Chat API | `src/app/api/architect/chat/route.ts` | ✅ Complete |
+| Middleware | `src/middleware.ts` | ✅ Updated |
+
+#### Environment Variables
+
+```env
+ADMIN_PIN=123456  # 6-digit PIN for control room access
+```
+
+#### Security Features
+
+- **Private Network Only:** Returns 404 to external IPs (doesn't reveal route exists)
+- **Timing-Safe Comparison:** `crypto.timingSafeEqual()` prevents timing attacks
+- **httpOnly Cookie:** Cannot be stolen via XSS
+- **24-Hour Session:** Cookie expires after 24 hours
+- **No Cloudflare Tunnel:** Admin panel never exposed publicly
+
+#### Usage
+
+1. Connect to home WiFi (phone, laptop)
+2. Navigate to `http://192.168.x.x:4000/control-room`
+3. Enter 6-digit PIN
+4. Full Architect access for system management
+
+---
+
+### Phase 15: Admin/Architect Separation Architecture
+
+**Status:** COMPLETE (January 15, 2026)
+**Goal:** Complete separation of admin/Architect code from production for defense-in-depth security.
+
+#### Security Rationale
+
+If production is compromised, attackers should find NO powerful admin tools to exploit. The Architect has full database access, file read/write capabilities, and bash command execution - these tools must never exist in the production codebase.
+
+#### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           LOCAL NETWORK                                  │
+│                                                                          │
+│   ┌───────────────────────────┐    ┌───────────────────────────┐       │
+│   │  km-master (Production)   │    │     km-admin (Admin)       │       │
+│   │  Port 4000               │    │     Port 8000              │       │
+│   │                          │    │                            │       │
+│   │  ✅ Mentor Chat          │    │  ✅ Architect Chat          │       │
+│   │  ✅ Self-Review (auto)   │    │  ✅ Database Query Tools    │       │
+│   │  ✅ User Auth            │    │  ✅ File Read/Write         │       │
+│   │  ❌ NO Architect         │    │  ✅ Bash Execution          │       │
+│   │  ❌ NO Admin Routes      │    │  ✅ System Prompt Mgmt      │       │
+│   │  ❌ NO Control Room      │    │  ✅ Cost Tracking           │       │
+│   │                          │    │  ✅ Review Analytics        │       │
+│   └────────────┬─────────────┘    └────────────┬───────────────┘       │
+│                │                               │                        │
+│                └───────────────┬───────────────┘                        │
+│                                │                                         │
+│                    ┌───────────▼───────────┐                            │
+│                    │    PostgreSQL DB      │                            │
+│                    │    Port 5434          │                            │
+│                    │    (Shared Access)    │                            │
+│                    └───────────────────────┘                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                    INTERNET
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ Cloudflare      │
+              │ Tunnel          │
+              │ (kingdomind.com)│
+              └────────┬────────┘
+                       │
+                       ▼
+              km-master ONLY (Port 4000)
+              (Admin panel NEVER exposed)
+```
+
+#### Files Removed from Production (km-master)
+
+| Deleted | Purpose |
+|---------|---------|
+| `src/app/control-room/` | Admin panel UI |
+| `src/app/api/admin/` | PIN verification, admin APIs |
+| `src/app/api/architect/` | Architect chat endpoint |
+| `src/lib/ai/architect.ts` | Architect brain logic |
+| `src/lib/ai/tools/architect-definitions.ts` | Architect tool definitions |
+| `src/lib/ai/tools/architect-handlers.ts` | Architect tool handlers |
+| `src/components/chat/ArchitectDashboard.tsx` | Architect UI component |
+| `src/lib/voice/` | Voice infrastructure (unused) |
+
+#### Files Modified in Production
+
+| File | Changes |
+|------|---------|
+| `src/lib/actions/chat.ts` | Removed architect mode parameter |
+| `src/lib/hooks/useStreamingChat.ts` | Removed mode parameter |
+| `src/components/chat/RootChat.tsx` | Removed architect state, `/architect` command, architect UI |
+| `src/components/chat/OnboardingRootChat.tsx` | Same removals as RootChat |
+| `src/middleware.ts` | Simplified to passthrough (no protected routes) |
+
+#### New km-admin Project
+
+**Location:** `/home/wmoore/project/km-admin`
+
+| File | Purpose |
+|------|---------|
+| `src/app/page.tsx` | Architect chat dashboard UI |
+| `src/app/api/architect/chat/route.ts` | Architect chat API endpoint |
+| `src/lib/ai/architect.ts` | Architect brain with tool execution |
+| `src/lib/ai/tools/architect-handlers.ts` | Tool implementations (PROJECT_ROOT → km-master) |
+| `src/lib/ai/tools/architect-definitions.ts` | Tool definitions |
+| `src/lib/ai/client.ts` | xAI client configuration |
+| `src/lib/db/` | Database client and schema (shared with production) |
+| `.env.local` | Database credentials, API keys, PROJECT_ROOT |
+
+#### Key Configuration
+
+```env
+# km-admin .env.local
+DATABASE_URL=postgresql://...@localhost:5434/kingdom_mind
+PROJECT_ROOT=/home/wmoore/project/km-master
+XAI_API_KEY=...
+```
+
+The `PROJECT_ROOT` variable allows Architect file tools to operate on the production codebase from the separate admin project.
+
+#### Security Benefits
+
+1. **Reduced Attack Surface:** Production contains zero admin tools
+2. **Defense in Depth:** Compromised production = no escalation path
+3. **Separate Processes:** Admin runs on different port, never exposed
+4. **Clear Boundaries:** Code separation makes auditing easier
+5. **No Admin in Tunnel:** Cloudflare only routes to production port
+
+#### Usage
+
+```bash
+# Production (public via Cloudflare)
+cd /home/wmoore/project/km-master
+npm run start  # Port 4000
+
+# Admin (local network only)
+cd /home/wmoore/project/km-admin
+npm run dev    # Port 8000
+# Access: http://192.168.x.x:8000
+```
+
+---
+
 ## Future Features (Backlog)
 
 Ideas for future development:
@@ -1722,6 +1982,9 @@ All major questions have been decided:
 | 2026-01-14 | Added Phase 11: Infinite Chat Log System - SQLite + FTS5, hybrid retrieval, searchHistory tool |
 | 2026-01-14 | Added Phase 12: Security Intelligence System - AI-powered threat detection, Cloudflare integration |
 | 2026-01-14 | **COMPREHENSIVE EXECUTIVE REVIEW** - Full board analysis with updated findings, security grade C+, 72% MVP, strategic decisions finalized |
+| 2026-01-15 | Added Phase 13: AI Self-Review System - PII-free mentor evaluation with 6 rating categories |
+| 2026-01-15 | Added Phase 14: Local-Only Admin Panel (Control Room) - Private network + PIN protection |
+| 2026-01-15 | Added Phase 15: Admin/Architect Separation - Complete security separation of admin tools from production |
 
 ---
 
@@ -1995,6 +2258,78 @@ The sanctuary system has been validated as operational. Key improvements since l
 - Must use "Clear & Reset" in browser site settings to fully reset
 - Or use the 5-tap logo reset feature
 - This behavior is by design for data persistence, but important for testing
+
+---
+
+### Local-Only Storage Architecture (January 15, 2026)
+
+**Philosophy:** The user IS the product, not the data. Insights and progress are just context for growth.
+
+#### Core Principles
+
+1. **Local-Only by Default** - All data stored in browser IndexedDB
+2. **No Server Storage** - Server is stateless, only processes/encrypts data
+3. **User-Controlled Backup** - QR code or file export when user needs it
+4. **Conversational UX** - No menus for sync, user asks the mentor
+
+#### What We Tell Users
+
+- **Minimal:** "Your progress is stored on this device."
+- **If they ask:** "You can back it up anytime - just ask me."
+- **If they lose it:** They keep growing. The journey continues.
+
+#### Backup/Restore Implementation
+
+| Feature | Implementation | Status |
+|---------|---------------|--------|
+| QR Export | `src/lib/storage/sanctuary-backup.ts` | ✅ Complete |
+| File Download | JSON file with encrypted blob | ✅ Complete |
+| QR Scanner | `src/components/backup/QRScanner.tsx` | ✅ Complete |
+| File Upload | Alternative for no-camera devices | ✅ Complete |
+| Settings UI | Export/Import buttons in settings menu | ✅ Complete |
+
+#### Data Flow
+
+```
+User Device (IndexedDB)
+├── sanctuary (encrypted blob)
+│   ├── insights (breakthroughs)
+│   ├── progression (star counts, stage)
+│   └── preferences
+└── biometric (enabled, credentialId)
+
+Server (Stateless)
+├── Receives blob from client
+├── Decrypts, processes, re-encrypts
+└── Returns updated blob (never stores)
+```
+
+#### Why No Cross-Device Sync
+
+1. **Simplicity** - No OAuth, no cloud APIs, no sync conflicts
+2. **Privacy** - Data never leaves user's device unless they export
+3. **Philosophy** - User growth is internal, data is just context
+4. **Passkeys** - Sync via Google/Apple, but that's authentication only
+
+#### Backup Size Limits
+
+- **< 3KB** - QR code generated (scannable on phone)
+- **> 3KB** - File download offered instead
+- **Typical user** - 2-5KB (fits in QR easily)
+
+#### Files Created
+
+| File | Purpose |
+|------|---------|
+| `src/lib/storage/sanctuary-backup.ts` | Export/import utilities |
+| `src/components/backup/QRExport.tsx` | QR code display + download |
+| `src/components/backup/QRScanner.tsx` | Camera scan + file upload |
+
+#### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/components/chat/SanctuaryChat.tsx` | Added backup/restore to settings |
 
 ---
 

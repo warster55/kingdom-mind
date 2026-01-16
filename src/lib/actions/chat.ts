@@ -12,17 +12,16 @@ import { xai } from '@/lib/ai/client';
 import { createStreamableValue } from '@ai-sdk/rsc';
 import { mentorTools, executeTool } from '@/lib/ai/tools/mentor-tools';
 import { getAllMentorConfig } from '@/lib/config/mentor-config';
+import { triggerSessionReview } from '@/lib/ai/self-review';
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
-
-import { processArchitectTurn } from '@/lib/ai/architect';
 
 /**
  * SOVEREIGN CHAT ACTION - Direct X.AI Implementation
  */
-export async function sendSanctuaryMessage(sessionId: number, message: string, timezone: string, mode: 'mentor' | 'architect' = 'mentor') {
+export async function sendSanctuaryMessage(sessionId: number, message: string, timezone: string) {
   const t1 = Date.now();
-  console.log(`sendSanctuaryMessage: Starting (${mode.toUpperCase()})...`);
+  console.log('sendSanctuaryMessage: Starting...');
   const session = await getServerSession(authOptions);
 
   if (sessionId !== 0 && !session) {
@@ -30,46 +29,11 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
   }
 
   const userId = session?.user?.id;
-  const userRole = (session?.user as { role?: string })?.role;
 
   // 1. RATE LIMITING
-  if (userId && userRole !== 'architect' && userRole !== 'admin') {
+  if (userId) {
     const { success } = await rateLimit(userId);
     if (!success) throw new Error('The Sanctuary needs a moment of silence.');
-  }
-
-  // --- ARCHITECT MODE BRANCH ---
-  if (mode === 'architect') {
-    if (userRole !== 'architect' && userRole !== 'admin') {
-      throw new Error('Sovereign Access Required.');
-    }
-
-    const stream = createStreamableValue('');
-    
-    // We need to wrap the ReadableStream from processArchitectTurn into the AI SDK stream
-    (async () => {
-      try {
-        const underlyingStream = new ReadableStream({
-          async start(controller) {
-            await processArchitectTurn(message, controller);
-            controller.close();
-          }
-        });
-
-        const reader = underlyingStream.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          stream.update(new TextDecoder().decode(value));
-        }
-        stream.done();
-      } catch (e) {
-        console.error('[Architect Error]:', e);
-        stream.error(e);
-      }
-    })();
-
-    return { output: stream.value };
   }
 
   // 2. SESSION MANAGEMENT (Standard Mentor Flow)
@@ -389,6 +353,19 @@ export async function sendSanctuaryMessage(sessionId: number, message: string, t
         },
         createdAt: new Date()
       });
+
+      // Self-Review Trigger: Check for review milestone (every 10 messages)
+      // Non-blocking background check
+      if (activeSessionId) {
+        const messageCount = dbHistory.length + 2; // +2 for this user+assistant pair
+        if (messageCount % 10 === 0 && messageCount >= 10) {
+          console.log(`[Self-Review] Milestone reached (${messageCount} messages), triggering review...`);
+          // Fire and forget - don't await to keep response fast
+          triggerSessionReview(activeSessionId).catch(err =>
+            console.error('[Self-Review] Background trigger failed:', err)
+          );
+        }
+      }
 
       stream.done();
     } catch (e) {

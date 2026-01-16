@@ -159,6 +159,37 @@ export const mentoringSessions = pgTable('mentoring_sessions', {
   startedAt: timestamp('started_at').defaultNow().notNull(),
 });
 
+// --- Mentor Reviews (AI Self-Evaluation - PII-FREE) ---
+export const mentorReviews = pgTable('mentor_reviews', {
+  id: serial('id').primaryKey(),
+  sessionId: integer('session_id').references(() => mentoringSessions.id, { onDelete: 'cascade' }).notNull(),
+
+  // Ratings (1-5 scale)
+  curriculumAdherence: integer('curriculum_adherence'),      // Stayed on curriculum topic?
+  empathyAppropriateness: integer('empathy_appropriateness'), // Tone matched user's emotional state?
+  breakthroughDetection: integer('breakthrough_detection'),   // Correctly identified breakthroughs?
+  domainAccuracy: integer('domain_accuracy'),                 // Assigned right domains?
+  responseStructure: integer('response_structure'),           // Brief, one question, etc.?
+  theologicalSoundness: integer('theological_soundness'),     // Aligned with 7 Pillars?
+
+  // Aggregate score (0-100 weighted average)
+  overallScore: integer('overall_score'),
+
+  // PII-Free observations (CRITICAL: no user data, only patterns)
+  // e.g., "User seemed resistant, mentor may have been too directive"
+  observations: text('observations'),
+
+  // Metadata
+  toolUsage: jsonb('tool_usage'),           // {"illuminate": 2, "breakthrough": 1, "advance": 0}
+  messageCount: integer('message_count'),   // Messages in reviewed session
+  modelUsed: varchar('model_used', { length: 100 }), // Which AI model did the review
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  sessionIdIdx: index('mentor_reviews_session_id_idx').on(table.sessionId),
+  overallScoreIdx: index('mentor_reviews_overall_score_idx').on(table.overallScore),
+}));
+
 // --- Chat Messages (The Omniscient Record) ---
 export const chatMessages = pgTable('chat_messages', {
   id: serial('id').primaryKey(),
@@ -219,4 +250,14 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const userProgressRelations = relations(userProgress, ({ one }) => ({
   user: one(users, { fields: [userProgress.userId], references: [users.id] }),
   curriculum: one(curriculum, { fields: [userProgress.curriculumId], references: [curriculum.id] }),
+}));
+
+export const mentoringSessionsRelations = relations(mentoringSessions, ({ one, many }) => ({
+  user: one(users, { fields: [mentoringSessions.userId], references: [users.id] }),
+  messages: many(chatMessages),
+  reviews: many(mentorReviews),
+}));
+
+export const mentorReviewsRelations = relations(mentorReviews, ({ one }) => ({
+  session: one(mentoringSessions, { fields: [mentorReviews.sessionId], references: [mentoringSessions.id] }),
 }));

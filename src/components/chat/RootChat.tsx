@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 import { useConfig } from '@/lib/contexts/ConfigContext';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArchitectDashboard } from './ArchitectDashboard';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import { DailyBread } from '@/components/chat/DailyBread';
 import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
@@ -34,7 +33,6 @@ function RootChatInner() {
   } = useOnboarding();
 
   // UI State
-  const [showArchitect, setShowArchitect] = useState(false);
   const [vvh, setVvh] = useState('100%');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [sanctuaryStatus, setSanctuaryStatus] = useState<'thinking' | 'waiting' | 'reading'>('reading');
@@ -49,13 +47,8 @@ function RootChatInner() {
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  const userRole = (session?.user as { role?: string })?.role;
-
   // Mentor chat for authenticated users
   const mentorChat = useStreamingChat({ sessionId: 0 });
-
-  // Architect chat
-  const architectChat = useStreamingChat({ sessionId: -1 });
 
   // Handle visual viewport for mobile keyboards
   useEffect(() => {
@@ -88,18 +81,6 @@ function RootChatInner() {
       }]);
     }
   }, [status, mentorChat.messages.length, mentorChat.setMessages, get]);
-
-  // Initialize Architect greeting
-  useEffect(() => {
-    if (showArchitect && architectChat.messages.length === 0) {
-      architectChat.setMessages([{
-        id: 'arc-init',
-        role: 'assistant',
-        content: "Architect Protocol Online. Accessing Galaxy...",
-        timestamp: new Date()
-      }]);
-    }
-  }, [showArchitect, architectChat.messages.length, architectChat.setMessages]);
 
   // Guest mode chat handler (no persistence, real AI)
   const handleGuestSend = useCallback(async (content: string) => {
@@ -197,15 +178,11 @@ function RootChatInner() {
 
   // Authenticated send handler
   const handleAuthenticatedSend = async (content: string) => {
-    if (content === '/architect' && (userRole === 'architect' || userRole === 'admin')) {
-      setShowArchitect(true);
-      return;
-    }
     if (content === '/logout') {
       signOut();
       return;
     }
-    mentorChat.sendMessage(content, 'mentor');
+    mentorChat.sendMessage(content);
   };
 
   // Loading state
@@ -353,32 +330,10 @@ function RootChatInner() {
   if (status === 'authenticated') {
     return (
       <div className="fixed inset-0 w-full bg-stone-950" style={{ height: vvh }}>
-        <AnimatePresence>
-          {showArchitect && (
-            <ArchitectDashboard
-              onExit={() => setShowArchitect(false)}
-              messages={architectChat.messages}
-              isStreaming={architectChat.isStreaming}
-              onSend={(msg) => architectChat.sendMessage(msg, 'architect')}
-            />
-          )}
-        </AnimatePresence>
-
-        <header className={cn(
-          "absolute top-0 left-0 right-0 p-8 z-[150] transition-opacity duration-500 flex flex-col items-center pointer-events-none",
-          showArchitect ? "opacity-0" : "opacity-100"
-        )}>
+        <header className="absolute top-0 left-0 right-0 p-8 z-[150] flex flex-col items-center pointer-events-none">
           <h1 className="flex items-baseline text-amber-500/80 text-[10px] uppercase tracking-[0.1em] font-black drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] mb-3 select-none">
             <span>KINGDO</span>
-            <span
-              onClick={() => {
-                if (userRole === 'architect' || userRole === 'admin') setShowArchitect(true);
-              }}
-              className={cn(
-                "text-lg font-normal text-amber-400 font-script mx-[-1px] transform translate-y-[2px] scale-110",
-                (userRole === 'architect' || userRole === 'admin') ? "cursor-pointer hover:text-white transition-colors pointer-events-auto" : ""
-              )}
-            >m</span>
+            <span className="text-lg font-normal text-amber-400 font-script mx-[-1px] transform translate-y-[2px] scale-110">m</span>
             <span className="ml-1">IND</span>
           </h1>
 
@@ -413,16 +368,14 @@ function RootChatInner() {
               isAuthenticated={true}
             />
           </div>
-          {!showArchitect && (
-            <div className={cn(
-              "w-full transition-all duration-300 px-4",
-              isKeyboardOpen ? "pb-2" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"
-            )}>
-              {!mentorChat.isStreaming && (
-                <ChatInput onSend={handleAuthenticatedSend} autoFocus placeholder="Speak your heart..." />
-              )}
-            </div>
-          )}
+          <div className={cn(
+            "w-full transition-all duration-300 px-4",
+            isKeyboardOpen ? "pb-2" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"
+          )}>
+            {!mentorChat.isStreaming && (
+              <ChatInput onSend={handleAuthenticatedSend} autoFocus placeholder="Speak your heart..." />
+            )}
+          </div>
         </div>
       </div>
     );
