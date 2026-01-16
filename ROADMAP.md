@@ -1,6 +1,6 @@
 # Kingdom Mind - Product Roadmap
 
-> Last Updated: January 15, 2026 (Biometric Security Implementation)
+> Last Updated: January 15, 2026 (Sanctuary Architecture + Admin Separation)
 > Status: Active Development
 
 ---
@@ -397,6 +397,135 @@ Next conversation: AI has insights, not full transcript
 - No PDF generation code needed
 - No export endpoints
 - Consider blocking print/screenshot where technically feasible (deterrent, not prevention)
+
+---
+
+### Phase 3C: Sanctuary Architecture - Client-Side First (IMPLEMENTED)
+
+**Status:** COMPLETE (January 15, 2026)
+**Goal:** Zero server-side user data. Everything lives on the client.
+
+#### The Paradigm Shift
+
+Kingdom Mind moved from server-side user storage to a **client-side first architecture**. User data never touches the server database - it lives entirely in the browser's IndexedDB as an encrypted blob.
+
+#### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT (Browser)                         │
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              IndexedDB (Dexie.js)                        │  │
+│   │                                                          │  │
+│   │   sanctuary: {                                           │  │
+│   │     blob: "IV:AuthTag:EncryptedData..."  ← All user data │  │
+│   │   }                                                      │  │
+│   │                                                          │  │
+│   │   biometric: { enabled: true, credentialId: "..." }      │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              │                                  │
+│                              │ Send blob with each request      │
+│                              ▼                                  │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        SERVER (Stateless)                       │
+│                                                                 │
+│   1. Receive encrypted blob from client                         │
+│   2. Decrypt with server key                                    │
+│   3. Process (AI chat, update resonance, record breakthrough)   │
+│   4. Re-encrypt updated blob                                    │
+│   5. Return blob to client (NOTHING STORED)                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### What's In The Blob
+
+| Field | Purpose |
+|-------|---------|
+| `stars` | 7-domain resonance scores (Identity, Purpose, etc.) |
+| `stage` | Onboarding stage (0-3) |
+| `breakthroughs` | Array of PII-free breakthrough memories |
+| `totalBreakthroughs` | Count for display |
+
+#### Encryption Format
+
+```
+IV (12 bytes) : AuthTag (16 bytes) : EncryptedData
+```
+- **Algorithm:** AES-256-GCM
+- **Key:** Server-side `ENCRYPTION_KEY` environment variable
+- **Security:** Client cannot decrypt their own blob (server key required)
+
+#### What's NOT Stored Server-Side
+
+| Previously Server-Side | Now Client-Side |
+|------------------------|-----------------|
+| `users` table | ❌ No user accounts |
+| `mentoring_sessions` | ❌ Sessions are ephemeral |
+| `chat_messages` | ❌ Chat in-memory only |
+| `insights` | ❌ Breakthroughs in blob |
+| `userProgress` | ❌ Progress in blob |
+| `habits` | ❌ Not implemented |
+
+#### What IS Still Server-Side
+
+| Table | Purpose | Why Server-Side |
+|-------|---------|-----------------|
+| `system_prompts` | Mentor personality | Admin-controlled |
+| `sacred_pillars` | 7 eternal truths | Admin-controlled |
+| `app_config` | Runtime config | Admin-controlled |
+| `curriculum` | 21-step journey | Admin-controlled |
+| `greetings` | Greeting templates | Admin-controlled |
+| `rate_limits` | API throttling | Security |
+
+#### Benefits
+
+1. **Privacy by Design:** No user data to breach
+2. **GDPR Compliant:** No personal data stored
+3. **Stateless Server:** Horizontal scaling trivial
+4. **User Owns Data:** Blob lives on their device
+5. **No Accounts:** Zero friction to start
+
+#### Trade-offs Accepted
+
+- **Device-Bound:** User loses data if they clear browser storage
+- **No Cross-Device:** Can't continue on phone after starting on laptop
+- **No Recovery:** If blob is lost, journey starts over
+- **Trust Server:** Server CAN decrypt (but policy says it won't log)
+
+#### Files Implementing Sanctuary Architecture
+
+| File | Purpose |
+|------|---------|
+| `src/lib/storage/sanctuary-db.ts` | IndexedDB wrapper (Dexie.js) |
+| `src/lib/storage/sanctuary-crypto.ts` | Encryption utilities |
+| `src/hooks/useSanctuary.ts` | React hook for sanctuary state |
+| `src/app/api/sanctuary/chat/route.ts` | Stateless chat endpoint |
+| `src/components/chat/SanctuaryChat.tsx` | Chat UI using sanctuary hook |
+
+#### Legacy Database Tables (Not Currently Used)
+
+The database schema (`src/lib/db/schema.ts`) still contains tables from the previous server-side architecture. These are **not actively used** but remain in the schema for potential future features or migration purposes:
+
+| Table | Original Purpose | Current Status |
+|-------|------------------|----------------|
+| `users` | User accounts with auth, resonance, progress | ❌ **UNUSED** - No accounts in Sanctuary model |
+| `mentoring_sessions` | Server-side session tracking | ❌ **UNUSED** - Sessions are ephemeral |
+| `chat_messages` | Persistent message history | ❌ **UNUSED** - Chat is in-memory only |
+| `insights` | Server-stored breakthroughs | ❌ **UNUSED** - Breakthroughs in client blob |
+| `userProgress` | Curriculum progress per user | ❌ **UNUSED** - Progress in client blob |
+| `habits` | User habit tracking | ❌ **UNUSED** - Never implemented |
+| `thoughts` | Raw thought stream | ❌ **UNUSED** - Never implemented |
+| `verificationCodes` | Email OTP codes | ❌ **UNUSED** - Email auth removed |
+| `webauthnCredentials` | Server-stored passkeys | ❌ **UNUSED** - Biometric is client-side |
+| `mentor_reviews` | AI self-evaluation | ❌ **UNUSED** - No sessions to review |
+| `clientEvents` | Frontend telemetry | ❌ **UNUSED** - No user tracking |
+
+> **Cleanup Option:** These tables can be removed from the schema in a future cleanup sprint. They have no data and no active code references.
 
 ---
 
@@ -1749,71 +1878,24 @@ Architect: [Uses getMentorReviews type='low_scores' limit=10]
 
 ### Phase 14: Local-Only Admin Panel (Control Room)
 
-**Status:** COMPLETE (January 15, 2026)
-**Goal:** Secure admin access restricted to home network with 6-digit PIN protection.
+**Status:** ⚠️ SUPERSEDED BY PHASE 15 (January 15, 2026)
 
-#### Security Architecture
+> **Note:** This phase was completed but then replaced by Phase 15's complete separation architecture. The `/control-room` routes were removed from production and the admin panel now runs as a separate project (`km-admin`) on port 8000.
 
-```
-                    INTERNET                          LOCAL NETWORK
-                        │                                   │
-[Public Users] ─────────┤                                   │
-        │               │                                   │
-        ▼               │                                   │
-[Cloudflare Tunnel] ────┤                                   │
-        │               │                                   │
-        ▼               │                                   │
-[kingdomind.com]        │                                   │
-        │               │                                   │
-        ▼               │                                   │
-┌───────────────────────┴───────────────────────────────────┤
-│                    Ubuntu Server                          │
-│                                                           │
-│  ┌─────────────────┐     ┌─────────────────────────────┐ │
-│  │ Production App  │     │ Control Room (/control-room) │ │
-│  │ Port 4000       │     │ - Private network only       │ │
-│  │ - /sanctuary    │     │ - 6-digit PIN required       │ │
-│  │ - Public chat   │     │ - Full Architect access      │ │
-│  └─────────────────┘     └─────────────────────────────┘ │
-└───────────────────────────────────────────────────────────┘
-```
+#### Original Goal
+Secure admin access restricted to home network with 6-digit PIN protection, embedded within the production app.
 
-#### Access Control (Two Layers)
+#### Why Superseded
+Security analysis determined that having Architect tools (database queries, file operations, bash commands) in the production codebase was a risk. If production were compromised, attackers would have access to powerful admin tools. Phase 15 implements complete separation instead.
 
-1. **Network Check:** Only private IPs allowed (192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost)
-2. **PIN Verification:** 6-digit PIN with timing-safe comparison
+#### What Was Removed From Production
+- `/control-room/*` routes
+- `/api/admin/*` routes
+- `/api/architect/*` routes
+- All Architect tools and handlers
+- Middleware route protection (simplified to passthrough)
 
-#### Implementation
-
-| Component | File | Status |
-|-----------|------|--------|
-| PIN Login UI | `src/app/control-room/login/page.tsx` | ✅ Complete |
-| Control Room | `src/app/control-room/page.tsx` | ✅ Complete |
-| PIN Verify API | `src/app/api/admin/verify-pin/route.ts` | ✅ Complete |
-| Cookie Check API | `src/app/api/admin/check/route.ts` | ✅ Complete |
-| Architect Chat API | `src/app/api/architect/chat/route.ts` | ✅ Complete |
-| Middleware | `src/middleware.ts` | ✅ Updated |
-
-#### Environment Variables
-
-```env
-ADMIN_PIN=123456  # 6-digit PIN for control room access
-```
-
-#### Security Features
-
-- **Private Network Only:** Returns 404 to external IPs (doesn't reveal route exists)
-- **Timing-Safe Comparison:** `crypto.timingSafeEqual()` prevents timing attacks
-- **httpOnly Cookie:** Cannot be stolen via XSS
-- **24-Hour Session:** Cookie expires after 24 hours
-- **No Cloudflare Tunnel:** Admin panel never exposed publicly
-
-#### Usage
-
-1. Connect to home WiFi (phone, laptop)
-2. Navigate to `http://192.168.x.x:4000/control-room`
-3. Enter 6-digit PIN
-4. Full Architect access for system management
+#### See Phase 15 for current implementation.
 
 ---
 
@@ -1913,9 +1995,37 @@ If production is compromised, attackers should find NO powerful admin tools to e
 DATABASE_URL=postgresql://...@localhost:5434/kingdom_mind
 PROJECT_ROOT=/home/wmoore/project/km-master
 XAI_API_KEY=...
+ADMIN_PIN=356532
 ```
 
 The `PROJECT_ROOT` variable allows Architect file tools to operate on the production codebase from the separate admin project.
+
+#### PIN Authentication
+
+- **PIN:** `356532` (6-digit)
+- **Storage:** Environment variable `ADMIN_PIN`
+- **Verification:** Timing-safe comparison via `crypto.timingSafeEqual()`
+- **Session:** 24-hour httpOnly cookie after successful PIN entry
+
+#### Admin Capabilities (Architect Tools)
+
+| Category | Tool | Purpose |
+|----------|------|---------|
+| **Content** | `viewSystemPrompt` | See current Mentor personality |
+| **Content** | `updateSystemPrompt` | Create new prompt version |
+| **Content** | `viewPillars` | See 7 Sacred Pillars |
+| **Content** | `updatePillar` | Edit pillar text |
+| **Config** | `viewConfig` | See all `app_config` values |
+| **Config** | `setConfig` | Update a config value |
+| **Code** | `readFile` | Read source files |
+| **Code** | `writeFile` | Create/overwrite files |
+| **Code** | `editFile` | Surgical find-and-replace |
+| **Code** | `listFiles` | Glob pattern search |
+| **Code** | `searchCode` | Regex search codebase |
+| **System** | `runBash` | Execute git, npm, etc. |
+| **System** | `queryDatabase` | Run SQL on config tables |
+
+> **Note:** User-data query tools (`getMentorReviews`, `getSystemHealth` for user metrics) are deprecated since user data is now client-side (see Phase 3C: Sanctuary Architecture).
 
 #### Security Benefits
 
@@ -1985,6 +2095,10 @@ All major questions have been decided:
 | 2026-01-15 | Added Phase 13: AI Self-Review System - PII-free mentor evaluation with 6 rating categories |
 | 2026-01-15 | Added Phase 14: Local-Only Admin Panel (Control Room) - Private network + PIN protection |
 | 2026-01-15 | Added Phase 15: Admin/Architect Separation - Complete security separation of admin tools from production |
+| 2026-01-15 | Added Phase 3C: Sanctuary Architecture - Client-side first, no server-side user data, IndexedDB blob storage |
+| 2026-01-15 | Updated Phase 14: Marked as SUPERSEDED by Phase 15 (control-room removed, km-admin replaces it) |
+| 2026-01-15 | Updated Phase 15: Added PIN authentication (356532), admin capabilities table, deprecated tools note |
+| 2026-01-15 | Added Legacy Database Tables section - Documented unused tables from previous architecture |
 
 ---
 
