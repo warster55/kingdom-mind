@@ -78,6 +78,35 @@ PostgreSQL with Drizzle ORM. Key tables:
 - No email-based authentication (TOTP + seed phrase)
 - **Never open source** - codebase is proprietary
 
+## Port Standards (IMPORTANT - MEMORIZE THIS)
+
+| Environment | Port | Container Name |
+|-------------|------|----------------|
+| **Production** | **4000** | `km-prod` |
+| **Development** | **3000** | N/A (npm run dev) |
+
+**Cloudflare tunnel ALWAYS points to port 4000. Never change this.**
+
+### Simple Deployment Process
+```bash
+# 1. Build the new image
+docker build -t km-app:latest .
+
+# 2. Quick swap (only ~1 second downtime)
+docker stop km-prod && docker rm km-prod && \
+docker run -d --name km-prod \
+  --env-file .env.production.local \
+  -e NODE_ENV=production \
+  -e PORT=4000 \
+  -e DATABASE_URL="postgresql://kingdom_user:<password>@db:5432/kingdom_mind" \
+  -p 4000:4000 \
+  --network km-master_km-prod-net \
+  --restart unless-stopped \
+  km-app:latest
+```
+
+**NO blue-green deployment. NO multiple containers. Simple and clean.**
+
 ## Key Environment Variables
 
 ```
