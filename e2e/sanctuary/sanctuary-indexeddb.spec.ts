@@ -3,6 +3,8 @@ import {
   clearIndexedDB,
   getIndexedDBSnapshot,
   TABLE_STORE,
+  TABLE_CHAT,
+  RECORD_ID,
   type IndexedDBSnapshot
 } from './fixtures/indexeddb-helpers';
 import {
@@ -54,11 +56,6 @@ test.describe('Sanctuary IndexedDB Storage', () => {
           blobLength: snapshot.rawBlob?.length,
           blobFormat: snapshot.blobParts ? 'IV:AuthTag:Data' : 'Unknown',
           updatedAt: snapshot.sanctuary?.updatedAt
-        },
-        biometricRecord: {
-          exists: !!snapshot.biometric,
-          enabled: snapshot.biometric?.enabled,
-          hasCredentialId: !!snapshot.biometric?.credentialId
         }
       });
 
@@ -140,11 +137,6 @@ test.describe('Sanctuary IndexedDB Storage', () => {
           blobLength: updatedBlob?.length,
           blobFormat: updatedSnapshot.blobParts ? 'IV:AuthTag:Data' : 'Unknown',
           updatedAt: updatedSnapshot.sanctuary?.updatedAt
-        },
-        biometricRecord: {
-          exists: !!updatedSnapshot.biometric,
-          enabled: updatedSnapshot.biometric?.enabled,
-          hasCredentialId: !!updatedSnapshot.biometric?.credentialId
         }
       });
 
@@ -178,7 +170,7 @@ test.describe('Sanctuary IndexedDB Storage', () => {
     }
   });
 
-  test('Database Structure - both sanctuary and biometric tables exist', async ({ page }) => {
+  test('Database Structure - sanctuary and chat tables exist', async ({ page }) => {
     const startTime = Date.now();
     const screenshots: string[] = [];
     const notes: string[] = [];
@@ -207,6 +199,9 @@ test.describe('Sanctuary IndexedDB Storage', () => {
 
       expect(snapshot.tables).toContain(TABLE_STORE);
       notes.push('Store table exists');
+
+      expect(snapshot.tables).toContain(TABLE_CHAT);
+      notes.push('Chat table exists');
 
       notes.push(`Total tables: ${snapshot.tables.length}`);
       notes.push(`Table names: ${snapshot.tables.join(', ')}`);
@@ -257,8 +252,8 @@ test.describe('Sanctuary IndexedDB Storage', () => {
       screenshots.push(ss1);
 
       if (snapshot.sanctuary) {
-        // Verify required fields
-        expect(snapshot.sanctuary.id).toBe('sanctuary');
+        // Verify required fields (obfuscated ID)
+        expect(snapshot.sanctuary.id).toBe(RECORD_ID);
         notes.push(`ID field: ${snapshot.sanctuary.id}`);
 
         expect(snapshot.sanctuary.blob).toBeDefined();
@@ -322,12 +317,6 @@ test.describe('Sanctuary IndexedDB Storage', () => {
         console.log('  - ID:', snapshot.sanctuary.id);
         console.log('  - Blob length:', snapshot.sanctuary.blob.length);
         console.log('  - Updated at:', new Date(snapshot.sanctuary.updatedAt).toISOString());
-      }
-      console.log('Biometric record:', snapshot.biometric ? 'Present' : 'Not found');
-      if (snapshot.biometric) {
-        console.log('  - ID:', snapshot.biometric.id);
-        console.log('  - Enabled:', snapshot.biometric.enabled);
-        console.log('  - Credential ID:', snapshot.biometric.credentialId || 'None');
       }
       if (snapshot.blobParts) {
         console.log('Blob parts:');

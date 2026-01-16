@@ -28,7 +28,7 @@ test.describe('Sanctuary Chat Flow', () => {
       // Navigate to sanctuary
       await page.goto(BASE_URL);
 
-      // Wait for biometric lock to resolve (auto-unlocks if not enabled)
+      // Wait for app to be ready (chat input visible)
       await waitForBiometricResolved(page);
 
       // Take screenshot of initial state

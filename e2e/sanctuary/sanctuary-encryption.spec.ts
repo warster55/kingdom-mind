@@ -96,11 +96,6 @@ test.describe('Sanctuary Encryption', () => {
           blobFormat: validation.isValid ? 'IV:AuthTag:Data' : 'Invalid',
           updatedAt: snapshot.sanctuary?.updatedAt
         },
-        biometricRecord: {
-          exists: !!snapshot.biometric,
-          enabled: snapshot.biometric?.enabled,
-          hasCredentialId: !!snapshot.biometric?.credentialId
-        },
         encryptionAnalysis: {
           formatValid: validation.isValid,
           ivBytes: validation.ivByteLength,

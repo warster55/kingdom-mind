@@ -26,11 +26,6 @@ export interface IndexedDBInspection {
     blobFormat?: string;
     updatedAt?: number;
   };
-  biometricRecord: {
-    exists: boolean;
-    enabled?: boolean;
-    hasCredentialId?: boolean;
-  };
   encryptionAnalysis?: {
     formatValid: boolean;
     ivBytes?: number;
@@ -202,16 +197,6 @@ class SanctuaryReportGenerator {
           lines.push(`| Blob Length | ${inspection.sanctuaryRecord.blobLength} chars |`);
           lines.push(`| Blob Format | ${inspection.sanctuaryRecord.blobFormat || 'N/A'} |`);
           lines.push(`| Updated At | ${inspection.sanctuaryRecord.updatedAt ? new Date(inspection.sanctuaryRecord.updatedAt).toISOString() : 'N/A'} |`);
-        }
-        lines.push('');
-
-        lines.push('#### Biometric Table');
-        lines.push('| Field | Value |');
-        lines.push('|-------|-------|');
-        lines.push(`| Record Exists | ${inspection.biometricRecord.exists ? 'YES' : 'NO'} |`);
-        if (inspection.biometricRecord.exists) {
-          lines.push(`| Enabled | ${inspection.biometricRecord.enabled ? 'YES' : 'NO'} |`);
-          lines.push(`| Has Credential ID | ${inspection.biometricRecord.hasCredentialId ? 'YES' : 'NO'} |`);
         }
         lines.push('');
 

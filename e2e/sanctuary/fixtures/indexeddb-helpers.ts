@@ -13,12 +13,6 @@ export interface SanctuaryRecord {
   updatedAt: number;
 }
 
-export interface BiometricRecord {
-  id: string;
-  enabled: boolean;
-  credentialId?: string;
-}
-
 export interface BlobParts {
   iv: string;
   authTag: string;
@@ -27,7 +21,6 @@ export interface BlobParts {
 
 export interface IndexedDBSnapshot {
   sanctuary: SanctuaryRecord | null;
-  biometric: BiometricRecord | null;
   rawBlob: string | null;
   blobParts: BlobParts | null;
   databaseExists: boolean;
@@ -38,11 +31,10 @@ export interface IndexedDBSnapshot {
  * Get a complete snapshot of the IndexedDB state
  */
 export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapshot> {
-  return await page.evaluate(async ({ dbName, tableStore, recordId }) => {
+  return await page.evaluate(async ({ dbName, tableStore, tableChat, recordId }) => {
     return new Promise<IndexedDBSnapshot>((resolve) => {
       const snapshot: IndexedDBSnapshot = {
         sanctuary: null,
-        biometric: null,
         rawBlob: null,
         blobParts: null,
         databaseExists: false,
@@ -55,6 +47,9 @@ export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapsho
         const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(tableStore)) {
           db.createObjectStore(tableStore, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(tableChat)) {
+          db.createObjectStore(tableChat, { keyPath: 'id' });
         }
       };
 
@@ -104,7 +99,7 @@ export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapsho
         resolve(snapshot);
       };
     });
-  }, { dbName: DB_NAME, tableStore: TABLE_STORE, recordId: RECORD_ID });
+  }, { dbName: DB_NAME, tableStore: TABLE_STORE, tableChat: TABLE_CHAT, recordId: RECORD_ID });
 }
 
 /**
@@ -128,7 +123,7 @@ export async function clearIndexedDB(page: Page): Promise<void> {
  * Set a specific sanctuary blob in IndexedDB
  */
 export async function setSanctuaryBlob(page: Page, blob: string): Promise<void> {
-  await page.evaluate(async ({ blobValue, dbName, tableStore, recordId }) => {
+  await page.evaluate(async ({ blobValue, dbName, tableStore, tableChat, recordId }) => {
     return new Promise<void>((resolve) => {
       const request = indexedDB.open(dbName, 1);
 
@@ -136,6 +131,9 @@ export async function setSanctuaryBlob(page: Page, blob: string): Promise<void> 
         const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(tableStore)) {
           db.createObjectStore(tableStore, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(tableChat)) {
+          db.createObjectStore(tableChat, { keyPath: 'id' });
         }
       };
 
@@ -165,21 +163,7 @@ export async function setSanctuaryBlob(page: Page, blob: string): Promise<void> 
         resolve();
       };
     });
-  }, { blobValue: blob, dbName: DB_NAME, tableStore: TABLE_STORE, recordId: RECORD_ID });
-}
-
-/**
- * Set biometric enabled state in IndexedDB
- * @deprecated Biometric feature not implemented - stub only for test compatibility
- */
-export async function setBiometricEnabled(
-  _page: Page,
-  _enabled: boolean,
-  _credentialId?: string
-): Promise<void> {
-  // Biometric feature not implemented in current schema
-  // This is a stub to prevent import errors in tests
-  return Promise.resolve();
+  }, { blobValue: blob, dbName: DB_NAME, tableStore: TABLE_STORE, tableChat: TABLE_CHAT, recordId: RECORD_ID });
 }
 
 /**

@@ -105,11 +105,12 @@ async function migrateFromLegacy(): Promise<void> {
       });
     }
 
-    // Migrate chat history
-    const legacyMessages = await legacy.chatHistory.toArray();
-    if (legacyMessages.length > 0) {
-      await newDb[TABLE_CHAT].bulkPut(legacyMessages);
-    }
+    // Note: Legacy chat history is NOT migrated because:
+    // 1. Legacy messages are plaintext (security concern)
+    // 2. New system uses server-side encryption
+    // 3. Client cannot encrypt without server roundtrip
+    // Users will start fresh with encrypted chat storage
+    console.log('[DB] Legacy chat history not migrated (plaintext -> encrypted)');
 
     // Delete legacy database
     await legacy.delete();

@@ -24,16 +24,14 @@ export async function waitForSanctuaryReady(page: Page): Promise<void> {
 }
 
 /**
- * Wait for biometric lock to resolve (unlock or skip)
+ * Wait for app to be ready (chat input visible)
+ * Legacy name kept for compatibility with existing tests
  */
 export async function waitForBiometricResolved(page: Page): Promise<void> {
-  // Wait for either:
-  // 1. Lock screen to disappear (unlocked/disabled)
-  // 2. Chat input to appear (fully loaded)
+  // Wait for chat input to appear (app is loaded)
   await page.waitForFunction(() => {
-    const lockScreen = document.querySelector('[class*="z-[250]"]');
     const chatInput = document.querySelector('textarea, input[type="text"]');
-    return !lockScreen || chatInput;
+    return !!chatInput;
   }, { timeout: 10000 });
 }
 

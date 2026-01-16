@@ -1,6 +1,6 @@
 # Kingdom Mind - Product Roadmap
 
-> Last Updated: January 16, 2026 (Zero Attack Surface + Bitcoin Simplified)
+> Last Updated: January 16, 2026 (Chat Encryption + IndexedDB Obfuscation)
 > Status: Active Development
 
 ---
@@ -2788,6 +2788,125 @@ Implemented blue-green deployment for zero-downtime updates:
 
 ---
 
+### Phase 23: Chat Encryption + IndexedDB Obfuscation ✅
+
+> **Status:** COMPLETE (January 16, 2026)
+> **Goal:** Server-side encryption for chat messages + obfuscated IndexedDB storage names.
+
+#### Problem Statement
+
+1. **Chat Messages Plaintext:** Chat messages were stored in IndexedDB as plaintext JSON, meaning anyone with browser devtools could read user conversations:
+   ```json
+   {id: 'e2a31c3e...', role: 'user', content: 'is this working?', timestamp: 1768596652480}
+   ```
+
+2. **Readable Database Names:** IndexedDB database was named `KingdomMindSanctuary` with tables `sanctuary` and `chatHistory` - immediately obvious what the data is.
+
+#### Solution: Server Round-Trip Encryption
+
+**Decision:** Server-side encryption (Option 3) was chosen over:
+- Option 1: Remove chat storage entirely (bad UX)
+- Option 2: Client-side encryption (key stored in IndexedDB = no security)
+
+**How It Works:**
+1. User sends message → Server encrypts with `SANCTUARY_ENCRYPTION_KEY` → Encrypted blob stored in IndexedDB
+2. Page loads → Encrypted blobs sent to server → Server decrypts → Messages displayed
+3. **User CANNOT decrypt their own messages** - key only exists on server
+4. Even exported data is encrypted - exports are useless without server
+
+#### Encryption Implementation
+
+**Algorithm:** AES-256-GCM (same as sanctuary blob)
+**Format:** `IV:AuthTag:EncryptedData` (Base64 encoded)
+
+**New Server Actions (in `src/lib/actions/chat.ts`):**
+```typescript
+export async function encryptChatMessage(message: ChatMessage): Promise<string>
+export async function decryptChatMessage(encryptedBlob: string): Promise<ChatMessage | null>
+export async function decryptChatMessages(encryptedBlobs: string[]): Promise<ChatMessage[]>
+```
+
+#### IndexedDB Obfuscation
+
+**Before:**
+| Item | Name |
+|------|------|
+| Database | `KingdomMindSanctuary` |
+| Sanctuary Table | `sanctuary` |
+| Chat Table | `chatHistory` |
+| Record ID | `sanctuary` |
+
+**After (Obfuscated):**
+| Item | Name |
+|------|------|
+| Database | `_kx7d2` |
+| Sanctuary Table | `_s1` |
+| Chat Table | `_c1` |
+| Record ID | `_r` |
+
+Now when someone opens DevTools → Application → IndexedDB, they see meaningless names. They still can't read the encrypted blobs inside.
+
+#### Legacy Migration
+
+**Decision:** Legacy plaintext chat history is NOT migrated.
+
+**Rationale:**
+1. Legacy messages are plaintext (security concern - why preserve?)
+2. Client-side code cannot encrypt without server roundtrip
+3. Server cannot access client IndexedDB
+4. Clean slate is appropriate - encrypted-only going forward
+
+**Migration Logic (in `sanctuary-db.ts`):**
+- Sanctuary blob IS migrated (it's already encrypted)
+- Chat history is SKIPPED (logged to console)
+- Legacy `KingdomMindSanctuary` database is deleted after migration
+
+#### Data Flow
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Browser    │───▶│   Server     │───▶│   IndexedDB  │
+│              │    │  (encrypt)   │    │ (encrypted)  │
+└──────────────┘    └──────────────┘    └──────────────┘
+                           │
+                           ▼
+                    SANCTUARY_ENCRYPTION_KEY
+                    (never leaves server)
+```
+
+#### Security Properties
+
+| Property | Status |
+|----------|--------|
+| Messages readable in DevTools | ❌ No (encrypted blobs) |
+| User can decrypt their data | ❌ No (server key only) |
+| Exports usable without server | ❌ No (encrypted) |
+| Database name reveals app | ❌ No (obfuscated) |
+| Table names reveal purpose | ❌ No (obfuscated) |
+| Legacy plaintext preserved | ❌ No (deleted) |
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/lib/actions/chat.ts` | Added `encryptChatMessage`, `decryptChatMessage`, `decryptChatMessages` |
+| `src/lib/storage/sanctuary-db.ts` | Obfuscated names, `EncryptedChatRecord` type, skip legacy chat migration |
+| `src/hooks/useSanctuary.ts` | Encrypt before save, decrypt on load via server actions |
+| `e2e/sanctuary/fixtures/indexeddb-helpers.ts` | Updated to use obfuscated names |
+| `e2e/sanctuary/sanctuary-indexeddb.spec.ts` | Updated tests for new table structure |
+
+#### Test Results
+
+E2E tests verify:
+- ✅ Encryption format valid (IV:AuthTag:Data)
+- ✅ Blobs not parseable as JSON
+- ✅ Unique IV per encryption
+- ✅ AES-256-GCM parameters correct
+- ✅ No PII in IndexedDB
+- ✅ Database and tables use obfuscated names
+
+---
+
 ## Future Features (Backlog)
 
 Ideas for future development:
@@ -2855,6 +2974,7 @@ All major questions have been decided:
 | 2026-01-16 | **PHASE 21: OPENROUTER MIGRATION** - Switched from direct xAI to OpenRouter. Evaluated 5 models. GPT-4o Mini recommended (25x cheaper than Grok, same quality, better security). |
 | 2026-01-16 | **PHASE 20: CHAT HISTORY IMPLEMENTED** - Added chatHistory table to IndexedDB. Messages persist across page refresh. 50 message / 7 day rolling cleanup. |
 | 2026-01-16 | **PHASE 22: PRODUCTION HARDENING** - Added all security headers (HSTS, X-Frame-Options, CSP). Blocked all crawlers in robots.txt (including Wayback Machine). Blue-green zero-downtime deployment with scripts/deploy.sh. Security grade upgraded to A. |
+| 2026-01-16 | **PHASE 23: CHAT ENCRYPTION** - Server-side encryption for chat messages. IndexedDB obfuscation (database `_kx7d2`, tables `_s1`, `_c1`). User cannot decrypt their own messages. Legacy plaintext chat not migrated. |
 
 ---
 

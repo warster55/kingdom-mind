@@ -1,760 +1,247 @@
 # Kingdom Mind Sanctuary Test Report
 
-**Generated:** 2026-01-15T23:19:40.330Z
+**Generated:** 2026-01-16T22:38:55.589Z
 **Environment:** http://localhost:3002
 
 ## Summary
 
 | Status | Count |
 |--------|-------|
-| Passed | 62 |
-| Failed | 18 |
+| Passed | 32 |
+| Failed | 0 |
 | Skipped | 0 |
-| **Total** | **80** |
+| **Total** | **32** |
 
-### Overall Status: FAILED
+### Overall Status: PASSED
 
 ## Test Results
 
-### API Tests
+### Breakthrough Tests
 
-- [PASS] GET Creates New Sanctuary (45ms)
-  - Note: Response status: 200
-  - Note: Has blob: true
-  - Note: Has display: true
-  - Note: Has isNewUser: true (value: true)
-  - Note: Blob format valid: false
-  - Note: Blob errors: IV should be 12 bytes, got 16
-  - Note: Display totalBreakthroughs: 0
-  - Note: Display totalStars: undefined
-- [PASS] POST Empty Message (33ms)
-  - Note: Got initial blob: 402 chars
-  - Note: POST status: 200
-  - Note: Response is null: true
-  - Note: Has required fields (blob, display)
-- [PASS] POST Processes Message (6.03s)
-  - Note: Initial blob: 402 chars
-  - Note: POST status: 200
-  - Note: Has AI response: true
-  - Note: Response length: 1051 chars
-  - Note: Has updated blob: true
-  - Note: Blob changed: true
-  - Note: Updated blob format valid: false
-- [PASS] Invalid Blob Recovery (3.60s)
-  - Note: POST status: 200
-  - Note: Response handled: true
-  - Note: Server recovered from invalid blob
-  - Note: New blob format valid: false
-- [PASS] Null Blob Handling (5.30s)
-  - Note: POST status: 200
-  - Note: Created new blob: true
-  - Note: New blob length: 402 chars
-  - Note: New blob format valid: false
-  - Note: Has AI response: true
-- [PASS] API Response Time (4.53s)
-  - Note: GET response time: 21ms
-  - Note: POST response time: 4505ms
-  - Note: GET under 5s: true
-  - Note: POST under 60s: true
-- [PASS] GET Creates New Sanctuary (40ms)
-  - Note: Response status: 200
-  - Note: Has blob: true
-  - Note: Has display: true
-  - Note: Has isNewUser: true (value: true)
-  - Note: Blob format valid: false
-  - Note: Blob errors: IV should be 12 bytes, got 16
-  - Note: Display totalBreakthroughs: 0
-  - Note: Display totalStars: undefined
-- [PASS] POST Empty Message (29ms)
-  - Note: Got initial blob: 402 chars
-  - Note: POST status: 200
-  - Note: Response is null: true
-  - Note: Has required fields (blob, display)
-- [PASS] POST Processes Message (4.53s)
-  - Note: Initial blob: 402 chars
-  - Note: POST status: 200
-  - Note: Has AI response: true
-  - Note: Response length: 1024 chars
-  - Note: Has updated blob: true
-  - Note: Blob changed: true
-  - Note: Updated blob format valid: false
-- [PASS] Invalid Blob Recovery (3.46s)
-  - Note: POST status: 200
-  - Note: Response handled: true
-  - Note: Server recovered from invalid blob
-  - Note: New blob format valid: false
-- [PASS] Null Blob Handling (8.73s)
-  - Note: POST status: 200
-  - Note: Created new blob: true
-  - Note: New blob length: 402 chars
-  - Note: New blob format valid: false
-  - Note: Has AI response: true
-- [PASS] API Response Time (4.21s)
-  - Note: GET response time: 14ms
-  - Note: POST response time: 4191ms
-  - Note: GET under 5s: true
-  - Note: POST under 60s: true
+- [PASS] Domain Labels Display (3.66s)
+  - Screenshot: [View](./reports/screenshots/breakthrough-domain-labels-initial-1768602677954.png)
+  - Note: Found 7/7 domains on screen
+  - Note: Domains: Identity, Purpose, Mindset, Relationships, Vision, Action, Legacy
+- [PASS] Heartbeat Animation (16.50s)
+  - Screenshot: [View](./reports/screenshots/breakthrough-heartbeat-thinking-1768602680734.png)
+  - Screenshot: [View](./reports/screenshots/breakthrough-heartbeat-complete-1768602695943.png)
+  - Note: Canvas element present: true
+  - Note: Heartbeat animation captured during thinking phase
+- [PASS] Text Pacer (8.50s)
+  - Screenshot: [View](./reports/screenshots/breakthrough-text-pacer-pacing-1768602699685.png)
+  - Screenshot: [View](./reports/screenshots/breakthrough-text-pacer-more-words-1768602704803.png)
+  - Screenshot: [View](./reports/screenshots/breakthrough-text-pacer-skip-complete-1768602705481.png)
+  - Note: Text pacer working - words appear progressively
+  - Note: Tap to skip functionality tested
+- [PASS] Identity Domain Resonance (15.98s)
+  - Screenshot: [View](./reports/screenshots/breakthrough-identity-resonance-response-1768602722509.png)
+  - Note: Found 4 identity-related keywords
+  - Note: Keywords: identity, beloved, child, loved
+- [PASS] Multi-Page Response Navigation (18.43s)
+  - Screenshot: [View](./reports/screenshots/breakthrough-multi-page-page1-complete-1768602742022.png)
+  - Note: Has more pages indicator: false
+  - Note: Response fit on single page
+- [PASS] Purpose Breakthrough Moment (16.07s)
+  - Screenshot: [View](./reports/screenshots/breakthrough-purpose-breakthrough-response-1768602759149.png)
+  - Note: Found 4 purpose-related keywords
+  - Note: Keywords: purpose, design, created, unique
+- [PASS] Canvas Star Field Present (-287ms)
+  - Screenshot: [View](./reports/screenshots/breakthrough-star-field-canvas-1768602759884.png)
+  - Note: Canvas elements found: 1
+  - Note: Canvas size: 1280x720
 
-### Biometric Tests
+### Star Animation Tests
 
-- [FAIL] Biometric Table Exists (3.53s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+- [PASS] Domain Position Layout (3.80s)
+  - Screenshot: [View](./reports/screenshots/star-animation-domain-positions-layout-1768602764747.png)
+  - Note: Visible domain labels: 7/7
+  - Note: IDENTITY: visible
+  - Note: PURPOSE: visible
+  - Note: MINDSET: visible
+  - Note: RELATIONSHIPS: visible
+  - Note: VISION: visible
+  - Note: ACTION: visible
+  - Note: LEGACY: visible
+- [PASS] Visual Blur During Streaming (17.00s)
+  - Screenshot: [View](./reports/screenshots/star-animation-blur-effect-initial-1768602766426.png)
+  - Screenshot: [View](./reports/screenshots/star-animation-blur-effect-streaming-1768602767609.png)
+  - Screenshot: [View](./reports/screenshots/star-animation-blur-effect-complete-1768602782733.png)
+  - Note: Blur effect during streaming captured
+  - Note: Clear canvas after streaming captured
 
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m`
-  - Screenshot: [View](./reports/screenshots/biometric-table-exists-check-1768502244027.png)
-- [PASS] Lock Screen Shows When Enabled (2.98s)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768502246245.png)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768502248756.png)
-  - Note: Lock screen indicator found: false
-  - Note: Lock screen UI displayed when biometric is enabled
-- [PASS] No Lock Screen When Disabled (832ms)
-  - Screenshot: [View](./reports/screenshots/biometric-no-lock-loaded-1768502250556.png)
-  - Note: Chat input visible: true
-  - Note: Lock screen bypassed when biometric disabled
-- [FAIL] Biometric State Persists (2.78s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+### Curriculum Tests
 
-Expected: [32mtrue[39m
-Received: [31mundefined[39m`
-  - Screenshot: [View](./reports/screenshots/biometric-persistence-after-reload-1768502254249.png)
-- [PASS] Disable Button Available After Failed Attempts (3.68s)
-  - Screenshot: [View](./reports/screenshots/biometric-disable-button-lock-screen-1768502259585.png)
-  - Note: Unlock button present: false
-  - Note: Note: Disable button appears after 2 failed WebAuthn attempts
-  - Note: This provides a safety escape hatch if biometric stops working
-  - Note: Expected lock UI elements: true
-- [PASS] Biometric Record Structure (477ms)
-  - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768502258261.png)
-  - Note: Biometric record exists
-- [FAIL] Biometric Table Exists (3.53s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+- [PASS] Domain Keywords in AI Response (12.86s)
+  - Screenshot: [View](./reports/screenshots/curriculum-domain-keywords-identity-response-1768602796758.png)
+  - Note: Found 9 curriculum keywords in response
+  - Note: Keywords: identity, child, purpose, kingdom, mindset...
+- [PASS] Purpose Domain Exploration (15.74s)
+  - Screenshot: [View](./reports/screenshots/curriculum-purpose-domain-response-1768602813944.png)
+  - Note: Found 6 purpose-related keywords
+  - Note: Keywords: purpose, design, unique, kingdom, created, fulfill
+- [PASS] Mindset Domain Guidance (12.81s)
+  - Screenshot: [View](./reports/screenshots/curriculum-mindset-domain-response-1768602827774.png)
+  - Note: Found 5 mindset-related keywords
+  - Note: Keywords: mindset, awareness, mind, think, transformed
+- [PASS] Warm Mentor Personality (15.79s)
+  - Screenshot: [View](./reports/screenshots/curriculum-mentor-personality-greeting-response-1768602844858.png)
+  - Note: Found 5 warm/welcoming phrases
+  - Note: Phrases: welcome, glad, journey, explore, share
+  - Note: Response contains question: true
+- [PASS] Response Brevity Check (12.80s)
+  - Screenshot: [View](./reports/screenshots/curriculum-brevity-check-response-1768602858668.png)
+  - Note: Longest message length: 0 characters
+  - Note: Response is reasonably brief: true
+- [PASS] Legacy Domain Wisdom (15.77s)
+  - Screenshot: [View](./reports/screenshots/curriculum-legacy-domain-response-1768602875527.png)
+  - Note: Found 3 legacy-related keywords
+  - Note: Keywords: legacy, future, impact
 
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m`
-  - Screenshot: [View](./reports/screenshots/biometric-table-exists-check-1768514968231.png)
-- [PASS] Lock Screen Shows When Enabled (2.94s)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768514970383.png)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768514972883.png)
-  - Note: Lock screen indicator found: false
-  - Note: Lock screen UI displayed when biometric is enabled
-- [PASS] No Lock Screen When Disabled (900ms)
-  - Screenshot: [View](./reports/screenshots/biometric-no-lock-loaded-1768514974700.png)
-  - Note: Chat input visible: true
-  - Note: Lock screen bypassed when biometric disabled
-- [FAIL] Biometric State Persists (2.74s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+### System Prompt Features
 
-Expected: [32mtrue[39m
-Received: [31mundefined[39m`
-  - Screenshot: [View](./reports/screenshots/biometric-persistence-after-reload-1768514975393.png)
-- [PASS] Disable Button Available After Failed Attempts (3.80s)
-  - Screenshot: [View](./reports/screenshots/biometric-disable-button-lock-screen-1768514980865.png)
-  - Note: Unlock button present: false
-  - Note: Note: Disable button appears after 2 failed WebAuthn attempts
-  - Note: This provides a safety escape hatch if biometric stops working
-  - Note: Expected lock UI elements: true
-- [PASS] Biometric Record Structure (424ms)
-  - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768514982169.png)
-  - Note: Biometric record exists
-- [PASS] Lock Screen Shows When Enabled (3.19s)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768515015498.png)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515018179.png)
-  - Note: Lock screen indicator found: false
-  - Note: Lock screen UI displayed when biometric is enabled
-- [FAIL] Biometric Table Exists (3.50s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m`
-  - Screenshot: [View](./reports/screenshots/biometric-table-exists-check-1768515061739.png)
-- [PASS] Lock Screen Shows When Enabled (2.96s)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768515060955.png)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515063482.png)
-  - Note: Lock screen indicator found: false
-  - Note: Lock screen UI displayed when biometric is enabled
-- [PASS] No Lock Screen When Disabled (865ms)
-  - Screenshot: [View](./reports/screenshots/biometric-no-lock-loaded-1768515065273.png)
-  - Note: Chat input visible: true
-  - Note: Lock screen bypassed when biometric disabled
-- [FAIL] Biometric State Persists (2.68s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-
-Expected: [32mtrue[39m
-Received: [31mundefined[39m`
-  - Screenshot: [View](./reports/screenshots/biometric-persistence-after-reload-1768515068759.png)
-- [PASS] Disable Button Available After Failed Attempts (3.65s)
-  - Screenshot: [View](./reports/screenshots/biometric-disable-button-lock-screen-1768515074091.png)
-  - Note: Unlock button present: false
-  - Note: Note: Disable button appears after 2 failed WebAuthn attempts
-  - Note: This provides a safety escape hatch if biometric stops working
-  - Note: Expected lock UI elements: true
-- [PASS] Biometric Record Structure (451ms)
-  - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768515075401.png)
-  - Note: Biometric record exists
-- [FAIL] Biometric Table Exists (3.51s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m`
-  - Screenshot: [View](./reports/screenshots/biometric-table-exists-check-1768519126134.png)
-- [PASS] Lock Screen Shows When Enabled (2.93s)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-before-reload-1768519128319.png)
-  - Screenshot: [View](./reports/screenshots/biometric-lock-enabled-lock-screen-1768519130845.png)
-  - Note: Lock screen indicator found: false
-  - Note: Lock screen UI displayed when biometric is enabled
-- [PASS] No Lock Screen When Disabled (848ms)
-  - Screenshot: [View](./reports/screenshots/biometric-no-lock-loaded-1768519132627.png)
-  - Note: Chat input visible: true
-  - Note: Lock screen bypassed when biometric disabled
-- [FAIL] Biometric State Persists (2.70s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-
-Expected: [32mtrue[39m
-Received: [31mundefined[39m`
-  - Screenshot: [View](./reports/screenshots/biometric-persistence-after-reload-1768519136235.png)
-- [PASS] Disable Button Available After Failed Attempts (3.77s)
-  - Screenshot: [View](./reports/screenshots/biometric-disable-button-lock-screen-1768519141609.png)
-  - Note: Unlock button present: false
-  - Note: Note: Disable button appears after 2 failed WebAuthn attempts
-  - Note: This provides a safety escape hatch if biometric stops working
-  - Note: Expected lock UI elements: true
-- [PASS] Biometric Record Structure (500ms)
-  - Screenshot: [View](./reports/screenshots/biometric-record-structure-data-1768519142955.png)
-  - Note: Biometric record exists
-
-### Chat Flow Tests
-
-- [FAIL] New User Complete Flow (743ms) **FAILED**
-  - Error: `locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:
-    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })
-    2) <span class="transition-opacity duration-500 opacity-0">Kingdom </span> aka getByText('Kingdom', { exact: true })
-
-Call log:
-[2m    - checking visibility of locator('text=KINGDO')[22m
-`
-  - Screenshot: [View](./reports/screenshots/chat-flow-new-user-initial-1768502259735.png)
-  - Screenshot: [View](./reports/screenshots/chat-flow-new-user-loaded-1768502260006.png)
-- [PASS] Welcome Message Display (2.53s)
-  - Screenshot: [View](./reports/screenshots/chat-flow-welcome-message-display-1768502264490.png)
-  - Note: New user greeting displayed with sanctuary keywords
-- [PASS] Message Input Functionality (580ms)
-  - Screenshot: [View](./reports/screenshots/chat-flow-message-input-typed-1768502265975.png)
-  - Note: User can type messages in the chat input
-- [PASS] Message Round-Trip (11.85s)
-  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-before-send-1768502267413.png)
-  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-sending-1768502268560.png)
-  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-response-1768502278713.png)
-  - Note: Message sent successfully
-  - Note: Response received from AI
-- [PASS] UI Elements Present (701ms)
-  - Screenshot: [View](./reports/screenshots/chat-flow-ui-elements-overview-1768502280390.png)
-  - Note: Header visible: true
-  - Note: Chat area visible: true
-  - Note: Input area visible: true
-- [FAIL] New User Complete Flow (701ms) **FAILED**
-  - Error: `locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:
-    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })
-    2) <span class="transition-opacity duration-500 opacity-0">Kingdom </span> aka getByText('Kingdom', { exact: true })
-
-Call log:
-[2m    - checking visibility of locator('text=KINGDO')[22m
-`
-  - Screenshot: [View](./reports/screenshots/chat-flow-new-user-initial-1768515076801.png)
-  - Screenshot: [View](./reports/screenshots/chat-flow-new-user-loaded-1768515077077.png)
-- [PASS] Welcome Message Display (2.56s)
-  - Screenshot: [View](./reports/screenshots/chat-flow-welcome-message-display-1768515081423.png)
-  - Note: New user greeting displayed with sanctuary keywords
-- [PASS] Message Input Functionality (587ms)
-  - Screenshot: [View](./reports/screenshots/chat-flow-message-input-typed-1768515082835.png)
-  - Note: User can type messages in the chat input
-- [PASS] Message Round-Trip (9.02s)
-  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-before-send-1768515084266.png)
-  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-sending-1768515085462.png)
-  - Screenshot: [View](./reports/screenshots/chat-flow-round-trip-response-1768515092697.png)
-  - Note: Message sent successfully
-  - Note: Response received from AI
-- [PASS] UI Elements Present (554ms)
-  - Screenshot: [View](./reports/screenshots/chat-flow-ui-elements-overview-1768515094079.png)
-  - Note: Header visible: true
-  - Note: Chat area visible: true
-  - Note: Input area visible: true
+- [PASS] Backup Export Trigger (12.80s)
+  - Screenshot: [View](./reports/screenshots/system-prompt-backup-export-response-1768602889607.png)
+  - Note: Found 3 backup-related keywords
+  - Note: Keywords: backup, preserve, journey
+  - Note: Backup UI appeared: true
+- [PASS] Gift Request Trigger (15.75s)
+  - Screenshot: [View](./reports/screenshots/system-prompt-gift-request-response-1768602906890.png)
+  - Note: Found 3 gift-related keywords
+  - Note: Keywords: gift, thank, support
+  - Note: Gift UI appeared: true
+- [PASS] No Markdown in Response (15.73s)
+  - Screenshot: [View](./reports/screenshots/system-prompt-no-markdown-response-1768602920823.png)
+  - Note: Contains markdown formatting: false
+  - Note: Markdown-free response: true
 
 ### Encryption Tests
 
-- [PASS] Blob Format Valid (7.75s)
+- [PASS] Blob Format Valid (10.67s)
   - Note: No blob found after message - skipping format validation
-- [PASS] Not Readable as Plaintext (10.53s)
+- [PASS] Not Readable as Plaintext (7.73s)
   - Note: No blob found - skipping plaintext check
-- [PASS] Unique IV Per Encryption (18.08s)
-  - Screenshot: [View](./reports/screenshots/encryption-unique-iv-comparison-1768502319571.png)
+- [PASS] Unique IV Per Encryption (20.80s)
+  - Screenshot: [View](./reports/screenshots/encryption-unique-iv-comparison-1768602963881.png)
   - Note: First IV: undefined...
   - Note: Second IV: undefined...
   - Note: Could not compare IVs - one or both blobs missing
-- [PASS] Base64 Components Valid (10.57s)
+- [PASS] Base64 Components Valid (7.73s)
   - Note: No blob found - skipping base64 validation
-- [PASS] Encryption Strength Analysis (10.57s)
-  - Note: No blob found
-- [PASS] Blob Format Valid (10.54s)
-  - Note: No blob found after message - skipping format validation
-- [PASS] Not Readable as Plaintext (10.58s)
-  - Note: No blob found - skipping plaintext check
-- [PASS] Unique IV Per Encryption (17.74s)
-  - Screenshot: [View](./reports/screenshots/encryption-unique-iv-comparison-1768515135692.png)
-  - Note: First IV: undefined...
-  - Note: Second IV: undefined...
-  - Note: Could not compare IVs - one or both blobs missing
-- [PASS] Base64 Components Valid (10.51s)
-  - Note: No blob found - skipping base64 validation
-- [PASS] Encryption Strength Analysis (7.63s)
+- [PASS] Encryption Strength Analysis (10.63s)
   - Note: No blob found
 
-### IndexedDB Tests
+### Security Tests
 
-- [FAIL] Blob Stored on First Visit (3.60s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m`
-  - Screenshot: [View](./reports/screenshots/indexeddb-first-visit-snapshot-1768502347432.png)
-- [PASS] Blob Updated After Message (12.81s)
-  - Screenshot: [View](./reports/screenshots/indexeddb-blob-updated-after-message-1768502359630.png)
-  - Note: Initial blob length: 0
-  - Note: Updated blob length: 0
-- [FAIL] Database Structure (10.70s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m`
-  - Screenshot: [View](./reports/screenshots/indexeddb-db-structure-tables-1768502371364.png)
-- [PASS] Blob Contains Required Fields (7.88s)
-  - Screenshot: [View](./reports/screenshots/indexeddb-required-fields-record-1768502381094.png)
-  - Note: No sanctuary record found after message
-- [PASS] IndexedDB Console Inspection (10.62s)
-  - Screenshot: [View](./reports/screenshots/indexeddb-console-inspection-full-1768502392642.png)
-  - Note: Full IndexedDB inspection logged to console
-  - Note: Database: MISSING
-  - Note: Tables: 
-- [FAIL] Blob Stored on First Visit (3.53s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m`
-  - Screenshot: [View](./reports/screenshots/indexeddb-first-visit-snapshot-1768515159910.png)
-- [PASS] Blob Updated After Message (12.65s)
-  - Screenshot: [View](./reports/screenshots/indexeddb-blob-updated-after-message-1768515174305.png)
-  - Note: Initial blob length: 0
-  - Note: Updated blob length: 0
-- [FAIL] Database Structure (7.86s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m`
-  - Screenshot: [View](./reports/screenshots/indexeddb-db-structure-tables-1768515183037.png)
-- [PASS] Blob Contains Required Fields (10.62s)
-  - Screenshot: [View](./reports/screenshots/indexeddb-required-fields-record-1768515195471.png)
-  - Note: No sanctuary record found after message
-- [PASS] IndexedDB Console Inspection (10.67s)
-  - Screenshot: [View](./reports/screenshots/indexeddb-console-inspection-full-1768515207009.png)
-  - Note: Full IndexedDB inspection logged to console
-  - Note: Database: MISSING
-  - Note: Tables: 
-
-### Persistence Tests
-
-- [PASS] Blob Survives Reload (11.19s)
-  - Screenshot: [View](./reports/screenshots/persistence-blob-survives-before-reload-1768502404262.png)
-  - Screenshot: [View](./reports/screenshots/persistence-blob-survives-after-reload-1768502404760.png)
-  - Note: Blob before reload: none
-  - Note: Blob after reload: none
-  - Note: No blob was created before reload
-- [FAIL] Database Survives Navigation (9.56s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m`
-  - Screenshot: [View](./reports/screenshots/persistence-navigation-after-1768502415168.png)
-- [PASS] UpdatedAt Timestamp Changes (19.97s)
-  - Screenshot: [View](./reports/screenshots/persistence-timestamp-updated-1768502437009.png)
-  - Note: First timestamp: none
-  - Note: Second timestamp: none
-- [FAIL] Multiple Sessions (14.23s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m`
-  - Screenshot: [View](./reports/screenshots/persistence-multi-session-session1-1768502448669.png)
-  - Screenshot: [View](./reports/screenshots/persistence-multi-session-session2-1768502452230.png)
-- [PASS] Returning User Detection (12.59s)
-  - Screenshot: [View](./reports/screenshots/persistence-returning-user-first-visit-1768502466808.png)
-  - Screenshot: [View](./reports/screenshots/persistence-returning-user-second-visit-1768502466706.png)
-  - Note: First visit - new user greeting: true
-  - Note: Second visit - returning greeting: true
-  - Note: Sanctuary loaded successfully on return visit
-- [PASS] Blob Survives Reload (8.41s)
-  - Screenshot: [View](./reports/screenshots/persistence-blob-survives-before-reload-1768515215741.png)
-  - Screenshot: [View](./reports/screenshots/persistence-blob-survives-after-reload-1768515216380.png)
-  - Note: Blob before reload: none
-  - Note: Blob after reload: none
-  - Note: No blob was created before reload
-- [FAIL] Database Survives Navigation (12.06s) **FAILED**
-  - Error: `[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m`
-  - Screenshot: [View](./reports/screenshots/persistence-navigation-after-1768515229356.png)
-- [FAIL] UpdatedAt Timestamp Changes (4.01s) **FAILED**
-  - Error: `page.waitForTimeout: Target page, context or browser has been closed`
-
-### Privacy Tests
-
-- [PASS] No PII in IndexedDB (10.67s)
-  - Screenshot: [View](./reports/screenshots/privacy-no-pii-indexeddb-check-1768502478263.png)
-  - Note: "john smith" in blob: NO (GOOD)
-  - Note: "john.smith@example.com" in blob: NO (GOOD)
-  - Note: "555-123-4567" in blob: NO (GOOD)
-  - Note: "5551234567" in blob: NO (GOOD)
-  - Note: Contains plaintext patterns: false
-- [PASS] No PII in Network URLs (10.57s)
-  - Screenshot: [View](./reports/screenshots/privacy-no-pii-urls-network-1768502489894.png)
-  - Note: Total requests captured: 1
-  - Note: PII found in URLs: NO (GOOD)
-  - Note: Sanctuary API calls: 1
-- [PASS] No Decrypted Data in HTML (7.96s)
-  - Screenshot: [View](./reports/screenshots/privacy-no-html-leak-source-1768502498751.png)
-  - Note: "breakthroughs array" in HTML: NO (GOOD)
-  - Note: "insights array" in HTML: NO (GOOD)
-  - Note: "resonance object" in HTML: NO (GOOD)
-  - Note: "sanctuary data" in HTML: NO (GOOD)
-  - Note: "raw encrypted blob" in HTML: NO (GOOD)
-  - Note: Expected UI content present: false
-  - Note: Potential data leaks found: NO
-- [PASS] LocalStorage Privacy (10.60s)
-  - Screenshot: [View](./reports/screenshots/privacy-localstorage-check-1768502510296.png)
-  - Note: LocalStorage keys: 1
-  - Note: WARNING: Sensitive patterns in key "nextauth.message"
-  - Note: Sensitive data in localStorage: YES (INVESTIGATE)
-- [PASS] Session Storage Privacy (10.59s)
-  - Screenshot: [View](./reports/screenshots/privacy-sessionstorage-check-1768502521824.png)
-  - Note: SessionStorage keys: 0
-  - Note: Sensitive data in sessionStorage: NO (GOOD)
-
-## IndexedDB Inspection
-
-### Inspection #1
-**Timestamp:** 2026-01-15T18:39:07.510Z
-
-#### Database Status
-- Database Exists: NO
-- Tables: None
-
-#### Sanctuary Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-#### Biometric Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-### Inspection #2
-**Timestamp:** 2026-01-15T18:39:19.729Z
-
-#### Database Status
-- Database Exists: NO
-- Tables: None
-
-#### Sanctuary Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-#### Biometric Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-### Inspection #3
-**Timestamp:** 2026-01-15T22:12:39.998Z
-
-#### Database Status
-- Database Exists: NO
-- Tables: None
-
-#### Sanctuary Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-#### Biometric Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-### Inspection #4
-**Timestamp:** 2026-01-15T22:12:54.408Z
-
-#### Database Status
-- Database Exists: NO
-- Tables: None
-
-#### Sanctuary Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-#### Biometric Table
-| Field | Value |
-|-------|-------|
-| Record Exists | NO |
-
-## Network Analysis
-
-| Metric | Value |
-|--------|-------|
-| Total Requests | 1 |
-| Sanctuary API Calls | 1 |
-| PII in URLs | NO (GOOD) |
+- [PASS] Input Length Limit (4.12s)
+  - Screenshot: [View](./reports/screenshots/security-length-limit-long-input-1768602986657.png)
+  - Screenshot: [View](./reports/screenshots/security-length-limit-response-1768602989821.png)
+  - Note: Long message (1500 chars) was rejected
+  - Note: Length limit enforced
+- [PASS] Tag Injection Blocked (14.86s)
+  - Screenshot: [View](./reports/screenshots/security-tag-injection-attempt-1768602993519.png)
+  - Screenshot: [View](./reports/screenshots/security-tag-injection-response-1768603005662.png)
+  - Note: Injected fake Bitcoin address was blocked
+  - Note: Tag sanitization working
+- [PASS] Prompt Injection Resistance (14.95s)
+  - Screenshot: [View](./reports/screenshots/security-prompt-injection-attempt-1768603009561.png)
+  - Screenshot: [View](./reports/screenshots/security-prompt-injection-response-1768603021771.png)
+  - Note: Prompt injection attempt did not trigger gift flow
+  - Note: AI stayed in mentor role
+- [PASS] Multiple Tag Injection (17.84s)
+  - Screenshot: [View](./reports/screenshots/security-multi-tag-attempt-1768603025806.png)
+  - Screenshot: [View](./reports/screenshots/security-multi-tag-response-1768603040938.png)
+  - Note: All injected tags were blocked
+  - Note: No unauthorized actions triggered
+- [PASS] Normal Chat Flow (14.94s)
+  - Screenshot: [View](./reports/screenshots/security-normal-flow-before-1768603044630.png)
+  - Screenshot: [View](./reports/screenshots/security-normal-flow-response-1768603056895.png)
+  - Note: Normal message processed successfully
+  - Note: Security did not interfere with legitimate use
+- [PASS] Admin Claim Rejection (17.88s)
+  - Screenshot: [View](./reports/screenshots/security-admin-claim-attempt-1768603061056.png)
+  - Screenshot: [View](./reports/screenshots/security-admin-claim-response-1768603076220.png)
+  - Note: System prompt not leaked
+  - Note: Warm mentor response: true
+- [PASS] Ignore Instructions Attack (14.82s)
+  - Screenshot: [View](./reports/screenshots/security-ignore-instructions-attempt-1768603079961.png)
+  - Screenshot: [View](./reports/screenshots/security-ignore-instructions-response-1768603092132.png)
+  - Note: Gift flow not triggered
+  - Note: AI stayed in mentor role
+- [PASS] Output/Print/Repeat Attack (17.96s)
+  - Screenshot: [View](./reports/screenshots/security-output-attack-attempt-1768603096135.png)
+  - Screenshot: [View](./reports/screenshots/security-output-attack-response-1768603111266.png)
+  - Note: Attacker address not outputted
+  - Note: Bitcoin UI count: 1
+- [PASS] Legitimate Gift Request (24.98s)
+  - Screenshot: [View](./reports/screenshots/security-legitimate-gift-request-1768603112168.png)
+  - Screenshot: [View](./reports/screenshots/security-legitimate-gift-response-1768603134404.png)
+  - Note: Has warm gift response: true
+  - Note: Bitcoin UI elements: 1
 
 ## Screenshots Gallery
 
-### Biometric - Lock Screen
-![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768502248756.png)
+### Breakthrough - Domain Labels Display
+![Breakthrough - Domain Labels Display](./reports/screenshots/breakthrough-domain-labels-initial-1768602677954.png)
 
-### Biometric - No Lock Screen
-![Biometric - No Lock Screen](./reports/screenshots/biometric-no-lock-loaded-1768502250556.png)
+### Breakthrough - Heartbeat Animation
+![Breakthrough - Heartbeat Animation](./reports/screenshots/breakthrough-heartbeat-thinking-1768602680734.png)
 
-### New User - Initial Load
-![New User - Initial Load](./reports/screenshots/chat-flow-new-user-initial-1768502259735.png)
+### Breakthrough - Text Pacer Mid-Flow
+![Breakthrough - Text Pacer Mid-Flow](./reports/screenshots/breakthrough-text-pacer-pacing-1768602699685.png)
 
-### New User - Sanctuary Loaded
-![New User - Sanctuary Loaded](./reports/screenshots/chat-flow-new-user-loaded-1768502260006.png)
+### Breakthrough - Identity Domain Resonance
+![Breakthrough - Identity Domain Resonance](./reports/screenshots/breakthrough-identity-resonance-response-1768602722509.png)
 
-### Welcome Message Display
-![Welcome Message Display](./reports/screenshots/chat-flow-welcome-message-display-1768502264490.png)
+### Breakthrough - Purpose Realization
+![Breakthrough - Purpose Realization](./reports/screenshots/breakthrough-purpose-breakthrough-response-1768602759149.png)
 
-### Message Input - After Typing
-![Message Input - After Typing](./reports/screenshots/chat-flow-message-input-typed-1768502265975.png)
+### Breakthrough - Star Field Canvas
+![Breakthrough - Star Field Canvas](./reports/screenshots/breakthrough-star-field-canvas-1768602759884.png)
 
-### Message Round-Trip - Sending
-![Message Round-Trip - Sending](./reports/screenshots/chat-flow-round-trip-sending-1768502268560.png)
+### Star Animation - Domain Position Layout
+![Star Animation - Domain Position Layout](./reports/screenshots/star-animation-domain-positions-layout-1768602764747.png)
 
-### Message Round-Trip - Response Received
-![Message Round-Trip - Response Received](./reports/screenshots/chat-flow-round-trip-response-1768502278713.png)
+### Star Animation - Blur During Streaming
+![Star Animation - Blur During Streaming](./reports/screenshots/star-animation-blur-effect-streaming-1768602767609.png)
 
-### UI Elements Overview
-![UI Elements Overview](./reports/screenshots/chat-flow-ui-elements-overview-1768502280390.png)
+### Curriculum - Identity Domain Response
+![Curriculum - Identity Domain Response](./reports/screenshots/curriculum-domain-keywords-identity-response-1768602796758.png)
 
-### IndexedDB - First Visit State
-![IndexedDB - First Visit State](./reports/screenshots/indexeddb-first-visit-snapshot-1768502347432.png)
+### Security - Long Input Attempt
+![Security - Long Input Attempt](./reports/screenshots/security-length-limit-long-input-1768602986657.png)
 
-### IndexedDB - After Message
-![IndexedDB - After Message](./reports/screenshots/indexeddb-blob-updated-after-message-1768502359630.png)
+### Security - Length Limit Response
+![Security - Length Limit Response](./reports/screenshots/security-length-limit-response-1768602989821.png)
 
-### IndexedDB - Console Inspection
-![IndexedDB - Console Inspection](./reports/screenshots/indexeddb-console-inspection-full-1768502392642.png)
+### Security - Tag Injection Attempt
+![Security - Tag Injection Attempt](./reports/screenshots/security-tag-injection-attempt-1768602993519.png)
 
-### Persistence - After Reload
-![Persistence - After Reload](./reports/screenshots/persistence-blob-survives-after-reload-1768502404760.png)
+### Security - After Tag Injection Attempt
+![Security - After Tag Injection Attempt](./reports/screenshots/security-tag-injection-response-1768603005662.png)
 
-### Persistence - Second Session
-![Persistence - Second Session](./reports/screenshots/persistence-multi-session-session2-1768502452230.png)
+### Security - Prompt Injection Attempt
+![Security - Prompt Injection Attempt](./reports/screenshots/security-prompt-injection-attempt-1768603009561.png)
 
-### Persistence - Returning User
-![Persistence - Returning User](./reports/screenshots/persistence-returning-user-second-visit-1768502466706.png)
+### Security - Prompt Injection Response
+![Security - Prompt Injection Response](./reports/screenshots/security-prompt-injection-response-1768603021771.png)
 
-### Privacy - IndexedDB PII Check
-![Privacy - IndexedDB PII Check](./reports/screenshots/privacy-no-pii-indexeddb-check-1768502478263.png)
+### Security - Multi-Tag Injection Response
+![Security - Multi-Tag Injection Response](./reports/screenshots/security-multi-tag-response-1768603040938.png)
 
-### Biometric - Lock Screen
-![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768514972883.png)
+### Security - Normal Chat Response
+![Security - Normal Chat Response](./reports/screenshots/security-normal-flow-response-1768603056895.png)
 
-### Biometric - No Lock Screen
-![Biometric - No Lock Screen](./reports/screenshots/biometric-no-lock-loaded-1768514974700.png)
+### Security - Admin Claim Response
+![Security - Admin Claim Response](./reports/screenshots/security-admin-claim-response-1768603076220.png)
 
-### Biometric - Lock Screen
-![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515018179.png)
+### Security - Ignore Instructions Response
+![Security - Ignore Instructions Response](./reports/screenshots/security-ignore-instructions-response-1768603092132.png)
 
-### Biometric - Lock Screen
-![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768515063482.png)
+### Security - Output Attack Response
+![Security - Output Attack Response](./reports/screenshots/security-output-attack-response-1768603111266.png)
 
-### Biometric - No Lock Screen
-![Biometric - No Lock Screen](./reports/screenshots/biometric-no-lock-loaded-1768515065273.png)
-
-### New User - Initial Load
-![New User - Initial Load](./reports/screenshots/chat-flow-new-user-initial-1768515076801.png)
-
-### New User - Sanctuary Loaded
-![New User - Sanctuary Loaded](./reports/screenshots/chat-flow-new-user-loaded-1768515077077.png)
-
-### Welcome Message Display
-![Welcome Message Display](./reports/screenshots/chat-flow-welcome-message-display-1768515081423.png)
-
-### Message Input - After Typing
-![Message Input - After Typing](./reports/screenshots/chat-flow-message-input-typed-1768515082835.png)
-
-### Message Round-Trip - Sending
-![Message Round-Trip - Sending](./reports/screenshots/chat-flow-round-trip-sending-1768515085462.png)
-
-### Message Round-Trip - Response Received
-![Message Round-Trip - Response Received](./reports/screenshots/chat-flow-round-trip-response-1768515092697.png)
-
-### UI Elements Overview
-![UI Elements Overview](./reports/screenshots/chat-flow-ui-elements-overview-1768515094079.png)
-
-### IndexedDB - First Visit State
-![IndexedDB - First Visit State](./reports/screenshots/indexeddb-first-visit-snapshot-1768515159910.png)
-
-### IndexedDB - After Message
-![IndexedDB - After Message](./reports/screenshots/indexeddb-blob-updated-after-message-1768515174305.png)
-
-### IndexedDB - Console Inspection
-![IndexedDB - Console Inspection](./reports/screenshots/indexeddb-console-inspection-full-1768515207009.png)
-
-### Persistence - After Reload
-![Persistence - After Reload](./reports/screenshots/persistence-blob-survives-after-reload-1768515216380.png)
-
-### Biometric - Lock Screen
-![Biometric - Lock Screen](./reports/screenshots/biometric-lock-enabled-lock-screen-1768519130845.png)
-
-### Biometric - No Lock Screen
-![Biometric - No Lock Screen](./reports/screenshots/biometric-no-lock-loaded-1768519132627.png)
-
-## Errors Encountered
-
-### Biometric Tests > Biometric Table Exists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m
-```
-
-### Biometric Tests > Biometric State Persists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-
-Expected: [32mtrue[39m
-Received: [31mundefined[39m
-```
-
-### Chat Flow Tests > New User Complete Flow
-```
-locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:
-    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })
-    2) <span class="transition-opacity duration-500 opacity-0">Kingdom </span> aka getByText('Kingdom', { exact: true })
-
-Call log:
-[2m    - checking visibility of locator('text=KINGDO')[22m
-
-```
-
-### IndexedDB Tests > Blob Stored on First Visit
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m
-```
-
-### IndexedDB Tests > Database Structure
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m
-```
-
-### Persistence Tests > Database Survives Navigation
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m
-```
-
-### Persistence Tests > Multiple Sessions
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m
-```
-
-### Biometric Tests > Biometric Table Exists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m
-```
-
-### Biometric Tests > Biometric State Persists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-
-Expected: [32mtrue[39m
-Received: [31mundefined[39m
-```
-
-### Biometric Tests > Biometric Table Exists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m
-```
-
-### Biometric Tests > Biometric State Persists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-
-Expected: [32mtrue[39m
-Received: [31mundefined[39m
-```
-
-### Chat Flow Tests > New User Complete Flow
-```
-locator.isVisible: Error: strict mode violation: locator('text=KINGDO') resolved to 2 elements:
-    1) <span>KINGDO</span> aka getByText('KINGDO', { exact: true })
-    2) <span class="transition-opacity duration-500 opacity-0">Kingdom </span> aka getByText('Kingdom', { exact: true })
-
-Call log:
-[2m    - checking visibility of locator('text=KINGDO')[22m
-
-```
-
-### IndexedDB Tests > Blob Stored on First Visit
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m
-```
-
-### IndexedDB Tests > Database Structure
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m
-```
-
-### Persistence Tests > Database Survives Navigation
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
-
-Received: [31mfalse[39m
-```
-
-### Persistence Tests > UpdatedAt Timestamp Changes
-```
-page.waitForTimeout: Target page, context or browser has been closed
-```
-
-### Biometric Tests > Biometric Table Exists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
-
-Expected value: [32m"biometric"[39m
-Received array: [31m[][39m
-```
-
-### Biometric Tests > Biometric State Persists
-```
-[2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
-
-Expected: [32mtrue[39m
-Received: [31mundefined[39m
-```
+### Security - Legitimate Gift Response
+![Security - Legitimate Gift Response](./reports/screenshots/security-legitimate-gift-response-1768603134404.png)
 
 ---
 

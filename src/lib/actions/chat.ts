@@ -1,6 +1,10 @@
 'use server';
 
 import OpenAI from 'openai';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import { desc, eq } from 'drizzle-orm';
+import { systemPrompts, curriculum } from '@/lib/db/schema';
 import {
   decryptSanctuary,
   encryptSanctuary,
@@ -20,6 +24,113 @@ import {
   INPUT_LIMITS,
 } from '@/lib/security/sanitize';
 import { checkRateLimit, generateRateLimitId } from '@/lib/security/rate-limit';
+
+// Database connection (singleton)
+let dbInstance: ReturnType<typeof drizzle> | null = null;
+
+function getDb() {
+  if (!dbInstance) {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL not set');
+    }
+    const client = postgres(connectionString);
+    dbInstance = drizzle(client);
+  }
+  return dbInstance;
+}
+
+// Cache for database data (refreshes every 5 minutes)
+let systemPromptCache: { content: string; timestamp: number } | null = null;
+let curriculumCache: { data: typeof curriculum.$inferSelect[]; timestamp: number } | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Load the active system prompt from database
+ * Falls back to a minimal prompt if database is unavailable
+ */
+async function loadSystemPrompt(): Promise<string> {
+  const now = Date.now();
+
+  // Return cached if still valid
+  if (systemPromptCache && now - systemPromptCache.timestamp < CACHE_TTL) {
+    return systemPromptCache.content;
+  }
+
+  try {
+    const db = getDb();
+    const result = await db
+      .select()
+      .from(systemPrompts)
+      .where(eq(systemPrompts.isApproved, true))
+      .orderBy(desc(systemPrompts.id))
+      .limit(1);
+
+    if (result.length > 0) {
+      systemPromptCache = { content: result[0].content, timestamp: now };
+      return result[0].content;
+    }
+  } catch (error) {
+    console.error('[Chat] Failed to load system prompt from DB:', error);
+  }
+
+  // Fallback minimal prompt
+  return `You are a warm, wise spiritual mentor. Be conversational and caring. Keep responses brief (2-3 sentences). Ask thoughtful questions.`;
+}
+
+/**
+ * Load curriculum from database
+ * Returns all 21 steps organized by domain
+ */
+async function loadCurriculum(): Promise<typeof curriculum.$inferSelect[]> {
+  const now = Date.now();
+
+  // Return cached if still valid
+  if (curriculumCache && now - curriculumCache.timestamp < CACHE_TTL) {
+    return curriculumCache.data;
+  }
+
+  try {
+    const db = getDb();
+    const result = await db
+      .select()
+      .from(curriculum)
+      .orderBy(curriculum.domain, curriculum.pillarOrder);
+
+    curriculumCache = { data: result, timestamp: now };
+    return result;
+  } catch (error) {
+    console.error('[Chat] Failed to load curriculum from DB:', error);
+    return [];
+  }
+}
+
+/**
+ * Build curriculum pillars text for system prompt
+ */
+function buildPillarsText(curriculumData: typeof curriculum.$inferSelect[]): string {
+  if (curriculumData.length === 0) {
+    return 'Guide seekers through identity, purpose, mindset, relationships, vision, action, and legacy.';
+  }
+
+  const byDomain: Record<string, typeof curriculum.$inferSelect[]> = {};
+  for (const item of curriculumData) {
+    if (!byDomain[item.domain]) {
+      byDomain[item.domain] = [];
+    }
+    byDomain[item.domain].push(item);
+  }
+
+  const lines: string[] = ['The 7 Domains of Spiritual Formation:'];
+  for (const [domain, pillars] of Object.entries(byDomain)) {
+    lines.push(`\n**${domain.charAt(0).toUpperCase() + domain.slice(1)}**`);
+    for (const pillar of pillars) {
+      lines.push(`  ${pillar.pillarOrder}. ${pillar.pillarName}: ${pillar.keyTruth}`);
+    }
+  }
+
+  return lines.join('\n');
+}
 
 // Types
 export interface ChatMessage {
@@ -300,9 +411,50 @@ export async function sendMentorMessage(
     // ========================================
     const sanitizedMessage = sanitizeUserInput(message);
 
-    // Build context
+    // Load system prompt and curriculum from database
+    const [dbPrompt, curriculumData] = await Promise.all([
+      loadSystemPrompt(),
+      loadCurriculum(),
+    ]);
+
+    // Build context and inject into system prompt
     const context = buildContext(sanctuary);
-    const systemPrompt = MENTOR_SYSTEM_PROMPT.replace('{{CONTEXT}}', context);
+    const pillarsText = buildPillarsText(curriculumData);
+
+    // Get current domain focus based on resonance
+    const { resonance } = sanctuary.progression;
+    const sortedDomains = Object.entries(resonance)
+      .sort(([, a], [, b]) => a - b);
+    const currentDomain = sortedDomains[0]?.[0] || 'identity';
+
+    // Calculate progress percentage
+    const totalResonance = Object.values(resonance).reduce((a, b) => a + b, 0);
+    const maxResonance = 7 * 21; // 7 domains × 21 max per domain
+    const progressPercent = Math.round((totalResonance / maxResonance) * 100);
+
+    // Get last insight
+    const lastInsight = sanctuary.insights.length > 0
+      ? `- Last Insight: "${sanctuary.insights[sanctuary.insights.length - 1].summary}"`
+      : '';
+
+    // Get user preferences
+    const userPrefs = sanctuary.preferences?.prefersStories
+      ? 'Prefers stories and metaphors. '
+      : '';
+    const responseLen = sanctuary.preferences?.responseLength === 'short'
+      ? 'Prefers shorter responses.'
+      : '';
+
+    // Replace all placeholders in the database prompt
+    let systemPrompt = dbPrompt
+      .replace('{{CONTEXT}}', context)
+      .replace('{{PILLARS}}', pillarsText)
+      .replace('{{USER_NAME}}', 'Seeker')
+      .replace('{{CURRENT_DOMAIN}}', currentDomain)
+      .replace('{{PROGRESS}}', String(progressPercent))
+      .replace('{{LAST_INSIGHT}}', lastInsight)
+      .replace('{{LOCAL_TIME}}', new Date().toLocaleTimeString())
+      .replace('{{USER_PREFERENCES}}', userPrefs + responseLen || 'None specified');
 
     // Build messages for AI
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
