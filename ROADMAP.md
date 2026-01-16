@@ -2051,17 +2051,178 @@ npm run dev    # Port 8000
 
 ---
 
+### Phase 16: Minimalist Architecture (COMPLETED - January 15, 2026)
+
+**The Great Purge** - Sanctuary Architecture made most of the codebase unnecessary. This phase removed all legacy code, leaving only the essential chat functionality.
+
+#### What Was Removed (88 files, 8,132 lines deleted)
+
+**API Routes (REMOVED):**
+| Route | Status | Reason |
+|-------|--------|--------|
+| `/api/auth/[...nextauth]` | REMOVED | No user accounts |
+| `/api/auth/totp/*` | REMOVED | No authentication |
+| `/api/auth/pin/*` | REMOVED | No authentication |
+| `/api/auth/seed-phrase/*` | REMOVED | No authentication |
+| `/api/auth/otp/*` | REMOVED | No authentication |
+| `/api/auth/username/generate` | REMOVED | No user accounts |
+| `/api/auth/register` | REMOVED | No user accounts |
+| `/api/auth/session/status` | REMOVED | No sessions |
+| `/api/user/bread` | REMOVED | Daily bread unused |
+| `/api/user/insights` | REMOVED | Insights in client blob |
+| `/api/user/status` | REMOVED | No server-side user data |
+| `/api/chat/guest` | REMOVED | Sanctuary IS the guest mode |
+| `/api/mentor/review` | REMOVED | AI self-review unused |
+| `/api/health/db` | REMOVED | No integration |
+| `/api/greetings` | REMOVED | Hardcoded greetings |
+
+**Components (REMOVED):**
+| Component | Status |
+|-----------|--------|
+| `RootChat.tsx` | REMOVED - Replaced by SanctuaryChat |
+| `OnboardingRootChat.tsx` | REMOVED - No onboarding |
+| `MobileTabBar.tsx` | REMOVED - Single view UI |
+| `WelcomePage.tsx` | REMOVED - Inline welcome |
+| `DailyBread.tsx` | REMOVED - Feature cut |
+| `onboarding/*` | REMOVED - No user accounts |
+| `providers/SessionProvider` | REMOVED - No sessions |
+| `providers/QueryProvider` | REMOVED - No React Query |
+
+**Lib Modules (REMOVED):**
+| Module | Status |
+|--------|--------|
+| `lib/auth/*` | REMOVED - No authentication |
+| `lib/onboarding/*` | REMOVED - No onboarding |
+| `lib/email/*` | REMOVED - No email |
+| `lib/ai/*` | REMOVED - Inline in sanctuary route |
+| `lib/actions/*` | REMOVED - No server actions |
+| `lib/hooks/*` | REMOVED - Unused hooks |
+| `lib/config/*` | REMOVED - Config inline |
+| `lib/utils/encryption.ts` | REMOVED - sanctuary-crypto handles it |
+| `lib/utils/privacy.ts` | REMOVED - Unused |
+| `lib/rate-limit.ts` | REMOVED - Not needed |
+| `lib/types.ts` | REMOVED - Unused types |
+| `middleware.ts` | REMOVED - Was empty |
+
+**Scripts (ALL REMOVED):**
+- All 19 scripts archived to `/home/wmoore/project/km-archive/scripts/`
+
+#### What Remains (The Essentials)
+
+**Routes:**
+```
+Route (app)
+├ ○ /                     # Main page (SanctuaryChat)
+├ ƒ /api/app/config       # UI configuration from DB
+└ ƒ /api/sanctuary/chat   # THE one chat endpoint
+```
+
+**Components:**
+```
+src/components/
+├── chat/
+│   ├── SanctuaryChat.tsx    # Main UI
+│   ├── StreamingChat.tsx    # Message display
+│   ├── ChatInput.tsx        # Input field
+│   └── ChatMessage.tsx      # Message types
+├── backup/
+│   ├── QRExport.tsx         # Export journey
+│   └── QRScanner.tsx        # Import journey
+└── pwa/
+    ├── InstallPrompt.tsx    # Android install
+    └── InstallGuide.tsx     # iOS install
+```
+
+**Lib:**
+```
+src/lib/
+├── contexts/
+│   ├── ConfigContext.tsx    # UI config
+│   └── ThemeContext.tsx     # Dark mode
+├── db/
+│   ├── client.ts            # Drizzle client
+│   ├── index.ts             # Exports
+│   └── schema.ts            # Only app_config table
+├── storage/
+│   ├── sanctuary-db.ts      # IndexedDB wrapper
+│   ├── sanctuary-crypto.ts  # AES-256-GCM encryption
+│   └── sanctuary-backup.ts  # QR/file export
+├── pwa/
+│   └── install-prompt.ts    # PWA installation
+└── utils.ts                 # cn() styling helper
+```
+
+**Hooks:**
+```
+src/hooks/
+└── useSanctuary.ts          # Main sanctuary hook
+```
+
+#### Database Schema (Simplified)
+
+The schema now contains only one table definition:
+```typescript
+// src/lib/db/schema.ts
+export const appConfig = pgTable('app_config', {
+  key: varchar('key', { length: 100 }).primaryKey(),
+  value: jsonb('value').notNull(),
+  description: text('description'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+```
+
+> **Note:** Legacy tables (users, chat_messages, insights, etc.) still exist in the PostgreSQL database but are no longer referenced by code. They can be dropped when convenient.
+
+#### Archive Location
+
+All removed code is safely archived at:
+```
+/home/wmoore/project/km-archive/
+├── api/           # All removed API routes
+├── components/    # All removed components
+├── lib/           # All removed lib modules
+├── hooks/         # All removed hooks
+├── scripts/       # All removed scripts
+└── middleware.ts  # Removed middleware
+```
+
+#### The New Philosophy
+
+**Before (Complex):**
+- User accounts with TOTP + seed phrase
+- Server-side session management
+- NextAuth authentication
+- 23+ API routes
+- 20+ components
+- Complex onboarding flow
+
+**After (Simple):**
+- No user accounts
+- Client-side encrypted blob
+- No authentication
+- 2 API routes
+- 10 components
+- Open the app and chat
+
+> "Simplicity is the ultimate sophistication." — Leonardo da Vinci
+
+---
+
 ## Future Features (Backlog)
 
 Ideas for future development:
 
-### Daily Bread
-A daily spiritual message/devotional feature for users.
-- Personalized daily Scripture or insight
-- Delivered when user opens the app
-- Could tie into curriculum progress
-- Encourages daily engagement
-- **Status:** Component exists (`DailyBread.tsx`), needs design and integration
+### ~~Daily Bread~~ (REMOVED)
+~~A daily spiritual message/devotional feature for users.~~
+- **Status:** REMOVED in Phase 16
+- Component and API route deleted
+- May revisit if user demand exists
+
+### Bitcoin Gifts (Lightning Network)
+- Accept Bitcoin donations/gifts
+- Lightning Network for instant payments
+- On-chain for larger amounts
+- **Status:** Not yet implemented
 
 ---
 
@@ -2101,6 +2262,7 @@ All major questions have been decided:
 | 2026-01-15 | Updated Phase 15: Added PIN authentication (356532), admin capabilities table, deprecated tools note |
 | 2026-01-15 | Added Legacy Database Tables section - Documented unused tables from previous architecture |
 | 2026-01-15 | **Biometric Removal** - Removed all biometric/passkey code (WebAuthn, lock screens, setup flows) - Sanctuary Architecture makes app-level auth unnecessary |
+| 2026-01-15 | **PHASE 16: MINIMALIST PURGE** - Massive codebase cleanup. Removed 88 files, 8,132 lines. Only 2 API routes remain. See Phase 16 section. |
 
 ---
 
