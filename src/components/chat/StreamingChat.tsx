@@ -410,16 +410,12 @@ export function StreamingChat({
             )}
           </AnimatePresence>
 
-          {/* Bitcoin Gift Card (shown when Mentor provides address) */}
+          {/* Bitcoin Gift Card Modal (shown when Mentor provides address) */}
           {giftAddress && isPageComplete && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="mt-8 pointer-events-auto"
-            >
-              <BitcoinGiftCard address={giftAddress} />
-            </motion.div>
+            <BitcoinGiftCard
+              address={giftAddress}
+              onClose={() => setGiftAddress(null)}
+            />
           )}
         </div>
       </div>

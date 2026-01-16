@@ -491,6 +491,9 @@ export async function sendMentorMessage(
 
     const rawAIResponse = completion.choices[0]?.message?.content || '';
 
+    // DEBUG: Log raw AI response for gift flow debugging
+    console.log('[Chat] Raw AI response:', rawAIResponse.substring(0, 500));
+
     // ========================================
     // SECURITY LAYER 4: Extract from RAW before sanitizing
     // ========================================
@@ -498,6 +501,9 @@ export async function sendMentorMessage(
     const wantsGift = detectActionRequest(rawAIResponse, 'gift');
     const wantsBackup = detectActionRequest(rawAIResponse, 'backup');
     const wantsRestore = detectActionRequest(rawAIResponse, 'restore');
+
+    // DEBUG: Log action detection results
+    console.log('[Chat] Action detection - Gift:', wantsGift, 'Backup:', wantsBackup, 'Restore:', wantsRestore);
     const breakthroughs = extractBreakthroughs(rawAIResponse);
 
     // ========================================
@@ -514,11 +520,15 @@ export async function sendMentorMessage(
 
     // Process gift request - server generates Bitcoin address
     if (wantsGift) {
+      console.log('[Chat] Gift requested - generating Bitcoin address...');
       const result = await generateGiftAddress();
+      console.log('[Chat] Gift address result:', result);
       if (result && isValidBitcoinAddress(result.address)) {
         sanitizedResponse += `\n\n[GIFT_ADDRESS:${result.address}]`;
+        console.log('[Chat] Added GIFT_ADDRESS tag to response');
       } else {
         sanitizedResponse += '\n\n(Bitcoin receiving is being set up. Please check back soon.)';
+        console.log('[Chat] Gift address generation failed or invalid');
       }
     }
 
