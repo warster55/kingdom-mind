@@ -24,6 +24,7 @@ import {
   INPUT_LIMITS,
 } from '@/lib/security/sanitize';
 import { checkRateLimit, generateRateLimitId } from '@/lib/security/rate-limit';
+import { setSystemPromptHealth } from '@/lib/health/system-prompt-health';
 
 // Database connection (singleton)
 let dbInstance: ReturnType<typeof drizzle> | null = null;
@@ -52,7 +53,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 async function loadSystemPrompt(): Promise<string> {
   const now = Date.now();
 
-  // Return cached if still valid
+  // Return cached if still valid (preserve the source from when it was loaded)
   if (systemPromptCache && now - systemPromptCache.timestamp < CACHE_TTL) {
     return systemPromptCache.content;
   }
@@ -68,10 +69,15 @@ async function loadSystemPrompt(): Promise<string> {
 
     if (result.length > 0) {
       systemPromptCache = { content: result[0].content, timestamp: now };
+      setSystemPromptHealth('database');
       return result[0].content;
     }
+
+    // Database connected but no approved prompts found - use fallback
+    setSystemPromptHealth('fallback', 'No approved system prompt found in database');
   } catch (error) {
     console.error('[Chat] Failed to load system prompt from DB:', error);
+    setSystemPromptHealth('fallback', error instanceof Error ? error.message : 'Unknown database error');
   }
 
   // Fallback to full system prompt if database unavailable

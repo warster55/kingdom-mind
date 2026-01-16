@@ -15,7 +15,8 @@
     "test:sanctuary:headed": "playwright test --project=sanctuary --headed",
     "test:factory": "dotenv -e .env.local -- tsx scripts/test-factory.ts",
     "test:models": "dotenv -e .env.local -- tsx scripts/eval-mentor.ts",
-    "test:models:quick": "dotenv -e .env.local -- tsx scripts/eval-mentor.ts --quick"
+    "test:models:quick": "dotenv -e .env.local -- tsx scripts/eval-mentor.ts --quick",
+    "db:maintenance": "dotenv -e .env.local -- tsx scripts/toggle-maintenance.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.6",
