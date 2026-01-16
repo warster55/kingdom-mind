@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Message } from '@/components/chat/ChatMessage';
 import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Insight, Habit } from '@/lib/types';
 import { useConfig } from '@/lib/contexts/ConfigContext';
 import { RotateCcw } from 'lucide-react';
 
@@ -13,12 +11,8 @@ interface StreamingChatProps {
   messages: Message[];
   isStreaming: boolean;
   error: string | null;
-  insights: Insight[];
-  habits: Habit[];
-  mode?: 'mentor' | 'architect';
   isKeyboardOpen?: boolean;
   onStatusChange?: (status: 'thinking' | 'waiting' | 'reading') => void;
-  isAuthenticated?: boolean; // New prop
 }
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
@@ -34,7 +28,7 @@ const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
 };
 
 export function StreamingChat({
-  messages, isStreaming, error: _error, insights: _insights, habits: _habits, mode: _mode = 'mentor', isKeyboardOpen = false, onStatusChange, isAuthenticated = false
+  messages, isStreaming, error: _error, isKeyboardOpen = false, onStatusChange
 }: StreamingChatProps) {
   const { get } = useConfig();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,17 +54,6 @@ export function StreamingChat({
     checkMobile(); window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  const { data: status } = useQuery({
-    queryKey: ['user-status'],
-    queryFn: async () => { 
-      const res = await fetch('/api/user/status'); 
-      if (!res.ok) throw new Error('Failed to fetch status');
-      return res.json(); 
-    },
-    refetchInterval: 10000,
-    enabled: isAuthenticated, // Only run if authenticated
-  });
 
   const starSpeed = get('star_speed', 2.5);
   const mobileZoomScale = get('mobile_zoom_scale', 0.7);
@@ -221,7 +204,7 @@ export function StreamingChat({
   const baseStarClusters = useMemo(() => {
     if (!hasMounted) return [] as StarCluster[];
     const clusters: StarCluster[] = [];
-    Object.entries(status?.resonance || {}).forEach(([domain, count]) => {
+    Object.entries({}).forEach(([domain, count]) => {
       const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
       const _pos = pos; // Silence unused variable warning - pos used for positioning
       const starCount = Math.floor((count as number) * (isMobile ? 0.3 : 1));
@@ -232,7 +215,7 @@ export function StreamingChat({
       }
     });
     return clusters;
-  }, [status?.resonance, isMobile, hasMounted]);
+  }, [{}, isMobile, hasMounted]);
 
   useEffect(() => {
     if (!hasMounted) return;
@@ -260,13 +243,13 @@ export function StreamingChat({
 
         const isGlowing = glowingDomains.has(star.domain);
         ctx.beginPath(); ctx.arc(x, y, star.size * zoomScale, 0, Math.PI * 2);
-        ctx.fillStyle = isGlowing ? `rgba(251, 191, 36, 0.6)` : `rgba(255, 255, 255, ${status?.activeDomain === star.domain ? 0.4 : 0.1})`; 
+        ctx.fillStyle = isGlowing ? `rgba(251, 191, 36, 0.6)` : `rgba(255, 255, 255, ${'' === star.domain ? 0.4 : 0.1})`; 
         ctx.fill();
       });
       frame = requestAnimationFrame(render);
     };
     render(); return () => cancelAnimationFrame(frame);
-  }, [baseStarClusters, activeResonanceList, hasMounted, isKeyboardOpen, status?.activeDomain, mobileZoomScale]);
+  }, [baseStarClusters, activeResonanceList, hasMounted, isKeyboardOpen, '', mobileZoomScale]);
 
   return (
     <div 
@@ -277,7 +260,7 @@ export function StreamingChat({
 
       <div className="absolute inset-0 pointer-events-none z-10">
         {hasMounted && DOMAINS.map((domain) => {
-          const isActive = status?.activeDomain === domain;
+          const isActive = '' === domain;
           const isGlowing = activeResonanceList.includes(domain);
           const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
           

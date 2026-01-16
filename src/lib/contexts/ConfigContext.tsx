@@ -1,7 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 
 interface ConfigContextType {
   config: Record<string, string | number | boolean>;
@@ -11,15 +10,30 @@ interface ConfigContextType {
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
-  const { data: config = {}, isLoading } = useQuery({
-    queryKey: ['app-config'],
-    queryFn: async () => {
-      const res = await fetch('/api/app/config');
-      return res.json();
-    },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    refetchInterval: 1000 * 30, // Refresh every 30 seconds
-  });
+  const [config, setConfig] = useState<Record<string, string | number | boolean>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const res = await fetch('/api/app/config');
+        if (res.ok) {
+          const data = await res.json();
+          setConfig(data);
+        }
+      } catch (error) {
+        console.error('[Config] Failed to load:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchConfig();
+
+    // Refresh config every 5 minutes
+    const interval = setInterval(fetchConfig, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <ConfigContext.Provider value={{ config, isLoading }}>

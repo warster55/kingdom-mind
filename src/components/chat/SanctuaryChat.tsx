@@ -214,11 +214,8 @@ export function SanctuaryChat() {
             messages={messages}
             isStreaming={isStreaming}
             error={null}
-            insights={[]}
-            habits={[]}
             isKeyboardOpen={isKeyboardOpen}
             onStatusChange={setSanctuaryStatus}
-            isAuthenticated={false}
           />
         </div>
 

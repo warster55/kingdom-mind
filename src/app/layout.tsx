@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Crimson_Pro, Inter, JetBrains_Mono, Great_Vibes } from 'next/font/google';
 import "./globals.css";
-import SessionProvider from '@/components/providers/SessionProvider';
-import QueryProvider from '@/components/providers/QueryProvider';
 import { ConfigProvider } from '@/lib/contexts/ConfigContext';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 
@@ -65,15 +63,11 @@ export default function RootLayout({
       <body 
         className={`${serif.variable} ${sans.variable} ${mono.variable} ${script.variable} font-serif antialiased bg-background-primary text-text-primary transition-colors duration-500 h-full w-full overflow-hidden`}
       >
-        <SessionProvider>
-          <QueryProvider>
-            <ConfigProvider>
-              <ThemeProvider>
-                {children}
-              </ThemeProvider>
-            </ConfigProvider>
-          </QueryProvider>
-        </SessionProvider>
+        <ConfigProvider>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </ConfigProvider>
       </body>
     </html>
   );
