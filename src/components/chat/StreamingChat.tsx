@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useConfig } from '@/lib/contexts/ConfigContext';
 import { RotateCcw } from 'lucide-react';
+import { BitcoinGiftCard } from '@/components/chat/BitcoinGiftCard';
 
 interface StreamingChatProps {
   messages: Message[];
@@ -13,6 +14,7 @@ interface StreamingChatProps {
   error: string | null;
   isKeyboardOpen?: boolean;
   onStatusChange?: (status: 'thinking' | 'waiting' | 'reading') => void;
+  onMentorAction?: (action: 'backup' | 'restore', data?: string) => void;
 }
 
 const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
@@ -28,7 +30,7 @@ const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
 };
 
 export function StreamingChat({
-  messages, isStreaming, error: _error, isKeyboardOpen = false, onStatusChange
+  messages, isStreaming, error: _error, isKeyboardOpen = false, onStatusChange, onMentorAction
 }: StreamingChatProps) {
   const { get } = useConfig();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,8 +71,46 @@ export function StreamingChat({
   const lastMessage = messages[messages.length - 1];
   const rawContent = lastAiMessage?.content || '';
 
+  // --- SPECIAL ACTION TAGS ---
+  const [giftAddress, setGiftAddress] = useState<string | null>(null);
+  const [lastActionMessageId, setLastActionMessageId] = useState<string | null>(null);
+
+  // Parse and handle special Mentor action tags
+  useEffect(() => {
+    if (!lastAiMessage?.id || lastAiMessage.id === lastActionMessageId) return;
+
+    // Check for backup export tag
+    if (rawContent.includes('[BACKUP_EXPORT]')) {
+      setLastActionMessageId(lastAiMessage.id);
+      onMentorAction?.('backup');
+    }
+
+    // Check for backup import tag
+    if (rawContent.includes('[BACKUP_IMPORT]')) {
+      setLastActionMessageId(lastAiMessage.id);
+      onMentorAction?.('restore');
+    }
+
+    // Check for gift address tag
+    const giftMatch = rawContent.match(/\[GIFT_ADDRESS:([^\]]+)\]/);
+    if (giftMatch) {
+      setLastActionMessageId(lastAiMessage.id);
+      setGiftAddress(giftMatch[1]);
+    } else {
+      setGiftAddress(null);
+    }
+  }, [rawContent, lastAiMessage?.id, lastActionMessageId, onMentorAction]);
+
   // --- SMART CHUNKING ---
-  const fullContent = useMemo(() => rawContent.replace(/\[RESONANCE:\s*[^\]]+\]/, '').trim(), [rawContent]);
+  // Strip all special tags from displayed content
+  const fullContent = useMemo(() => {
+    return rawContent
+      .replace(/\[RESONANCE:\s*[^\]]+\]/g, '')
+      .replace(/\[BACKUP_EXPORT\]/g, '')
+      .replace(/\[BACKUP_IMPORT\]/g, '')
+      .replace(/\[GIFT_ADDRESS:[^\]]+\]/g, '')
+      .trim();
+  }, [rawContent]);
   const allWords = useMemo(() => fullContent.split(' '), [fullContent]);
 
   const pages = useMemo(() => {
@@ -369,6 +409,18 @@ export function StreamingChat({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Bitcoin Gift Card (shown when Mentor provides address) */}
+          {giftAddress && isPageComplete && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-8 pointer-events-auto"
+            >
+              <BitcoinGiftCard address={giftAddress} />
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

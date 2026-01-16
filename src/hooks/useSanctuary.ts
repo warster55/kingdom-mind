@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getEncryptedBlob, setEncryptedBlob, hasSanctuary } from '@/lib/storage/sanctuary-db';
+import { getEncryptedBlob, setEncryptedBlob } from '@/lib/storage/sanctuary-db';
+import { initializeSanctuary, sendMentorMessage, type ChatMessage, type DisplayData } from '@/lib/actions/chat';
+import { INPUT_LIMITS } from '@/lib/security/sanitize';
 
-export interface DisplayData {
-  stars: Record<string, number>;
-  stage: number;
-  totalBreakthroughs: number;
-}
+export type { ChatMessage, DisplayData };
+export { INPUT_LIMITS };
 
 export interface SanctuaryState {
   isLoading: boolean;
@@ -15,11 +14,6 @@ export interface SanctuaryState {
   blob: string | null;
   display: DisplayData | null;
   error: string | null;
-}
-
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
 }
 
 export function useSanctuary() {
@@ -40,50 +34,23 @@ export function useSanctuary() {
       try {
         const existingBlob = await getEncryptedBlob();
 
-        if (existingBlob) {
-          // Existing user - validate blob with server
-          const response = await fetch('/api/sanctuary/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: '', // Empty message just to validate
-              blob: existingBlob,
-            }),
-          });
+        // Use server action to initialize/validate
+        const result = await initializeSanctuary(existingBlob || undefined);
 
-          if (response.ok) {
-            const data = await response.json();
-            setState({
-              isLoading: false,
-              isNewUser: false,
-              blob: data.blob || existingBlob,
-              display: data.display,
-              error: null,
-            });
-
-            // Store updated blob if provided
-            if (data.blob) {
-              await setEncryptedBlob(data.blob);
-            }
-            return;
-          }
+        if (result.error) {
+          throw new Error(result.error);
         }
 
-        // New user or invalid blob - create fresh sanctuary
-        const response = await fetch('/api/sanctuary/chat');
-        if (response.ok) {
-          const data = await response.json();
-          await setEncryptedBlob(data.blob);
-          setState({
-            isLoading: false,
-            isNewUser: true,
-            blob: data.blob,
-            display: data.display,
-            error: null,
-          });
-        } else {
-          throw new Error('Failed to create sanctuary');
-        }
+        // Store blob locally
+        await setEncryptedBlob(result.blob);
+
+        setState({
+          isLoading: false,
+          isNewUser: result.isNewUser,
+          blob: result.blob,
+          display: result.display,
+          error: null,
+        });
       } catch (error) {
         console.error('[Sanctuary] Init error:', error);
         setState(prev => ({
@@ -99,7 +66,21 @@ export function useSanctuary() {
 
   // Send a message
   const sendMessage = useCallback(async (message: string) => {
-    if (!message.trim() || isStreaming) return;
+    const trimmed = message.trim();
+
+    // Client-side validation (server also validates - defense in depth)
+    if (!trimmed || isStreaming) return;
+
+    // Check length limit
+    if (trimmed.length > INPUT_LIMITS.MAX_MESSAGE_LENGTH) {
+      // Show error message to user
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        content: `Your message is too long. Please keep it under ${INPUT_LIMITS.MAX_MESSAGE_LENGTH} characters.`,
+      };
+      setChatHistory(prev => [...prev, errorMessage]);
+      return;
+    }
 
     setIsStreaming(true);
 
@@ -108,25 +89,22 @@ export function useSanctuary() {
     setChatHistory(prev => [...prev, userMessage]);
 
     try {
-      const response = await fetch('/api/sanctuary/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message,
-          blob: state.blob,
-          chatHistory: [...chatHistory, userMessage],
-        }),
-      });
+      // Use server action instead of fetch
+      const data = await sendMentorMessage(
+        message,
+        state.blob,
+        [...chatHistory, userMessage]
+      );
 
-      if (!response.ok) {
-        throw new Error('Chat request failed');
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      const data = await response.json();
-
       // Add assistant response to history
-      const assistantMessage: ChatMessage = { role: 'assistant', content: data.response };
-      setChatHistory(prev => [...prev, assistantMessage]);
+      if (data.response) {
+        const assistantMessage: ChatMessage = { role: 'assistant', content: data.response };
+        setChatHistory(prev => [...prev, assistantMessage]);
+      }
 
       // Update state with new blob and display
       if (data.blob) {
@@ -139,7 +117,7 @@ export function useSanctuary() {
       }
 
       return {
-        response: data.response,
+        response: data.response || '',
         breakthroughCount: data.breakthroughCount || 0,
       };
     } catch (error) {
@@ -168,19 +146,22 @@ export function useSanctuary() {
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const response = await fetch('/api/sanctuary/chat');
-      if (response.ok) {
-        const data = await response.json();
-        await setEncryptedBlob(data.blob);
-        setChatHistory([]);
-        setState({
-          isLoading: false,
-          isNewUser: true,
-          blob: data.blob,
-          display: data.display,
-          error: null,
-        });
+      // Use server action to create fresh sanctuary
+      const result = await initializeSanctuary();
+
+      if (result.error) {
+        throw new Error(result.error);
       }
+
+      await setEncryptedBlob(result.blob);
+      setChatHistory([]);
+      setState({
+        isLoading: false,
+        isNewUser: true,
+        blob: result.blob,
+        display: result.display,
+        error: null,
+      });
     } catch (error) {
       console.error('[Sanctuary] Reset error:', error);
       setState(prev => ({ ...prev, isLoading: false, error: 'Failed to reset' }));

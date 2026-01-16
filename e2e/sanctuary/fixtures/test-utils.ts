@@ -5,8 +5,8 @@ import { Page, expect } from '@playwright/test';
  * Shared helpers for testing the sanctuary system
  */
 
-// Base URL for tests
-export const BASE_URL = 'http://localhost:3002';
+// Base URL for tests (defaults to 3000, override with TEST_BASE_URL env var)
+export const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
 /**
  * Wait for the sanctuary to be fully loaded and ready

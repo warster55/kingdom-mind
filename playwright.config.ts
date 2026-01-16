@@ -13,7 +13,7 @@ export default defineConfig({
   use: {
     trace: 'on-first-retry',
     headless: true,
-    baseURL: 'http://localhost:3002',
+    baseURL: process.env.TEST_BASE_URL || 'http://localhost:3000',
     // Screenshot configuration
     screenshot: 'on',
     video: 'retain-on-failure',

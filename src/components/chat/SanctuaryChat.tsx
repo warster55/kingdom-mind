@@ -9,11 +9,9 @@ import { type Message } from '@/components/chat/ChatMessage';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { InstallGuide } from '@/components/pwa/InstallGuide';
 import { clearSanctuary } from '@/lib/storage/sanctuary-db';
-import { getSanctuarySize } from '@/lib/storage/sanctuary-backup';
 import { QRExport } from '@/components/backup/QRExport';
 import { QRScanner } from '@/components/backup/QRScanner';
 import { cn } from '@/lib/utils';
-import { Settings, Download, Upload } from 'lucide-react';
 
 export function SanctuaryChat() {
   const {
@@ -29,15 +27,13 @@ export function SanctuaryChat() {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [sanctuaryStatus, setSanctuaryStatus] = useState<'thinking' | 'waiting' | 'reading'>('reading');
 
-  // Settings menu states
-  const [showSettings, setShowSettings] = useState(false);
-  const logoTapCount = useRef(0);
-  const logoTapTimer = useRef<NodeJS.Timeout | null>(null);
-
-  // Backup/restore states
+  // Mentor-triggered action states
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [journeySize, setJourneySize] = useState('');
+
+  // Debug reset via logo taps
+  const logoTapCount = useRef(0);
+  const logoTapTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Handle visual viewport for mobile keyboards
   useEffect(() => {
@@ -71,27 +67,14 @@ export function SanctuaryChat() {
     }
   }, [isLoading, isNewUser, messages.length]);
 
-  // Check journey size on mount
-  useEffect(() => {
-    async function checkJourneySize() {
-      const size = await getSanctuarySize();
-      if (size.exists) {
-        setJourneySize(size.sizeFormatted);
-      }
+  // Handle Mentor-triggered actions (backup, restore, gift)
+  const handleMentorAction = useCallback((action: string) => {
+    if (action === 'backup') {
+      setShowExport(true);
+    } else if (action === 'restore') {
+      setShowImport(true);
     }
-    checkJourneySize();
-  }, []);
-
-  // Export journey trigger
-  const handleExport = useCallback(() => {
-    setShowSettings(false);
-    setShowExport(true);
-  }, []);
-
-  // Import journey trigger
-  const handleImport = useCallback(() => {
-    setShowSettings(false);
-    setShowImport(true);
+    // Gift actions are handled inline in the chat via BitcoinGiftCard
   }, []);
 
   // Import success - reload to use new data
@@ -169,15 +152,6 @@ export function SanctuaryChat() {
     <div className="fixed inset-0 w-full bg-stone-950" style={{ height: vvh }}>
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 p-8 z-[150] flex flex-col items-center">
-        {/* Settings button - top right */}
-        <button
-          onClick={() => setShowSettings(true)}
-          className="absolute top-4 right-4 p-2 text-stone-600 hover:text-stone-400 transition-colors"
-          aria-label="Settings"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
-
         {/* Logo - tappable for debug reset (5 taps) */}
         <h1
           onClick={handleLogoTap}
@@ -216,6 +190,7 @@ export function SanctuaryChat() {
             error={null}
             isKeyboardOpen={isKeyboardOpen}
             onStatusChange={setSanctuaryStatus}
+            onMentorAction={handleMentorAction}
           />
         </div>
 
@@ -238,79 +213,12 @@ export function SanctuaryChat() {
       <InstallPrompt />
       <InstallGuide />
 
-      {/* Settings Menu */}
-      {showSettings && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] bg-stone-950/95 flex items-center justify-center p-6"
-          onClick={() => setShowSettings(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="max-w-sm w-full bg-stone-900 rounded-2xl p-6 shadow-2xl border border-stone-800"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-semibold text-stone-100 mb-6">Settings</h2>
-
-            {/* Settings sections */}
-            <div className="space-y-4">
-              {/* Export Journey */}
-              <button
-                onClick={handleExport}
-                className="w-full flex items-center justify-between p-3 bg-stone-800/50 hover:bg-stone-800 rounded-xl transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Download className="w-5 h-5 text-amber-400" />
-                  <div className="text-left">
-                    <div className="text-stone-200 text-sm font-medium">Backup Journey</div>
-                    <div className="text-stone-500 text-xs">
-                      {journeySize ? `Export your progress (${journeySize})` : 'Export your progress'}
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Import Journey */}
-              <button
-                onClick={handleImport}
-                className="w-full flex items-center justify-between p-3 bg-stone-800/50 hover:bg-stone-800 rounded-xl transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Upload className="w-5 h-5 text-amber-400" />
-                  <div className="text-left">
-                    <div className="text-stone-200 text-sm font-medium">Restore Journey</div>
-                    <div className="text-stone-500 text-xs">Import from another device</div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Info */}
-              <div className="p-3 bg-stone-800/30 rounded-xl text-xs text-stone-500">
-                <p>Your progress is stored locally on this device. Use backup to transfer to another device.</p>
-              </div>
-            </div>
-
-            {/* Close button */}
-            <button
-              onClick={() => setShowSettings(false)}
-              className="w-full mt-6 py-3 text-stone-400 hover:text-stone-300 transition-colors"
-            >
-              Close
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-
-      {/* Export Modal */}
+      {/* Export Modal (triggered by Mentor) */}
       {showExport && (
         <QRExport onClose={() => setShowExport(false)} />
       )}
 
-      {/* Import Modal */}
+      {/* Import Modal (triggered by Mentor) */}
       {showImport && (
         <QRScanner
           onSuccess={handleImportSuccess}
