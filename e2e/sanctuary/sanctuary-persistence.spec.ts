@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 import {
   clearIndexedDB,
   getIndexedDBSnapshot,
-  getRawBlob
+  getRawBlob,
+  TABLE_STORE
 } from './fixtures/indexeddb-helpers';
 import {
   waitForSanctuaryReady,
@@ -139,9 +140,8 @@ test.describe('Sanctuary Persistence', () => {
       expect(snapshotAfter.databaseExists).toBeTruthy();
       notes.push('Database persisted across navigation');
 
-      // Verify tables exist
-      expect(snapshotAfter.tables).toContain('sanctuary');
-      expect(snapshotAfter.tables).toContain('biometric');
+      // Verify tables exist (using obfuscated names)
+      expect(snapshotAfter.tables).toContain(TABLE_STORE);
       notes.push('Tables preserved after navigation');
 
       report.addTestResult({

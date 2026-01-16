@@ -1,5 +1,12 @@
 import { Page } from '@playwright/test';
 
+// Obfuscated names must match src/lib/storage/sanctuary-db.ts
+// Export these so tests can check for proper table names
+export const DB_NAME = '_kx7d2';
+export const TABLE_STORE = '_s1';
+export const TABLE_CHAT = '_c1';
+export const RECORD_ID = '_r';
+
 export interface SanctuaryRecord {
   id: string;
   blob: string;
@@ -31,7 +38,7 @@ export interface IndexedDBSnapshot {
  * Get a complete snapshot of the IndexedDB state
  */
 export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapshot> {
-  return await page.evaluate(async () => {
+  return await page.evaluate(async ({ dbName, tableStore, recordId }) => {
     return new Promise<IndexedDBSnapshot>((resolve) => {
       const snapshot: IndexedDBSnapshot = {
         sanctuary: null,
@@ -42,15 +49,12 @@ export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapsho
         tables: []
       };
 
-      const request = indexedDB.open('KingdomMindSanctuary', 1);
+      const request = indexedDB.open(dbName, 1);
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains('sanctuary')) {
-          db.createObjectStore('sanctuary', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('biometric')) {
-          db.createObjectStore('biometric', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(tableStore)) {
+          db.createObjectStore(tableStore, { keyPath: 'id' });
         }
       };
 
@@ -61,9 +65,9 @@ export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapsho
 
         // Read sanctuary table
         try {
-          const sanctuaryTx = db.transaction(['sanctuary'], 'readonly');
-          const sanctuaryStore = sanctuaryTx.objectStore('sanctuary');
-          const sanctuaryReq = sanctuaryStore.get('sanctuary');
+          const sanctuaryTx = db.transaction([tableStore], 'readonly');
+          const sanctuaryStore = sanctuaryTx.objectStore(tableStore);
+          const sanctuaryReq = sanctuaryStore.get(recordId);
 
           sanctuaryReq.onsuccess = () => {
             if (sanctuaryReq.result) {
@@ -82,27 +86,8 @@ export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapsho
                 }
               }
             }
-
-            // Read biometric table
-            try {
-              const biometricTx = db.transaction(['biometric'], 'readonly');
-              const biometricStore = biometricTx.objectStore('biometric');
-              const biometricReq = biometricStore.get('biometric');
-
-              biometricReq.onsuccess = () => {
-                snapshot.biometric = biometricReq.result || null;
-                db.close();
-                resolve(snapshot);
-              };
-
-              biometricReq.onerror = () => {
-                db.close();
-                resolve(snapshot);
-              };
-            } catch {
-              db.close();
-              resolve(snapshot);
-            }
+            db.close();
+            resolve(snapshot);
           };
 
           sanctuaryReq.onerror = () => {
@@ -119,48 +104,48 @@ export async function getIndexedDBSnapshot(page: Page): Promise<IndexedDBSnapsho
         resolve(snapshot);
       };
     });
-  });
+  }, { dbName: DB_NAME, tableStore: TABLE_STORE, recordId: RECORD_ID });
 }
 
 /**
- * Clear the entire IndexedDB database
+ * Clear the entire IndexedDB database (both new and legacy)
  */
 export async function clearIndexedDB(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    return new Promise<void>((resolve) => {
-      const request = indexedDB.deleteDatabase('KingdomMindSanctuary');
+  await page.evaluate(async (dbName) => {
+    // Delete both new obfuscated DB and legacy DB
+    const deleteDb = (name: string) => new Promise<void>((resolve) => {
+      const request = indexedDB.deleteDatabase(name);
       request.onsuccess = () => resolve();
       request.onerror = () => resolve();
       request.onblocked = () => resolve();
     });
-  });
+    await deleteDb(dbName);
+    await deleteDb('KingdomMindSanctuary'); // Legacy DB
+  }, DB_NAME);
 }
 
 /**
  * Set a specific sanctuary blob in IndexedDB
  */
 export async function setSanctuaryBlob(page: Page, blob: string): Promise<void> {
-  await page.evaluate(async (blobValue) => {
+  await page.evaluate(async ({ blobValue, dbName, tableStore, recordId }) => {
     return new Promise<void>((resolve) => {
-      const request = indexedDB.open('KingdomMindSanctuary', 1);
+      const request = indexedDB.open(dbName, 1);
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains('sanctuary')) {
-          db.createObjectStore('sanctuary', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('biometric')) {
-          db.createObjectStore('biometric', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(tableStore)) {
+          db.createObjectStore(tableStore, { keyPath: 'id' });
         }
       };
 
       request.onsuccess = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        const tx = db.transaction(['sanctuary'], 'readwrite');
-        const store = tx.objectStore('sanctuary');
+        const tx = db.transaction([tableStore], 'readwrite');
+        const store = tx.objectStore(tableStore);
 
         store.put({
-          id: 'sanctuary',
+          id: recordId,
           blob: blobValue,
           updatedAt: Date.now()
         });
@@ -180,58 +165,21 @@ export async function setSanctuaryBlob(page: Page, blob: string): Promise<void> 
         resolve();
       };
     });
-  }, blob);
+  }, { blobValue: blob, dbName: DB_NAME, tableStore: TABLE_STORE, recordId: RECORD_ID });
 }
 
 /**
  * Set biometric enabled state in IndexedDB
+ * @deprecated Biometric feature not implemented - stub only for test compatibility
  */
 export async function setBiometricEnabled(
-  page: Page,
-  enabled: boolean,
-  credentialId?: string
+  _page: Page,
+  _enabled: boolean,
+  _credentialId?: string
 ): Promise<void> {
-  await page.evaluate(async ({ enabled, credentialId }) => {
-    return new Promise<void>((resolve) => {
-      const request = indexedDB.open('KingdomMindSanctuary', 1);
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains('sanctuary')) {
-          db.createObjectStore('sanctuary', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('biometric')) {
-          db.createObjectStore('biometric', { keyPath: 'id' });
-        }
-      };
-
-      request.onsuccess = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        const tx = db.transaction(['biometric'], 'readwrite');
-        const store = tx.objectStore('biometric');
-
-        store.put({
-          id: 'biometric',
-          enabled,
-          credentialId
-        });
-
-        tx.oncomplete = () => {
-          db.close();
-          resolve();
-        };
-
-        tx.onerror = () => {
-          db.close();
-          resolve();
-        };
-      };
-
-      request.onerror = () => {
-        resolve();
-      };
-    });
-  }, { enabled, credentialId });
+  // Biometric feature not implemented in current schema
+  // This is a stub to prevent import errors in tests
+  return Promise.resolve();
 }
 
 /**

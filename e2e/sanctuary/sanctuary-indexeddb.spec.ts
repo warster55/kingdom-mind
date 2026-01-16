@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   clearIndexedDB,
   getIndexedDBSnapshot,
+  TABLE_STORE,
   type IndexedDBSnapshot
 } from './fixtures/indexeddb-helpers';
 import {
@@ -65,9 +66,9 @@ test.describe('Sanctuary IndexedDB Storage', () => {
       expect(snapshot.databaseExists).toBeTruthy();
       notes.push('Database created successfully');
 
-      // Verify sanctuary table exists
-      expect(snapshot.tables).toContain('sanctuary');
-      notes.push('Sanctuary table exists');
+      // Verify store table exists (obfuscated name)
+      expect(snapshot.tables).toContain(TABLE_STORE);
+      notes.push('Store table exists');
 
       // Verify blob is stored (may be null for fresh user before first API call)
       notes.push(`Blob stored: ${!!snapshot.rawBlob}`);
@@ -200,15 +201,12 @@ test.describe('Sanctuary IndexedDB Storage', () => {
       const ss1 = await takeScreenshot(page, 'indexeddb', 'db-structure', 'tables');
       screenshots.push(ss1);
 
-      // Verify database structure
+      // Verify database structure (obfuscated names)
       expect(snapshot.databaseExists).toBeTruthy();
       notes.push('Database exists');
 
-      expect(snapshot.tables).toContain('sanctuary');
-      notes.push('Sanctuary table exists');
-
-      expect(snapshot.tables).toContain('biometric');
-      notes.push('Biometric table exists');
+      expect(snapshot.tables).toContain(TABLE_STORE);
+      notes.push('Store table exists');
 
       notes.push(`Total tables: ${snapshot.tables.length}`);
       notes.push(`Table names: ${snapshot.tables.join(', ')}`);
