@@ -74,8 +74,8 @@ async function loadSystemPrompt(): Promise<string> {
     console.error('[Chat] Failed to load system prompt from DB:', error);
   }
 
-  // Fallback minimal prompt
-  return `You are a warm, wise spiritual mentor. Be conversational and caring. Keep responses brief (2-3 sentences). Ask thoughtful questions.`;
+  // Fallback to full system prompt if database unavailable
+  return MENTOR_SYSTEM_PROMPT;
 }
 
 /**
