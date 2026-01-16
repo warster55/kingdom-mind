@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getEncryptedBlob, setEncryptedBlob } from '@/lib/storage/sanctuary-db';
 import { initializeSanctuary, sendMentorMessage, type ChatMessage, type DisplayData } from '@/lib/actions/chat';
 import { INPUT_LIMITS } from '@/lib/security/sanitize';
+import { saveChatMessage, loadChatHistory, clearChatHistory } from '@/lib/storage/chat-history';
 
 export type { ChatMessage, DisplayData };
 export { INPUT_LIMITS };
@@ -32,6 +33,12 @@ export function useSanctuary() {
   useEffect(() => {
     async function init() {
       try {
+        // Load persisted chat history from IndexedDB
+        const persistedHistory = await loadChatHistory();
+        if (persistedHistory.length > 0) {
+          setChatHistory(persistedHistory);
+        }
+
         const existingBlob = await getEncryptedBlob();
 
         // Use server action to initialize/validate
@@ -88,6 +95,9 @@ export function useSanctuary() {
     const userMessage: ChatMessage = { role: 'user', content: message };
     setChatHistory(prev => [...prev, userMessage]);
 
+    // Persist user message to IndexedDB
+    await saveChatMessage({ ...userMessage, timestamp: Date.now() });
+
     try {
       // Use server action instead of fetch
       const data = await sendMentorMessage(
@@ -104,6 +114,9 @@ export function useSanctuary() {
       if (data.response) {
         const assistantMessage: ChatMessage = { role: 'assistant', content: data.response };
         setChatHistory(prev => [...prev, assistantMessage]);
+
+        // Persist assistant message to IndexedDB after streaming completes
+        await saveChatMessage({ ...assistantMessage, timestamp: Date.now() });
       }
 
       // Update state with new blob and display
@@ -137,8 +150,9 @@ export function useSanctuary() {
   }, [state.blob, chatHistory, isStreaming]);
 
   // Clear chat history (but keep sanctuary data)
-  const clearChat = useCallback(() => {
+  const clearChat = useCallback(async () => {
     setChatHistory([]);
+    await clearChatHistory();
   }, []);
 
   // Reset sanctuary (start fresh)
@@ -155,6 +169,7 @@ export function useSanctuary() {
 
       await setEncryptedBlob(result.blob);
       setChatHistory([]);
+      await clearChatHistory();
       setState({
         isLoading: false,
         isNewUser: true,
