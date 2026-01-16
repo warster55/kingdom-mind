@@ -362,6 +362,12 @@ export async function sendMentorMessage(
       sanitizedResponse += '\n\n[BACKUP_IMPORT]';
     }
 
+    // Re-add RESONANCE tags for breakthrough star animation (server-validated)
+    if (breakthroughs.length > 0) {
+      const domains = breakthroughs.map(bt => bt.domain).join(', ');
+      sanitizedResponse += `\n\n[RESONANCE: ${domains}]`;
+    }
+
     // Update sanctuary with new breakthroughs
     if (breakthroughs.length > 0) {
       for (const bt of breakthroughs) {
