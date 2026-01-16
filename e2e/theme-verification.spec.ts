@@ -2,13 +2,13 @@ import { test, expect } from '@playwright/test';
 
 test('verify application is in dark mode', async ({ page }) => {
   // 1. Go to the root (Welcome Page)
-  await page.goto('http://localhost:4000');
+  await page.goto('/');
   
   console.log('Welcome Page Loaded.');
   await page.waitForTimeout(1000);
 
   // 2. Capture Screenshot
-  await page.screenshot({ path: 'test-results/theme-verification.png' });
+  await page.screenshot({ path: 'e2e/reports/test-results/theme-verification.png' });
 
   // 3. Verify Background Color (Obsidian #0c0a09)
   // We check the computed style of the body

@@ -6,8 +6,8 @@ test.use({
 });
 
 test('capture star birth animation video', async ({ page }) => {
-  // 1. Go to the Sandbox
-  await page.goto('http://localhost:4000/test-stars');
+  // 1. Go to the Sandbox (only works in dev, skip in production)
+  await page.goto('/test-stars');
   
   console.log('Sandbox Loaded.');
   await page.waitForTimeout(1000);
