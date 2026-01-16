@@ -44,6 +44,9 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy WASM files needed at runtime (tiny-secp256k1 for Bitcoin addresses)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/tiny-secp256k1/lib/secp256k1.wasm ./node_modules/tiny-secp256k1/lib/secp256k1.wasm
+
 # Include migration tools and scripts
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./
