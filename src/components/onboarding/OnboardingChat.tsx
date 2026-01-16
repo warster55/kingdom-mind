@@ -9,7 +9,6 @@ import { Message } from '@/components/chat/ChatMessage';
 import { UsernameSelector } from './UsernameSelector';
 import { TotpSetup } from './TotpSetup';
 import { SeedPhraseDisplay } from './SeedPhraseDisplay';
-import { QuickUnlockSetup } from './QuickUnlockSetup';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -244,7 +243,6 @@ export function OnboardingChat() {
           {currentStep?.requiresAction === 'show_usernames' && <UsernameSelector />}
           {currentStep?.requiresAction === 'show_qr' && <TotpSetup />}
           {currentStep?.requiresAction === 'show_seed_phrase' && <SeedPhraseDisplay />}
-          {currentStep?.requiresAction === 'show_pin_setup' && <QuickUnlockSetup />}
         </div>
       )}
     </div>

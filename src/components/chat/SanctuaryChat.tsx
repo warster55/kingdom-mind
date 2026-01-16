@@ -8,15 +8,12 @@ import { StreamingChat } from '@/components/chat/StreamingChat';
 import { type Message } from '@/components/chat/ChatMessage';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { InstallGuide } from '@/components/pwa/InstallGuide';
-import { BiometricLock } from '@/components/biometric/BiometricLock';
-import { BiometricSetup } from '@/components/biometric/BiometricSetup';
-import { getBiometricEnabled, clearSanctuary, setBiometricEnabled } from '@/lib/storage/sanctuary-db';
-import { isPlatformAuthenticatorAvailable } from '@/lib/biometric/client';
+import { clearSanctuary } from '@/lib/storage/sanctuary-db';
 import { getSanctuarySize } from '@/lib/storage/sanctuary-backup';
 import { QRExport } from '@/components/backup/QRExport';
 import { QRScanner } from '@/components/backup/QRScanner';
 import { cn } from '@/lib/utils';
-import { Settings, Shield, Download, Upload } from 'lucide-react';
+import { Settings, Download, Upload } from 'lucide-react';
 
 export function SanctuaryChat() {
   const {
@@ -32,16 +29,8 @@ export function SanctuaryChat() {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [sanctuaryStatus, setSanctuaryStatus] = useState<'thinking' | 'waiting' | 'reading'>('reading');
 
-  // Biometric states
-  const [isLocked, setIsLocked] = useState(true);
-  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
-  const [hasCompletedFirstMessage, setHasCompletedFirstMessage] = useState(false);
-  const [biometricSetupDismissed, setBiometricSetupDismissed] = useState(false);
-
   // Settings menu states
   const [showSettings, setShowSettings] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const logoTapCount = useRef(0);
   const logoTapTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -82,68 +71,15 @@ export function SanctuaryChat() {
     }
   }, [isLoading, isNewUser, messages.length]);
 
-  // Check biometric availability and journey size on mount
+  // Check journey size on mount
   useEffect(() => {
-    async function checkBiometric() {
-      const available = await isPlatformAuthenticatorAvailable();
-      const enabled = await getBiometricEnabled();
-      console.log('[Sanctuary] Biometric available:', available);
-      console.log('[Sanctuary] Biometric enabled:', enabled);
-      setBiometricAvailable(available);
-      setBiometricEnabledState(enabled);
-    }
     async function checkJourneySize() {
       const size = await getSanctuarySize();
       if (size.exists) {
         setJourneySize(size.sizeFormatted);
       }
     }
-    checkBiometric();
     checkJourneySize();
-  }, []);
-
-  // Check if we should show biometric setup (after first message for new users)
-  useEffect(() => {
-    async function checkBiometricSetup() {
-      console.log('[Sanctuary] Checking biometric setup:', {
-        hasCompletedFirstMessage,
-        isNewUser,
-        biometricSetupDismissed,
-        biometricAvailable
-      });
-      if (hasCompletedFirstMessage && isNewUser && !biometricSetupDismissed && biometricAvailable) {
-        const alreadyEnabled = await getBiometricEnabled();
-        console.log('[Sanctuary] Already enabled:', alreadyEnabled);
-        if (!alreadyEnabled) {
-          // Small delay to let the chat settle
-          setTimeout(() => setShowBiometricSetup(true), 1500);
-        }
-      }
-    }
-    checkBiometricSetup();
-  }, [hasCompletedFirstMessage, isNewUser, biometricSetupDismissed, biometricAvailable]);
-
-  // Handle biometric unlock
-  const handleUnlock = useCallback(() => {
-    setIsLocked(false);
-  }, []);
-
-  // Handle biometric setup complete
-  const handleBiometricSetupComplete = useCallback(() => {
-    setShowBiometricSetup(false);
-    setBiometricSetupDismissed(true);
-  }, []);
-
-  // Handle biometric setup skip
-  const handleBiometricSetupSkip = useCallback(() => {
-    setShowBiometricSetup(false);
-    setBiometricSetupDismissed(true);
-  }, []);
-
-  // Manual biometric setup trigger (from settings)
-  const handleManualBiometricSetup = useCallback(() => {
-    setShowSettings(false);
-    setShowBiometricSetup(true);
   }, []);
 
   // Export journey trigger
@@ -164,7 +100,7 @@ export function SanctuaryChat() {
     window.location.reload();
   }, []);
 
-  // Debug reset - triple tap logo
+  // Debug reset - 5 taps on logo
   const handleLogoTap = useCallback(() => {
     logoTapCount.current += 1;
 
@@ -177,7 +113,6 @@ export function SanctuaryChat() {
       logoTapCount.current = 0;
       if (confirm('Reset sanctuary? This will clear all local data.')) {
         clearSanctuary().then(() => {
-          setBiometricEnabled(false);
           window.location.reload();
         });
       }
@@ -212,18 +147,8 @@ export function SanctuaryChat() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);
-
-      // Mark first message as complete (for biometric setup prompt)
-      if (!hasCompletedFirstMessage) {
-        setHasCompletedFirstMessage(true);
-      }
     }
   };
-
-  // Biometric lock screen (shows first, before anything else)
-  if (isLocked) {
-    return <BiometricLock onUnlock={handleUnlock} />;
-  }
 
   // Loading state
   if (isLoading) {
@@ -316,14 +241,6 @@ export function SanctuaryChat() {
       <InstallPrompt />
       <InstallGuide />
 
-      {/* Biometric Setup Prompt (for new users after first message) */}
-      {showBiometricSetup && (
-        <BiometricSetup
-          onComplete={handleBiometricSetupComplete}
-          onSkip={handleBiometricSetupSkip}
-        />
-      )}
-
       {/* Settings Menu */}
       {showSettings && (
         <motion.div
@@ -344,34 +261,6 @@ export function SanctuaryChat() {
 
             {/* Settings sections */}
             <div className="space-y-4">
-              {/* Biometric Security */}
-              <div className="flex items-center justify-between p-3 bg-stone-800/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-amber-400" />
-                  <div>
-                    <div className="text-stone-200 text-sm font-medium">Biometric Lock</div>
-                    <div className="text-stone-500 text-xs">
-                      {biometricAvailable
-                        ? biometricEnabled
-                          ? 'Enabled'
-                          : 'Not enabled'
-                        : 'Not available on this device'}
-                    </div>
-                  </div>
-                </div>
-                {biometricAvailable && !biometricEnabled && (
-                  <button
-                    onClick={handleManualBiometricSetup}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-900 text-sm font-medium rounded-lg transition-colors"
-                  >
-                    Enable
-                  </button>
-                )}
-                {biometricEnabled && (
-                  <span className="text-green-400 text-sm">✓ Active</span>
-                )}
-              </div>
-
               {/* Export Journey */}
               <button
                 onClick={handleExport}
@@ -404,7 +293,7 @@ export function SanctuaryChat() {
 
               {/* Info */}
               <div className="p-3 bg-stone-800/30 rounded-xl text-xs text-stone-500">
-                <p>Your progress is stored locally on this device only. Use backup to transfer to another device.</p>
+                <p>Your progress is stored locally on this device. Use backup to transfer to another device.</p>
               </div>
             </div>
 

@@ -40,11 +40,12 @@ Kingdom Mind is a completely **closed-box** spiritual formation platform. All da
 - Zero external service calls
 - This is non-negotiable for all users
 
-**SECONDARY - Biometric/Passkeys (WebAuthn)**
-- If user's device supports fingerprint or Face ID, offer this as additional option
-- Works on mobile (fingerprint, Face ID) and desktop (Windows Hello, Touch ID)
-- Not required, but encouraged if available
-- Provides convenience without compromising security
+**REMOVED - Biometric/Passkeys (WebAuthn)**
+- ~~If user's device supports fingerprint or Face ID, offer this as additional option~~
+- **Status: REMOVED** (January 15, 2026)
+- Reason: Sanctuary Architecture makes this unnecessary - all data is client-side
+- Security philosophy: If users don't lock their device with PIN/fingerprint, that's their responsibility
+- The app no longer manages authentication - it's purely a client-side data blob
 
 **OPTIONAL - Hardware Security Keys**
 - YubiKey and similar FIDO2 devices supported
@@ -2099,6 +2100,7 @@ All major questions have been decided:
 | 2026-01-15 | Updated Phase 14: Marked as SUPERSEDED by Phase 15 (control-room removed, km-admin replaces it) |
 | 2026-01-15 | Updated Phase 15: Added PIN authentication (356532), admin capabilities table, deprecated tools note |
 | 2026-01-15 | Added Legacy Database Tables section - Documented unused tables from previous architecture |
+| 2026-01-15 | **Biometric Removal** - Removed all biometric/passkey code (WebAuthn, lock screens, setup flows) - Sanctuary Architecture makes app-level auth unnecessary |
 
 ---
 

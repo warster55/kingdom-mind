@@ -135,7 +135,6 @@ export function useSanctuary() {
           ...prev,
           blob: data.blob,
           display: data.display || prev.display,
-          // Note: isNewUser stays true for the session so biometric prompt can show
         }));
       }
 
