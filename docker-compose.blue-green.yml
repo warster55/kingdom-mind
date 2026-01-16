@@ -1,0 +1,76 @@
+version: '3.8'
+
+# Blue-Green Deployment Configuration
+# Blue runs on port 4001, Green runs on port 4002
+# Only one receives traffic at a time via Cloudflare tunnel
+
+services:
+  blue:
+    container_name: km-blue
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4001:4000"
+    env_file:
+      - .env.production.local
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    depends_on:
+      - db
+    networks:
+      - km-prod-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4000/api/app/config"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  green:
+    container_name: km-green
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4002:4000"
+    env_file:
+      - .env.production.local
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    depends_on:
+      - db
+    networks:
+      - km-prod-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4000/api/app/config"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  db:
+    container_name: km-prod-db
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=kingdom_user
+      - POSTGRES_PASSWORD=781-1mGLUV_rx9uAQhH5S6VUwoxBykZ0
+      - POSTGRES_DB=kingdom_mind
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - km_prod_postgres_data:/var/lib/postgresql/data
+    networks:
+      - km-prod-net
+
+volumes:
+  km_prod_postgres_data:
+
+networks:
+  km-prod-net:
+    driver: bridge
