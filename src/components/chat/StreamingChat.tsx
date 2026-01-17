@@ -72,7 +72,7 @@ export function StreamingChat({
   const rawContent = lastAiMessage?.content || '';
 
   // --- SPECIAL ACTION TAGS ---
-  const [giftAddress, setGiftAddress] = useState<string | null>(null);
+  const [showQRAddress, setShowQRAddress] = useState<string | null>(null);
   const [lastActionMessageId, setLastActionMessageId] = useState<string | null>(null);
 
   // Parse and handle special Mentor action tags
@@ -91,13 +91,27 @@ export function StreamingChat({
       onMentorAction?.('restore');
     }
 
-    // Check for gift address tag
-    const giftMatch = rawContent.match(/\[GIFT_ADDRESS:([^\]]+)\]/);
-    if (giftMatch) {
+    // Check for OPEN_WALLET tag - immediately open bitcoin: URI
+    const walletMatch = rawContent.match(/\[OPEN_WALLET:([^\]]+)\]/);
+    if (walletMatch) {
       setLastActionMessageId(lastAiMessage.id);
-      setGiftAddress(giftMatch[1]);
-    } else {
-      setGiftAddress(null);
+      const address = walletMatch[1];
+      // Open wallet app via bitcoin: URI
+      window.location.href = `bitcoin:${address}`;
+    }
+
+    // Check for SHOW_QR tag - show dedicated QR screen
+    const qrMatch = rawContent.match(/\[SHOW_QR:([^\]]+)\]/);
+    if (qrMatch) {
+      setLastActionMessageId(lastAiMessage.id);
+      setShowQRAddress(qrMatch[1]);
+    }
+
+    // Legacy: Check for old GIFT_ADDRESS tag
+    const legacyMatch = rawContent.match(/\[GIFT_ADDRESS:([^\]]+)\]/);
+    if (legacyMatch) {
+      setLastActionMessageId(lastAiMessage.id);
+      setShowQRAddress(legacyMatch[1]);
     }
   }, [rawContent, lastAiMessage?.id, lastActionMessageId, onMentorAction]);
 
@@ -109,6 +123,8 @@ export function StreamingChat({
       .replace(/\[BACKUP_EXPORT\]/g, '')
       .replace(/\[BACKUP_IMPORT\]/g, '')
       .replace(/\[GIFT_ADDRESS:[^\]]+\]/g, '')
+      .replace(/\[OPEN_WALLET:[^\]]+\]/g, '')
+      .replace(/\[SHOW_QR:[^\]]+\]/g, '')
       .trim();
   }, [rawContent]);
   const allWords = useMemo(() => fullContent.split(' '), [fullContent]);
@@ -410,11 +426,11 @@ export function StreamingChat({
             )}
           </AnimatePresence>
 
-          {/* Bitcoin Gift Card Modal (shown when Mentor provides address) */}
-          {giftAddress && isPageComplete && (
+          {/* Dedicated QR Screen (shown when user wants QR code) */}
+          {showQRAddress && isPageComplete && (
             <BitcoinGiftCard
-              address={giftAddress}
-              onClose={() => setGiftAddress(null)}
+              address={showQRAddress}
+              onClose={() => setShowQRAddress(null)}
             />
           )}
         </div>

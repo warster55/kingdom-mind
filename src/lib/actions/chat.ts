@@ -498,12 +498,14 @@ export async function sendMentorMessage(
     // SECURITY LAYER 4: Extract from RAW before sanitizing
     // ========================================
     // Check for legitimate AI-requested actions BEFORE sanitizing
-    const wantsGift = detectActionRequest(rawAIResponse, 'gift');
+    const wantsGiftWallet = detectActionRequest(rawAIResponse, 'gift_wallet');
+    const wantsGiftQR = detectActionRequest(rawAIResponse, 'gift_qr');
+    const wantsGiftLegacy = detectActionRequest(rawAIResponse, 'gift'); // Fallback for old [GIFT_REQUEST]
     const wantsBackup = detectActionRequest(rawAIResponse, 'backup');
     const wantsRestore = detectActionRequest(rawAIResponse, 'restore');
 
     // DEBUG: Log action detection results
-    console.log('[Chat] Action detection - Gift:', wantsGift, 'Backup:', wantsBackup, 'Restore:', wantsRestore);
+    console.log('[Chat] Action detection - GiftWallet:', wantsGiftWallet, 'GiftQR:', wantsGiftQR, 'Backup:', wantsBackup, 'Restore:', wantsRestore);
     const breakthroughs = extractBreakthroughs(rawAIResponse);
 
     // ========================================
@@ -519,13 +521,25 @@ export async function sendMentorMessage(
     // Only the server can add legitimate action tags back
 
     // Process gift request - server generates Bitcoin address
-    if (wantsGift) {
+    // New two-step flow: GIFT_WALLET opens wallet app, GIFT_QR shows QR code
+    if (wantsGiftWallet || wantsGiftQR || wantsGiftLegacy) {
       console.log('[Chat] Gift requested - generating Bitcoin address...');
       const result = await generateGiftAddress();
       console.log('[Chat] Gift address result:', result);
       if (result && isValidBitcoinAddress(result.address)) {
-        sanitizedResponse += `\n\n[GIFT_ADDRESS:${result.address}]`;
-        console.log('[Chat] Added GIFT_ADDRESS tag to response');
+        if (wantsGiftWallet) {
+          // User wants wallet app opened
+          sanitizedResponse += `\n\n[OPEN_WALLET:${result.address}]`;
+          console.log('[Chat] Added OPEN_WALLET tag to response');
+        } else if (wantsGiftQR) {
+          // User wants QR code shown
+          sanitizedResponse += `\n\n[SHOW_QR:${result.address}]`;
+          console.log('[Chat] Added SHOW_QR tag to response');
+        } else {
+          // Legacy fallback - show QR
+          sanitizedResponse += `\n\n[SHOW_QR:${result.address}]`;
+          console.log('[Chat] Added SHOW_QR tag (legacy fallback) to response');
+        }
       } else {
         sanitizedResponse += '\n\n(Bitcoin receiving is being set up. Please check back soon.)';
         console.log('[Chat] Gift address generation failed or invalid');

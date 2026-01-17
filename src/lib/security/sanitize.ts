@@ -22,6 +22,10 @@ export const RATE_LIMITS = {
 const DANGEROUS_PATTERNS = [
   /\[GIFT_ADDRESS:[^\]]*\]/gi,
   /\[GIFT_REQUEST\]/gi,
+  /\[GIFT_WALLET\]/gi,
+  /\[GIFT_QR\]/gi,
+  /\[OPEN_WALLET:[^\]]*\]/gi,
+  /\[SHOW_QR:[^\]]*\]/gi,
   /\[BACKUP_EXPORT\]/gi,
   /\[BACKUP_IMPORT\]/gi,
   /\[BREAKTHROUGH:[^\]]*\]/gi,
@@ -86,6 +90,8 @@ export function detectActionRequest(rawOutput: string, action: string): boolean 
 
   const actionPatterns: Record<string, RegExp> = {
     'gift': /\[GIFT_REQUEST\]/i,
+    'gift_wallet': /\[GIFT_WALLET\]/i,
+    'gift_qr': /\[GIFT_QR\]/i,
     'backup': /\[BACKUP_EXPORT\]/i,
     'restore': /\[BACKUP_IMPORT\]/i,
   };
