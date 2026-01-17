@@ -82,13 +82,19 @@ export function sanitizeAIOutput(output: string): string {
 /**
  * Check if AI output contains a specific action request
  * Used to detect legitimate AI-requested actions BEFORE sanitization
+ *
+ * Detects both explicit tags AND natural language patterns
+ * (because some models don't reliably output tags)
  */
 export function detectActionRequest(rawOutput: string, action: string): boolean {
   if (!rawOutput || typeof rawOutput !== 'string') {
     return false;
   }
 
-  const actionPatterns: Record<string, RegExp> = {
+  const lowerOutput = rawOutput.toLowerCase();
+
+  // Primary: Check for explicit tags
+  const tagPatterns: Record<string, RegExp> = {
     'gift': /\[GIFT_REQUEST\]/i,
     'gift_wallet': /\[GIFT_WALLET\]/i,
     'gift_qr': /\[GIFT_QR\]/i,
@@ -96,8 +102,50 @@ export function detectActionRequest(rawOutput: string, action: string): boolean 
     'restore': /\[BACKUP_IMPORT\]/i,
   };
 
-  const pattern = actionPatterns[action];
-  return pattern ? pattern.test(rawOutput) : false;
+  const tagPattern = tagPatterns[action];
+  if (tagPattern && tagPattern.test(rawOutput)) {
+    return true;
+  }
+
+  // Fallback: Check for natural language patterns (AI didn't use tags)
+  const naturalPatterns: Record<string, string[]> = {
+    'gift_wallet': [
+      'opening your wallet',
+      'open your wallet',
+      'opening the wallet',
+      'launching your wallet',
+    ],
+    'gift_qr': [
+      "here's the qr",
+      'here is the qr',
+      'showing you the qr',
+      'showing the qr',
+      'qr code for you',
+      'scan this qr',
+    ],
+    'backup': [
+      'backing up your journey',
+      'saving your journey',
+      'exporting your data',
+      'here is your backup',
+    ],
+    'restore': [
+      'restoring your journey',
+      'importing your data',
+      'welcome back',
+    ],
+  };
+
+  const phrases = naturalPatterns[action];
+  if (phrases) {
+    for (const phrase of phrases) {
+      if (lowerOutput.includes(phrase)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
