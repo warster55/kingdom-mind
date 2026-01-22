@@ -23,6 +23,7 @@ import {
   isValidBitcoinAddress,
   INPUT_LIMITS,
 } from '@/lib/security/sanitize';
+import { toDisplayDomain } from '@/lib/constants/domains';
 import { checkRateLimit, generateRateLimitId } from '@/lib/security/rate-limit';
 import { setSystemPromptHealth } from '@/lib/health/system-prompt-health';
 
@@ -555,9 +556,15 @@ export async function sendMentorMessage(
     }
 
     // Re-add RESONANCE tags for breakthrough star animation (server-validated)
+    // Use toDisplayDomain for consistent PascalCase conversion
     if (breakthroughs.length > 0) {
-      const domains = breakthroughs.map(bt => bt.domain).join(', ');
-      sanitizedResponse += `\n\n[RESONANCE: ${domains}]`;
+      const domains = breakthroughs
+        .map(bt => toDisplayDomain(bt.domain))
+        .filter((d): d is NonNullable<typeof d> => d !== null)
+        .join(', ');
+      if (domains) {
+        sanitizedResponse += `\n\n[RESONANCE: ${domains}]`;
+      }
     }
 
     // Update sanctuary with new breakthroughs

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { toDisplayDomain } from '@/lib/constants/domains';
 
 const ALGORITHM = 'aes-256-gcm';
 
@@ -186,10 +187,14 @@ export function calculateDisplayData(sanctuary: SanctuaryData): {
 } {
   const { progression } = sanctuary;
 
-  // Calculate stars per domain (1 star per 3 resonance points)
+  // Calculate stars per domain (1 star per resonance point)
+  // Use toDisplayDomain for consistent PascalCase conversion
   const stars: Record<string, number> = {};
   for (const [domain, value] of Object.entries(progression.resonance)) {
-    stars[domain] = Math.floor(value / 3);
+    const displayDomain = toDisplayDomain(domain);
+    if (displayDomain) {
+      stars[displayDomain] = value;
+    }
   }
 
   return {

@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useConfig } from '@/lib/contexts/ConfigContext';
 import { RotateCcw } from 'lucide-react';
 import { BitcoinGiftCard } from '@/components/chat/BitcoinGiftCard';
+import { DOMAINS, isValidDomain, type Domain } from '@/lib/constants/domains';
 
 interface StreamingChatProps {
   messages: Message[];
@@ -17,8 +18,6 @@ interface StreamingChatProps {
   onStatusChange?: (status: 'thinking' | 'waiting' | 'reading') => void;
   onMentorAction?: (action: 'backup' | 'restore', data?: string) => void;
 }
-
-const DOMAINS = ['Identity', 'Purpose', 'Mindset', 'Relationships', 'Vision', 'Action', 'Legacy'];
 
 const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
   'Identity': { x: 20, y: 20 }, 
@@ -244,7 +243,7 @@ export function StreamingChat({
       setLastTaggedId(lastAiMessage?.id || null);
       const newStars: BornStar[] = [];
       activeResonanceList.forEach(domain => {
-        if (DOMAINS.includes(domain)) {
+        if (isValidDomain(domain)) {
           newStars.push({ id: `star-${Math.random()}`, domain, size: 2.5, offsetX: 0, offsetY: 0 });
         }
       });
@@ -262,13 +261,15 @@ export function StreamingChat({
     if (!hasMounted) return [] as StarCluster[];
     const clusters: StarCluster[] = [];
     Object.entries(stars).forEach(([domain, count]) => {
-      const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
-      const _pos = pos; // Silence unused variable warning - pos used for positioning
-      const starCount = Math.floor((count as number) * (isMobile ? 0.3 : 1));
+      const numericCount = count as number;
+      if (numericCount <= 0) return;
+      // Ensure at least 1 star per domain with resonance, scale up for more
+      const starCount = Math.max(1, Math.floor(numericCount * (isMobile ? 0.5 : 1)));
       for (let i = 0; i < starCount; i++) {
         const u = Math.random(); const v = Math.random();
         const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-        clusters.push({ domain, offsetX: z * 8, offsetY: (Math.random() - 0.5) * 16, size: Math.random() * 0.8 + 0.2 });
+        // Size: 1.5-3.5 pixels (visible)
+        clusters.push({ domain, offsetX: z * 8, offsetY: (Math.random() - 0.5) * 16, size: Math.random() * 2 + 1.5 });
       }
     });
     return clusters;
@@ -300,13 +301,14 @@ export function StreamingChat({
 
         const isGlowing = glowingDomains.has(star.domain);
         ctx.beginPath(); ctx.arc(x, y, star.size * zoomScale, 0, Math.PI * 2);
-        ctx.fillStyle = isGlowing ? `rgba(251, 191, 36, 0.6)` : `rgba(255, 255, 255, ${'' === star.domain ? 0.4 : 0.1})`; 
+        // Glowing: amber at 80%, Normal: white at 40% (visible)
+        ctx.fillStyle = isGlowing ? `rgba(251, 191, 36, 0.8)` : `rgba(255, 255, 255, 0.4)`;
         ctx.fill();
       });
       frame = requestAnimationFrame(render);
     };
     render(); return () => cancelAnimationFrame(frame);
-  }, [baseStarClusters, activeResonanceList, hasMounted, isKeyboardOpen, '', mobileZoomScale]);
+  }, [baseStarClusters, activeResonanceList, hasMounted, isKeyboardOpen, mobileZoomScale]);
 
   return (
     <div 
@@ -317,25 +319,24 @@ export function StreamingChat({
 
       <div className="absolute inset-0 pointer-events-none z-10">
         {hasMounted && DOMAINS.map((domain) => {
-          const isActive = '' === domain;
           const isGlowing = activeResonanceList.includes(domain);
           const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
-          
+
           return (
-            <motion.div 
-              key={domain} 
+            <motion.div
+              key={domain}
               initial={{ scale: 0, opacity: 0, left: '50%', top: '50%', x: '-50%', y: '-50%' }}
-              animate={{ 
-                opacity: isStreaming ? 0.3 : (isActive || isGlowing ? 1 : 0.7),
-                left: `${pos.x}%`, 
+              animate={{
+                opacity: isStreaming ? 0.3 : (isGlowing ? 1 : 0.7),
+                left: `${pos.x}%`,
                 top: `${pos.y}%`,
-                scale: isKeyboardOpen ? mobileZoomScale : (isActive ? 1.2 : 1),
+                scale: isKeyboardOpen ? mobileZoomScale : 1,
                 y: isKeyboardOpen ? `${mobileYOffset - 75}%` : '-50%'
-              }} 
-              transition={{ duration: 1.5, ease: "easeOut" }} 
+              }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
               className="absolute"
             >
-              <span className={cn("font-serif italic uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-1000", isMobile ? "text-[10px]" : "text-sm")} style={{ color: isGlowing ? colorAccent : (isActive ? colorTextMain : colorTextDim) }}>{domain}</span>
+              <span className={cn("font-serif italic uppercase tracking-[0.2em] whitespace-nowrap transition-all duration-1000", isMobile ? "text-[10px]" : "text-sm")} style={{ color: isGlowing ? colorAccent : colorTextDim }}>{domain}</span>
             </motion.div>
           );
         })}

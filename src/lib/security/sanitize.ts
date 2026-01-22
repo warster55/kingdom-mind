@@ -5,6 +5,8 @@
  * Defense-in-depth protection for chat input/output
  */
 
+import { isValidDomain, toStorageKey } from '@/lib/constants/domains';
+
 // Input length limits
 export const INPUT_LIMITS = {
   MAX_MESSAGE_LENGTH: 1000,      // ~200 words max - enough for chatting
@@ -157,14 +159,13 @@ export function extractBreakthroughs(rawOutput: string): Array<{ domain: string;
 
   let match;
   while ((match = regex.exec(rawOutput)) !== null) {
-    const domainLower = match[1].toLowerCase();
+    const domain = match[1];
     const summary = match[2].trim();
+    const storageKey = toStorageKey(domain);
 
-    const validDomains = ['identity', 'purpose', 'mindset', 'relationships', 'vision', 'action', 'legacy'];
-    if (validDomains.includes(domainLower)) {
-      // Capitalize first letter to match client-side DOMAINS array
-      const domain = domainLower.charAt(0).toUpperCase() + domainLower.slice(1);
-      breakthroughs.push({ domain, summary });
+    if (storageKey) {
+      // Use storage key (lowercase) to match sanctuary.progression.resonance keys
+      breakthroughs.push({ domain: storageKey, summary });
     }
   }
 
