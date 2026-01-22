@@ -13,6 +13,7 @@ interface StreamingChatProps {
   isStreaming: boolean;
   error: string | null;
   isKeyboardOpen?: boolean;
+  stars?: Record<string, number>;
   onStatusChange?: (status: 'thinking' | 'waiting' | 'reading') => void;
   onMentorAction?: (action: 'backup' | 'restore', data?: string) => void;
 }
@@ -30,7 +31,7 @@ const DOMAIN_POSITIONS: Record<string, { x: number; y: number }> = {
 };
 
 export function StreamingChat({
-  messages, isStreaming, error: _error, isKeyboardOpen = false, onStatusChange, onMentorAction
+  messages, isStreaming, error: _error, isKeyboardOpen = false, stars = {}, onStatusChange, onMentorAction
 }: StreamingChatProps) {
   const { get } = useConfig();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -260,7 +261,7 @@ export function StreamingChat({
   const baseStarClusters = useMemo(() => {
     if (!hasMounted) return [] as StarCluster[];
     const clusters: StarCluster[] = [];
-    Object.entries({}).forEach(([domain, count]) => {
+    Object.entries(stars).forEach(([domain, count]) => {
       const pos = DOMAIN_POSITIONS[domain] || { x: 50, y: 50 };
       const _pos = pos; // Silence unused variable warning - pos used for positioning
       const starCount = Math.floor((count as number) * (isMobile ? 0.3 : 1));
@@ -271,7 +272,7 @@ export function StreamingChat({
       }
     });
     return clusters;
-  }, [{}, isMobile, hasMounted]);
+  }, [stars, isMobile, hasMounted]);
 
   useEffect(() => {
     if (!hasMounted) return;

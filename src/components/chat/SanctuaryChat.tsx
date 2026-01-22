@@ -189,6 +189,7 @@ export function SanctuaryChat() {
             isStreaming={isStreaming}
             error={null}
             isKeyboardOpen={isKeyboardOpen}
+            stars={display?.stars}
             onStatusChange={setSanctuaryStatus}
             onMentorAction={handleMentorAction}
           />
